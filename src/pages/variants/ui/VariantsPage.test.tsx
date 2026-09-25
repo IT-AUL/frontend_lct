@@ -5,9 +5,7 @@ import type { ReactNode } from 'react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { api, artifactUrl } from '@/shared/api'
-import generation from '@/shared/api/mocks/fixtures/generation.json'
-import passport from '@/shared/api/mocks/fixtures/passport.json'
-import fixtures from '@/shared/api/mocks/fixtures/variants.json'
+import { generationFixture as generation, passportFixture as passport, variantFixtures as fixtures, type VariantFixture } from '@/shared/api/mocks'
 import { routes } from '@/shared/config'
 import { ToastProvider } from '@/shared/ui'
 import { VariantsPage } from './VariantsPage'
@@ -25,7 +23,7 @@ vi.mock('@/shared/ui', async (importOriginal) => {
 })
 
 type Strategy = keyof typeof fixtures
-type Fixture = (typeof fixtures)[Strategy]
+type Fixture = VariantFixture
 
 const PROJECT_ID = generation.project_id
 const RUN_ID = generation.id
@@ -161,7 +159,7 @@ describe('VariantsPage', () => {
     const [faithful] = await cards()
     const card = within(faithful as HTMLElement)
     expect(card.getByRole('link', { name: 'Открыть и проверить' })).toHaveAttribute('href', routes.audit(PROJECT_ID, RUN_ID, decks.faithful.variant.id))
-    expect(await card.findByRole('link', { name: /Скачать PPTX/ })).toHaveAttribute('href', artifactUrl(decks.faithful.variant.deck_artifact_id))
+    expect(await card.findByRole('link', { name: /Скачать PPTX/ })).toHaveAttribute('href', artifactUrl(decks.faithful.variant.deck_artifact_id ?? ''))
     expect(await card.findByRole('link', { name: /Открыть PDF/ })).toHaveAttribute('target', '_blank')
   })
 
