@@ -4,11 +4,11 @@
 > и **обновляет его в конце каждой значимой работы** (правила — внизу).
 > Время — МСК. Стоп-код: **29.09.2026 23:59**.
 
-**Обновлено:** 2026-09-25 21:10 · **Фаза:** 4 — проверка против живого бэка, заморозка · **Ведёт удалённый агент-оркестратор**, ветка `new/festive-newton-hlnl7c`
+**Обновлено:** 2026-09-25 21:17 · **Фаза:** 4 — живой бэк, полировка, заморозка · Всё влито в `main` (`new/festive-newton-hlnl7c` = `main`)
 
 ---
 
-## 0. Если ты удалённый агент — начни здесь
+## 0. Любой агент (локальный или удалённый) — начни здесь
 
 1. Прочитай `.claude/CLAUDE.md` (суть кейса) → этот файл → `docs/15-design-v1-review.md` (дизайн)
    → `docs/10-backend-integration.md` + `docs/16-backend-requests.md` (реальный API и его дыры)
@@ -25,7 +25,11 @@
    лежит в `.claude/backend-snapshot/` (OpenAPI, исходник API, аудит/repair, контракты, документация; см. его README).
    Истина по API — `backend-snapshot/backend/deckdna/api.py`. Запуск живого бэка — в README среза
    (Docker Hub может отдавать 401 — там есть обход через зеркало).
-5. Без бэка всё равно можно работать: **реальные ответы API записаны** в
+5. **Команды:** `npm ci` · `npm run dev:mock` (без бэка) · `npm run dev` (прокси на `BACKEND_URL`) ·
+   `npm run lint && npm run lint:fsd && npm run typecheck && npm test -- --run && npm run build` ·
+   `npm run e2e` (Playwright; в облаке — `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npm run e2e -- --project=chromium`).
+   Всё это должно быть зелёным перед каждым пушем; CI (`.github/workflows/ci.yml`) гоняет то же + Docker + e2e в 3 браузерах на push в `main`.
+6. Без бэка всё равно можно работать: **реальные ответы API записаны** в
    `src/shared/api/mocks/fixtures/*.json`, PDF трёх вариантов — в `public/mocks/`.
    Mock-режим готов: `npm run dev:mock` (MSW, весь путь без бэка).
 
@@ -41,15 +45,19 @@
 
 ## 2. Текущее состояние кода
 
-| Слой | Что готово | Что дальше |
-|---|---|---|
-| Инфраструктура | `package.json` (React 19.3, React Router 7, TanStack Query 5, TS 5.9, Vite 7, Vitest 3, ESLint 10, Steiger, MSW, Playwright, pdfjs-dist 6, openapi-fetch), tsconfig (strict, алиас `@/`), vite.config (прокси `/api` → `BACKEND_URL`, vitest jsdom), eslint.config, steiger.config, index.html, favicon , Dockerfile + nginx-шаблон + compose + CI | e2e (Playwright) |
-| `src/app/styles` | `tokens.css` (токены дизайна 1:1, светлая + тёмная), `global.css` (шрифты Onest/JetBrains Mono через @fontsource, анимации) | `app/`: main.tsx, providers (QueryClient, Toast, theme), router, layout |
-| `src/shared` | `api` (schema.d.ts из живого OpenAPI, openapi-fetch клиент + `unwrap`, `ApiError` из error envelope, upload с прогрессом через XHR, `artifactUrl`); `config`; `lib` (format + тесты, storage, useNow, pdf: loadPdf/renderPdfPage/usePdfDocument); `ui` (Button, Badge, Segmented, Card, PageHeader, Meter, Mono, Skeleton, EmptyState, Drawer (Radix), Toast, Field/TextInput/TextArea, Switch (Radix), Checkbox, StepperInput, TagInput) | `mocks/` MSW-хендлеры по фикстурам |
-| `src/entities` | **audit** (типы, SEVERITY, словарь 24 D + 10 N правил с категориями и реальным покрытием автоисправления, фильтры/группировки/сигнатуры + тесты на реальных данных, хуки useVariantAudit/useAuditIssues/useRepairIssues/useDismissIssue/useContextualAudit, SeverityBadge, CheckKindBadge); **project** (хуки, runHistory в localStorage); **template** (хуки, upload/analyze, `buildDesignSystem` из package_inventory + тесты); **content-pack** (хук, upload, summarize) | **generation**, **variant** (каталог стратегий faithful/balanced/visual), **provider-session**, **passport** |
-| features / widgets / pages | Все экраны: проекты, шаблон/ДНК, бриф, генерация, план (v1, только чтение), варианты (карточки + сравнение), аудит (bbox, D/N, repair, журнал, до/после), экспорт + паспорт; панели «Провайдер моделей» и «О системе». Полный путь в mock-режиме проверен в Chromium | e2e, ревью, живой бэк (приватный репо) |
+| Слой | Что есть |
+|---|---|
+| Инфраструктура | Vite 7 + React 19 + TS strict, ESLint, Steiger (FSD, блокирующий), Vitest, Playwright (`e2e/`, 5 сценариев), MSW mock-режим, Dockerfile + `docker/nginx.conf.template` (`BACKEND_URL` в рантайме) + compose + CI |
+| `src/app` | `main.tsx` (mock-воркер + засев демо-прогона), `setup/AppProviders`, `router` (ленивые страницы, маршруты — `shared/config/routes.ts`), `layouts` (`AppFrame`, `ProjectLayout`, `runStatus`) |
+| `src/pages` | projects, template (ДНК + «ДНК в JSON»), brief, generation (таймер 5:00, трекер sync/async), plan (v1, только чтение), variants (карточки + сравнение), audit (bbox, D/N, repair, журнал, до/после, повторный аудит), export (+ паспорт), not-found |
+| `src/widgets` | app-header, project-rail (шаги + цепочка доказательств), provider-panel, about-panel, design-dna, project-list, generation-tracker, deck-plan, variant-board, variant-compare, audit-workspace, slide-inspector, quality-passport |
+| `src/features` | variant-files, upload-template, create-project, cancel-generation, rerun-generation, request-pdf-export, repair-issues, dismiss-issue, select-issues, export-deck |
+| `src/entities` | project (+ evidence, runHistory), template, content-pack, audit, generation (tracker), variant (стратегии), passport, provider-session, system |
+| `src/shared` | api (openapi-fetch, ошибки, upload, `mockMode` с обходом скачиваний), mocks (MSW), config, lib (pdf.js **legacy**, theme, storage, format, time), ui-кит (+ `PdfPage`) |
+| Документация | `README.md`, `ARCHITECTURE.md`, `docs/REQUIREMENTS.md`, `docs/VARIANTS.md`, `docs/AUDIT_UI.md` |
 
-Проверено: `tsc --noEmit` чистый, `vitest run` — 14 тестов зелёные.
+Проверено (25.09 21:30): lint, lint:fsd, typecheck, **269 unit-тестов**, build, **e2e 5/5** (Chromium) — зелёные.
+Только mock-режим: **против живого бэка фронт ещё не проверялся** (CP-11).
 
 ## 3. Контрольные точки
 
@@ -94,14 +102,30 @@
 | 25.09 | ДНК шаблона строим из `latest_analysis.package_inventory` (DNA почти пустая) — `buildDesignSystem` |
 | 25.09 | id прогонов проекта храним в localStorage (`runHistory`) — у бэка нет списка прогонов |
 | 25.09 | Модели в UI — только ≤ 35B (в дизайне были 120B/72B — нарушение ТЗ) |
+| 25.09 | pdf.js — **legacy**-сборка: современная вызывает `Map.getOrInsertComputed`, которого нет в Chromium 141 и прошлых версиях браузеров (NFR-08) |
+| 25.09 | Анимации из CSS Modules — только `global(dd-pulse)` / `global(dd-fade)`, иначе имя keyframes хешируется |
+| 25.09 | В mock-режиме `<a download>` на `/api/` перехватывается и качается через fetch→blob (MSW не видит навигацию) — `shared/api/mockMode.ts` |
+| 25.09 | Статус в шапке и шаги рельса — из реального состояния генерации и трекера; шаги варианты/аудит/экспорт закрыты до реального run id |
+| 25.09 | Аудит после repair — по `audit_id` из ответа repair; бэк сохраняет audit id, но выдаёт новые id проблем → журнал по `issueSignature` |
+| 25.09 | Правило steiger `insignificant-slice` выключено (виджеты одной страницы выделены намеренно) |
+| 25.09 | Параллельная работа агентов — в git worktree (`.claude/worktrees/`, в .gitignore), бриф — `docs/17-screen-agent-brief.md` |
 
 ## 6. Следующие шаги
 
-1. Проверить против живого бэка (нужен доступ к приватному репо или поднятый стенд) — CP-11.
-2. Решить с пользователем: вливать `new/festive-newton-hlnl7c` в `main`.
-3. Заморозка к 29.09 20:00 МСК, тег сдачи.
+1. **Проверить против живого бэка (CP-11)** — у локального агента клон бэка есть: поднять API (README
+   `backend-snapshot`), `npm run dev`, пройти весь путь на реальном шаблоне VK Tech и двух «невиданных»
+   (`tests/fixtures/pptx/synthetic_unseen*.pptx` в репо бэка); расхождения с mock — в `docs/16` и фиксы.
+2. Проверить CI первого прогона в `main` (e2e в Firefox/WebKit ещё ни разу не гонялись).
+3. Браузеры NFR-08: Safari/WebKit и Firefox вручную по happy path.
+4. Ручка бэка, если появится (HTML-экспорт, план до вёрстки, PNG-превью) — переключить адаптеры (CP-11).
+5. Заморозка к 29.09 20:00 МСК, тег сдачи.
 
 ## 7. Журнал (новые записи сверху)
+
+- **2026-09-25 21:17** — Всё влито в `main` (fast-forward), поверх — срез бэка от локального агента; проверено:
+  типы из `backend-snapshot/openapi.json` совпадают с `schema.d.ts`, lint/fsd/typecheck/269 unit/build/e2e 5/5
+  зелёные. По `api.py`: repair сохраняет audit id и выдаёт новые id проблем (фронт это учитывает).
+  STATUS переписан под передачу локальному агенту.
 
 - **2026-09-25 21:10** — Волна 3 влита. Ревью: 7 багов исправлено с регрессионными тестами (аудит после repair
   по id из ответа, повторный аудит без устаревших данных, прогон запоминается сразу после принятия POST,

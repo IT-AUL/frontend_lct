@@ -52,3 +52,15 @@ Superpowers задаёт жёсткий порядок работы; если м
 
 `~/.claude/projects/-Users-renat-dev-frontend-lct/memory/` — роль пользователя (фронтенд),
 факты о кейсе. Это дополнение: главный источник — `.claude/STATUS.md`.
+
+## Облачная сессия (claude.ai/code)
+
+- Репозиторий бэка приватный и из облака недоступен — работать по `.claude/backend-snapshot/` и mock-режиму.
+- Chromium для Playwright: `/opt/pw-browsers/chromium-1194/chrome-linux/chrome` (`PW_CHROMIUM_PATH` для e2e,
+  `executablePath` для скриптов). `npx playwright install` там не запускать; Firefox/WebKit — только в CI.
+- Docker-демон по умолчанию не запущен, но `dockerd` стартует вручную.
+- Плагины ставятся `claude plugin marketplace add anthropics/claude-plugins-official` +
+  `claude plugin install <имя>@claude-plugins-official` (подключаются со следующей сессии).
+- Параллельные агенты — `isolation: worktree`; worktree создаётся от `origin/main`, поэтому агенту первым
+  делом `git merge --ff-only <ветка оркестратора>`. Dev-серверы агентов — на своих портах (5174–5181),
+  не убивать чужие (`pkill -f vite` запрещён).
