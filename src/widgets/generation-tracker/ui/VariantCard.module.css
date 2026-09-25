@@ -1,0 +1,145 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  min-height: 300px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2xl);
+  background: var(--surface);
+}
+
+.card_done {
+  border-color: var(--line-2);
+}
+
+.card_error {
+  border-color: var(--error);
+}
+
+.errorBox {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  background: var(--error-bg);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.code {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.status_pending,
+.status_running {
+  color: var(--info);
+}
+
+.status_pending .dot,
+.status_running .dot {
+  animation: global(dd-pulse) 1.6s infinite;
+}
+
+.status_queued,
+.status_canceled {
+  color: var(--ink-3);
+}
+
+.status_done {
+  color: var(--ok);
+}
+
+.status_error {
+  color: var(--error);
+}
+
+.axis {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.thumbs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.appear {
+  animation: global(dd-fade) 0.5s ease-out;
+}
+
+.thumb {
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.slotPulse {
+  aspect-ratio: 16 / 9;
+  border-radius: 3px;
+  background: var(--sunken);
+  animation: global(dd-pulse) 1.6s infinite;
+}
+
+.slotDashed {
+  aspect-ratio: 16 / 9;
+  border: 1px dashed var(--line-2);
+  border-radius: 3px;
+}
+
+.hint {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.okLine {
+  color: var(--ok);
+  font-size: 12px;
+}
+
+.warnLine {
+  color: var(--warn);
+  font-size: 12px;
+}
+
+.errorTitle {
+  color: var(--error);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.errorText {
+  font-size: 13px;
+}
