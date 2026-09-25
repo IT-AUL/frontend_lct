@@ -10,6 +10,7 @@ export type {
   PassportContentSupport,
   PassportEditability,
   PassportExport,
+  PassportAutoFix,
   PassportFallback,
   PassportInputs,
   PassportIssues,

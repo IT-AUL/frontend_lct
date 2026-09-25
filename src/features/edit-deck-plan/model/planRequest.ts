@@ -4,8 +4,10 @@ import { readJson, writeJson } from '@/shared/lib/storage'
 
 const STORAGE_PREFIX = 'deckdna.plan-request.v1:'
 
+export type StoredRequest = PlanRequest & { template_id: string }
+
 export interface StoredPlanRequest {
-  request: PlanRequest
+  request: StoredRequest
   result: PlanDraftResult
   createdAt: string
 }
@@ -15,7 +17,7 @@ export function readPlanRequest(projectId: string): StoredPlanRequest | null {
   return stored && Array.isArray(stored.result?.proposals) && stored.result.proposals.length > 0 ? stored : null
 }
 
-export async function requestAndStorePlan(projectId: string, request: PlanRequest): Promise<StoredPlanRequest> {
+export async function requestAndStorePlan(projectId: string, request: StoredRequest): Promise<StoredPlanRequest> {
   const result = await requestPlans(projectId, request)
   const stored: StoredPlanRequest = { request, result, createdAt: new Date().toISOString() }
   writeJson(`${STORAGE_PREFIX}${projectId}`, stored)
@@ -23,5 +25,5 @@ export async function requestAndStorePlan(projectId: string, request: PlanReques
 }
 
 export function useRequestPlan(projectId: string) {
-  return useMutation({ mutationFn: (request: PlanRequest) => requestAndStorePlan(projectId, request) })
+  return useMutation({ mutationFn: (request: StoredRequest) => requestAndStorePlan(projectId, request) })
 }

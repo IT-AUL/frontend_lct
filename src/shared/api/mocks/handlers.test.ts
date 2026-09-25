@@ -186,7 +186,7 @@ describe('mock backend', () => {
       api.POST('/api/v1/audits/{audit_id}/repairs', { params: { path: { audit_id: audit.id } }, body: { selected_issue_ids: selected, max_iterations: 2 } }),
     )
     expect(repair).toMatchObject({ audit_id: audit.id, deck_revision: 2 })
-    const repairJob = await unwrap(api.GET('/api/v1/jobs/{job_id}', { params: { path: { job_id: repair.job_id } } }))
+    const repairJob = await unwrap(api.GET('/api/v1/jobs/{job_id}', { params: { path: { job_id: 'job_id' in repair ? repair.job_id : '' } } }))
     expect(repairJob).toMatchObject({ kind: 'repair', state: 'completed' })
     expect(repairJob.result_ids).toMatchObject({ applied: '2', unresolved: '0', deck_revision: '2' })
 
@@ -204,7 +204,7 @@ describe('mock backend', () => {
     const partial = await unwrap(
       api.POST('/api/v1/audits/{audit_id}/repairs', { params: { path: { audit_id: audit.id } }, body: { selected_issue_ids: [fontScale.id, selected[0] ?? ''], max_iterations: 2 } }),
     )
-    const partialJob = await unwrap(api.GET('/api/v1/jobs/{job_id}', { params: { path: { job_id: partial.job_id } } }))
+    const partialJob = await unwrap(api.GET('/api/v1/jobs/{job_id}', { params: { path: { job_id: 'job_id' in partial ? partial.job_id : '' } } }))
     expect(partialJob.result_ids).toMatchObject({ applied: '0', skipped: '1', unresolved: '1' })
     expect((await listIssues({ limit: 500, status: 'unresolved' })).map((issue) => issue.id)).toEqual([fontScale.id])
 

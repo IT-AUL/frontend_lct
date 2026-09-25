@@ -2,7 +2,7 @@ import type { Schemas } from '@/shared/api'
 
 export type TemplateAsset = Schemas['TemplateAsset']
 export type TemplateDetail = Schemas['TemplateDetail']
-export type DesignDna = Schemas['DesignDNA']
+export type DesignDna = Schemas['DesignDNAOut']
 
 export interface PackageInventory {
   slides?: number

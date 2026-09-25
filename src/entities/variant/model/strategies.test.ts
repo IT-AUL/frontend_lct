@@ -60,6 +60,6 @@ describe('variantAxes', () => {
 
   it('falls back to the strategy profile', () => {
     expect(variantAxes({ strategy: 'balanced', axes: null }).map((axis) => axis.caption)).toEqual(['Текст: 2 из 3', 'Макеты-образцы: 2 из 3', 'Визуализация: 2 из 3'])
-    expect(variantAxes({ strategy: 'custom', axes: {} })).toEqual([])
+    expect(variantAxes({ strategy: 'custom', axes: null })).toEqual([])
   })
 })

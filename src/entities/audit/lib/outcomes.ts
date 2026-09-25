@@ -8,6 +8,7 @@ const STATUS_ALIASES: Record<string, RepairIssueStatus> = {
   unresolved: 'failed',
   not_implemented: 'skipped',
   skipped: 'skipped',
+  planned: 'planned',
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

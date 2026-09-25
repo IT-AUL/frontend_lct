@@ -26,7 +26,7 @@ function tagPlacement(y: number, h: number): 'above' | 'below' | 'inside' {
 
 export function IssueOverlay({ items, activeKey, hoverKey, onPick, onHover }: IssueOverlayProps) {
   const placed = items
-    .map((item) => ({ ...item, box: clampBox(item.issue.bbox) }))
+    .map((item) => ({ ...item, box: clampBox(item.issue.clipped_bbox ?? item.issue.bbox) }))
     .filter((item) => item.box !== null)
     .sort((a, b) => Number(a.key === activeKey) - Number(b.key === activeKey))
 

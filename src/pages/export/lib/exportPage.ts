@@ -34,9 +34,10 @@ export function serverSkillVersion(manifest: Record<string, unknown> | null | un
   return readVersion(manifest, ['skill_version', 'version']) ?? readVersion(version, ['skill_version', 'skill'])
 }
 
-export function exportFileName(strategy: string, format: ExportFormat, revision: number | null): string {
+export function exportFileName(strategy: string, format: ExportFormat, revision: number | null, mimeType: string | null = null): string {
   const base = format === 'quality_passport' ? 'passport' : `deckdna_${strategy}`
   const suffix = revision === null ? '' : `_r${revision}`
+  if (format === 'html' && !mimeType?.includes('text/html')) return `${base}${suffix}_html.zip`
   return `${base}${suffix}.${EXTENSION[format]}`
 }
 

@@ -81,7 +81,7 @@ describe('DesignDna on the recorded VK Tech analysis', () => {
 describe('DesignDna on a filled DNA', () => {
   it('draws blueprints, scale, anchors, roles and unsupported features', () => {
     render(<DesignDna detail={detail} dna={filled} />)
-    expect(screen.getByRole('img', { name: 'Схема макета 1_Контент' })).toHaveTextContent('title')
+    expect(screen.getByRole('img', { name: 'Схема макета 1_Контент' })).toHaveTextContent('заголовок')
     expect(within(screen.getByRole('region', { name: 'Шкала кеглей' })).getByText('дробный кегль')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Якоря' })).toBeInTheDocument()
     expect(screen.getByText('Лого · 94%')).toBeInTheDocument()

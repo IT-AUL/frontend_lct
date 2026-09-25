@@ -1,4 +1,5 @@
 import type {
+  PassportAutoFix,
   PassportExport,
   PassportFallback,
   PassportIssues,
@@ -67,14 +68,36 @@ function stageTimings(value: unknown): PassportStageTiming[] {
   return (scores(value) ?? []).map(({ key, value: seconds }) => ({ stage: key, seconds }))
 }
 
+function isAutoFix(item: unknown): boolean {
+  return isRecord(item) && item.strategy === 'auto_fix'
+}
+
+function autoFixes(value: unknown): PassportAutoFix[] {
+  if (!Array.isArray(value)) return []
+  return value.filter(isAutoFix).flatMap((item): PassportAutoFix[] => {
+    if (!isRecord(item)) return []
+    const feature = text(item, 'feature') ?? text(item, 'rule_code')
+    if (!feature) return []
+    const disclosure = text(item, 'disclosure')
+    const count = disclosure ? Number(/^\s*(\d+)/.exec(disclosure)?.[1]) : NaN
+    return [{ ruleCode: feature.replace(/^repair\./, ''), count: Number.isFinite(count) ? count : null, detail: disclosure }]
+  })
+}
+
 function fallbacks(value: unknown): PassportFallback[] {
   if (!Array.isArray(value)) return []
-  return value.flatMap((item): PassportFallback[] => {
+  return value.filter((item) => !isAutoFix(item)).flatMap((item): PassportFallback[] => {
     if (typeof item === 'string') return item ? [{ label: item, detail: null }] : []
     if (!isRecord(item)) return []
-    const label = text(item, 'stage') ?? text(item, 'component') ?? text(item, 'kind') ?? text(item, 'code') ?? text(item, 'rule_code')
+    const label = text(item, 'stage') ?? text(item, 'component') ?? text(item, 'kind') ?? text(item, 'code') ?? text(item, 'rule_code') ?? text(item, 'feature')
     const detail =
-      text(item, 'reason') ?? text(item, 'message') ?? text(item, 'detail') ?? text(item, 'description') ?? text(item, 'summary') ?? text(item, 'action')
+      text(item, 'disclosure') ??
+      text(item, 'reason') ??
+      text(item, 'message') ??
+      text(item, 'detail') ??
+      text(item, 'description') ??
+      text(item, 'summary') ??
+      text(item, 'action')
     if (label) return [{ label, detail }]
     return detail ? [{ label: detail, detail: null }] : []
   })
@@ -160,7 +183,7 @@ export function parsePassport(raw: unknown): QualityPassport {
     usage: scores(metrics.usage),
     issues: issues(section(raw, 'issues_summary')),
     fallbacks: fallbacks(raw.fallbacks),
-    autoFixes: fallbacks(raw.auto_fixes ?? metrics.auto_fixes),
+    autoFixes: autoFixes([...(Array.isArray(raw.fallbacks) ? raw.fallbacks : []), ...(Array.isArray(raw.auto_fixes) ? raw.auto_fixes.map((item) => (isRecord(item) ? { strategy: 'auto_fix', ...item } : item)) : [])]),
     provenance: {
       pipelineVersion: text(provenance, 'pipeline_version'),
       skillVersion: text(provenance, 'skill_version'),

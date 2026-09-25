@@ -68,7 +68,7 @@ describe('stable fingerprints and fix previews', () => {
   })
 
   it('shows the fix preview computed by the service first', () => {
-    expect(plannedFix({ ...contrast, fix_preview: 'Уменьшить кегль 18 → 14 pt' })).toBe('Уменьшить кегль 18 → 14 pt')
-    expect(plannedFix({ ...contrast, fix_preview: { action: 'map_color', description_ru: 'Заменить цвет' } })).toBe('Заменить цвет')
+    expect(plannedFix({ ...contrast, fix_preview: { description_ru: 'Уменьшить кегль 18 → 14 pt', actions: [] } })).toBe('Уменьшить кегль 18 → 14 pt')
+    expect(plannedFix({ ...contrast, fix_preview: { description_ru: ' ', actions: ['map_color'] } })).not.toBe(' ')
   })
 })

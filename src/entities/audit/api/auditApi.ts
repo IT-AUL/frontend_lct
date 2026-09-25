@@ -1,5 +1,5 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, requestJson, unwrap } from '@/shared/api'
+import { api, unwrap } from '@/shared/api'
 import { parseRepairOutcomes, readCount } from '../lib/outcomes'
 import type { AuditIssue, AuditRun, RepairIssueOutcome } from '../model/types'
 import { loadRuleCatalog } from './ruleCatalogApi'
@@ -72,6 +72,7 @@ export function useRepairIssues(variantId: string) {
           body: { selected_issue_ids: issueIds, max_iterations: 2, provider_session_id: providerSessionId ?? null },
         }),
       )
+      if (!('job_id' in accepted)) throw new Error('Сервис вернул предпросмотр вместо запуска исправлений')
       const job = await unwrap(api.GET('/api/v1/jobs/{job_id}', { params: { path: { job_id: accepted.job_id } } }))
       const read = (key: string) => readCount(job, key)
       return {
@@ -121,14 +122,11 @@ export function useContextualAudit(variantId: string) {
 }
 
 export async function previewRepair(auditId: string, issueIds: readonly string[], providerSessionId?: string): Promise<RepairIssueOutcome[]> {
-  const payload = await requestJson<Record<string, unknown>>(`/audits/${encodeURIComponent(auditId)}/repairs`, {
-    query: { dry_run: true },
-    body: { selected_issue_ids: issueIds, max_iterations: 2, provider_session_id: providerSessionId ?? null, dry_run: true },
-  })
-  const direct = parseRepairOutcomes(payload)
-  if (direct) return direct
-  const jobId = typeof payload.job_id === 'string' ? payload.job_id : null
-  if (!jobId) return []
-  const job = await unwrap(api.GET('/api/v1/jobs/{job_id}', { params: { path: { job_id: jobId } } }))
-  return parseRepairOutcomes(job) ?? []
+  const preview = await unwrap(
+    api.POST('/api/v1/audits/{audit_id}/repairs', {
+      params: { path: { audit_id: auditId }, query: { dry_run: true } },
+      body: { selected_issue_ids: [...issueIds], max_iterations: 2, provider_session_id: providerSessionId ?? null },
+    }),
+  )
+  return parseRepairOutcomes(preview) ?? []
 }

@@ -851,5 +851,7 @@
     "max_chart_series": null,
     "occupancy_range": null
   },
-  "unsupported_features": []
+  "unsupported_features": [],
+  "conflicts": [],
+  "confidence": {}
 }

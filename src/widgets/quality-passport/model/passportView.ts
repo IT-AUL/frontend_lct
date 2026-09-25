@@ -1,3 +1,4 @@
+import { ruleMeta } from '@/entities/audit'
 import type { PassportModelProfile, QualityPassport } from '@/entities/passport'
 import { stageLabel } from '@/entities/generation'
 import { PEI_MAX } from '@/entities/variant'
@@ -297,7 +298,10 @@ export function buildPassportView(passport: QualityPassport, context: PassportCo
     timing: timingView(passport, context.budgetSeconds),
     usage: usageView(passport),
     fallbacks: passport.fallbacks,
-    autoFixes: passport.autoFixes,
+    autoFixes: passport.autoFixes.map((fix) => ({
+      label: ruleMeta(fix.ruleCode).name,
+      detail: fix.count === null ? null : `исправлено ${formatNumber(fix.count)}`,
+    })),
     provenance: provenanceRows(passport, context),
   }
 }

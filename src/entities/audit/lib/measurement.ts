@@ -45,6 +45,9 @@ const ACTION_LABEL: Record<string, string> = {
   recrop_image: 'перекадрировать картинку',
   contain_image: 'вписать картинку без искажений',
   rewrite_title: 'переписать заголовок как вывод',
+  rewrite_text: 'сократить текст моделью',
+  move_shape: 'сдвинуть фигуру',
+  crop_image: 'кадрировать картинку',
 }
 
 export function actionLabel(action: string): string {

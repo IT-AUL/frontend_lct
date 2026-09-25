@@ -102,6 +102,28 @@ export interface paths {
         patch: operations["patch_project_api_v1_projects__project_id__patch"];
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/generations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Project Generations
+         * @description Прогоны проекта, новые первыми (D10): экран проектов и «продолжить»
+         *     не зависят от localStorage браузера.
+         */
+        get: operations["list_project_generations_api_v1_projects__project_id__generations_get"];
+        put?: never;
+        /** Create Generation */
+        post: operations["create_generation_api_v1_projects__project_id__generations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/templates": {
         parameters: {
             query?: never;
@@ -238,7 +260,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{project_id}/generations": {
+    "/api/v1/projects/{project_id}/plans": {
         parameters: {
             query?: never;
             header?: never;
@@ -247,8 +269,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create Generation */
-        post: operations["create_generation_api_v1_projects__project_id__generations_post"];
+        /**
+         * Create Plans
+         * @description План до вёрстки (D7): структура колоды по каждой стратегии за
+         *     секунды. Его можно показать, поправить и передать в POST /generations
+         *     (deck_plan_id или deck_plan) — планирование тогда не повторяется.
+         */
+        post: operations["create_plans_api_v1_projects__project_id__plans_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -425,6 +452,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/audit/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Audit Rules
+         * @description Каталог правил аудита (D8): название, категория, серьёзность,
+         *     чинится ли, порог — единый источник для интерфейса.
+         */
+        get: operations["list_audit_rules_api_v1_audit_rules_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/variants/{variant_id}/audits": {
         parameters: {
             query?: never;
@@ -551,7 +599,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Download Artifact */
+        /**
+         * Download Artifact
+         * @description Скачивание артефакта с ``ETag`` и ``Range`` (pdf.js грузит большие
+         *     PDF по диапазонам, браузер кеширует по ETag).
+         */
         get: operations["download_artifact_api_v1_artifacts__artifact_id__download_get"];
         put?: never;
         post?: never;
@@ -737,6 +789,55 @@ export interface components {
             /** Proposed Actions */
             proposed_actions?: string[] | null;
             provenance?: components["schemas"]["deckdna__contracts__audit_issue__Provenance"] | null;
+        };
+        /**
+         * AuditIssueOut
+         * @description Ответная форма замороженного контракта AuditIssue.
+         *
+         *     Контракт (schemas/audit-issue.schema.json) не меняется: поля ниже —
+         *     аддитивное расширение API-слоя (ADR-011). Все опциональны.
+         */
+        AuditIssueOut: {
+            /** Schema Version */
+            schema_version: string;
+            /** Id */
+            id: string;
+            /** Audit Run Id */
+            audit_run_id: string;
+            /** Deck Revision */
+            deck_revision?: number | null;
+            /** Rule Code */
+            rule_code: string;
+            /** Deterministic */
+            deterministic: boolean;
+            severity: components["schemas"]["Severity"];
+            /** Slide Id */
+            slide_id?: string | null;
+            /** Slide Index */
+            slide_index?: number | null;
+            /** Shape Ids */
+            shape_ids?: string[] | null;
+            bbox?: components["schemas"]["deckdna__contracts__audit_issue__Bbox"] | null;
+            /** Message */
+            message: string;
+            /** Measured Value */
+            measured_value?: string | number | null;
+            /** Threshold */
+            threshold?: string | number | null;
+            /** Evidence */
+            evidence?: components["schemas"]["EvidenceItem"][] | null;
+            /** Confidence */
+            confidence?: number | null;
+            status: components["schemas"]["Status"];
+            /** Repairable */
+            repairable: boolean;
+            /** Proposed Actions */
+            proposed_actions?: string[] | null;
+            provenance?: components["schemas"]["deckdna__contracts__audit_issue__Provenance"] | null;
+            /** Fingerprint */
+            fingerprint?: string | null;
+            fix_preview?: components["schemas"]["FixPreview"] | null;
+            clipped_bbox?: components["schemas"]["deckdna__contracts__audit_issue__Bbox"] | null;
         };
         /** AuditRequest */
         AuditRequest: {
@@ -967,7 +1068,28 @@ export interface components {
             job: components["schemas"]["Job"];
         };
         /** ContentUnit */
-        ContentUnit: {
+        "ContentUnit-Input": {
+            /** Role */
+            role: string;
+            kind: components["schemas"]["Kind-Input"];
+            /** Text */
+            text?: string | null;
+            /** Evidence Ids */
+            evidence_ids?: string[] | null;
+            /** Target Chars */
+            target_chars?: number | null;
+            /** Asset Ref */
+            asset_ref?: string | null;
+            /** Table Ref */
+            table_ref?: string | null;
+            /** Chart Ref */
+            chart_ref?: string | null;
+            /** Diagram Ref */
+            diagram_ref?: string | null;
+            chart_spec?: components["schemas"]["ChartSpec"] | null;
+        };
+        /** ContentUnit */
+        "ContentUnit-Output": {
             /** Role */
             role: string;
             kind: components["schemas"]["deckdna__contracts__deck_plan__Kind"];
@@ -988,7 +1110,28 @@ export interface components {
             chart_spec?: components["schemas"]["ChartSpec"] | null;
         };
         /** DeckPlan */
-        DeckPlan: {
+        "DeckPlan-Input": {
+            /** Schema Version */
+            schema_version: string;
+            /** Id */
+            id: string;
+            brief: components["schemas"]["Brief"];
+            /** Evidence Graph Id */
+            evidence_graph_id: string;
+            /** Objective */
+            objective: string;
+            /** Audience */
+            audience: string;
+            /** Language */
+            language: string;
+            /** Sections */
+            sections?: components["schemas"]["Section-Input"][] | null;
+            /** Slides */
+            slides: components["schemas"]["SlidePlan-Input"][];
+            provenance: components["schemas"]["Provenance-Input"];
+        };
+        /** DeckPlan */
+        "DeckPlan-Output": {
             /** Schema Version */
             schema_version: string;
             /** Id */
@@ -1005,7 +1148,7 @@ export interface components {
             /** Sections */
             sections?: components["schemas"]["deckdna__contracts__deck_plan__Section"][] | null;
             /** Slides */
-            slides: components["schemas"]["SlidePlan"][];
+            slides: components["schemas"]["SlidePlan-Output"][];
             provenance: components["schemas"]["deckdna__contracts__deck_plan__Provenance"];
         };
         /** Declared */
@@ -1025,8 +1168,12 @@ export interface components {
             /** Max Chars */
             max_chars?: number | null;
         };
-        /** DesignDNA */
-        DesignDNA: {
+        /**
+         * DesignDNAOut
+         * @description Ответная форма замороженного контракта DesignDNA (ADR-011):
+         *     к контракту добавлены необязательные ``conflicts`` и ``confidence``.
+         */
+        DesignDNAOut: {
             /** Schema Version */
             schema_version: string;
             /** Template Id */
@@ -1052,6 +1199,18 @@ export interface components {
             capacities: components["schemas"]["Capacities"];
             /** Unsupported Features */
             unsupported_features: components["schemas"]["UnsupportedFeature"][];
+            /**
+             * Conflicts
+             * @default []
+             */
+            conflicts: components["schemas"]["DnaConflict"][];
+            /**
+             * Confidence
+             * @default {}
+             */
+            confidence: {
+                [key: string]: number;
+            };
         };
         /**
          * DesiredVisual
@@ -1069,6 +1228,21 @@ export interface components {
             /** Steps */
             steps: string[];
             source_ref: components["schemas"]["deckdna__contracts__content_pack__SourceRef"];
+        };
+        /**
+         * DnaConflict
+         * @description Расхождение declared и observed и решение системы (D1).
+         */
+        DnaConflict: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "font" | "color";
+            /** Detail */
+            detail: string;
+            /** Resolution */
+            resolution: string;
         };
         /** Edge */
         Edge: {
@@ -1192,6 +1366,21 @@ export interface components {
             /** Formats */
             formats: ("pptx" | "pdf" | "html" | "quality_passport")[];
         };
+        /**
+         * FixPreview
+         * @description Что будет сделано для проблемы — считает тот же планировщик (D8).
+         */
+        FixPreview: {
+            /** Title Ru */
+            title_ru?: string | null;
+            /** Description Ru */
+            description_ru: string;
+            /**
+             * Actions
+             * @default []
+             */
+            actions: string[];
+        };
         /** FontSize */
         FontSize: {
             /** Size Pt */
@@ -1242,9 +1431,12 @@ export interface components {
             seed?: number | null;
             /**
              * Use Llm
-             * @default false
+             * @description Model mode. null (default) = auto: the model is used whenever a provider is available (provider_session_id, or a real server provider configured via DECKDNA_PROVIDER_* with mock off). true = force the model (server gateway, mock if configured so). false = deterministic path, no model calls.
              */
-            use_llm: boolean;
+            use_llm?: boolean | null;
+            /** Deck Plan Id */
+            deck_plan_id?: string | null;
+            deck_plan?: components["schemas"]["DeckPlan-Input"] | null;
         };
         /** GenerationDetail */
         GenerationDetail: {
@@ -1263,9 +1455,39 @@ export interface components {
             content_pack_id: string;
             /** Deck Plan Id */
             deck_plan_id?: string | null;
-            deck_plan?: components["schemas"]["DeckPlan"] | null;
+            deck_plan?: components["schemas"]["DeckPlan-Output"] | null;
             /** Variants */
             variants: components["schemas"]["VariantSummary"][];
+            /** Parent Run Id */
+            parent_run_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Finished At */
+            finished_at?: string | null;
+        };
+        /**
+         * GenerationSummary
+         * @description Строка списка прогонов проекта (D10) — без тяжёлого DeckPlan.
+         */
+        GenerationSummary: {
+            /** Id */
+            id: string;
+            /** Project Id */
+            project_id: string;
+            state: components["schemas"]["JobState"];
+            /** Stage */
+            stage?: string | null;
+            /** Job Id */
+            job_id: string;
+            /** Template Id */
+            template_id: string;
+            /** Content Pack Id */
+            content_pack_id: string;
+            /** Variant Ids */
+            variant_ids: string[];
             /** Parent Run Id */
             parent_run_id?: string | null;
             /**
@@ -1280,6 +1502,27 @@ export interface components {
         IssueDismissRequest: {
             /** Reason */
             reason: string;
+        };
+        /**
+         * IssueOutcome
+         * @description Исход repair по одной выбранной проблеме (handoff D2).
+         */
+        IssueOutcome: {
+            /** Issue Id */
+            issue_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "fixed" | "failed" | "skipped" | "planned";
+            /** Action */
+            action?: string | null;
+            /** Summary */
+            summary?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** Fingerprint */
+            fingerprint?: string | null;
         };
         /** IssueSummary */
         IssueSummary: {
@@ -1333,6 +1576,7 @@ export interface components {
             result_ids: {
                 [key: string]: string;
             };
+            result?: components["schemas"]["RepairJobResult"] | null;
         };
         /** JobError */
         JobError: {
@@ -1353,6 +1597,11 @@ export interface components {
          * @enum {string}
          */
         JobState: "queued" | "running" | "awaiting_user" | "completed" | "failed" | "canceled";
+        /**
+         * Kind
+         * @enum {string}
+         */
+        "Kind-Input": "title" | "subtitle" | "bullet" | "paragraph" | "number" | "label" | "image" | "icon" | "table" | "chart" | "diagram" | "quote" | "note";
         /**
          * Kind2
          * @enum {string}
@@ -1432,10 +1681,17 @@ export interface components {
             /** Max */
             max?: number | null;
         };
-        /** Page[AuditIssue] */
-        Page_AuditIssue_: {
+        /** Page[AuditIssueOut] */
+        Page_AuditIssueOut_: {
             /** Items */
-            items: components["schemas"]["AuditIssue"][];
+            items: components["schemas"]["AuditIssueOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /** Page[GenerationSummary] */
+        Page_GenerationSummary_: {
+            /** Items */
+            items: components["schemas"]["GenerationSummary"][];
             /** Next Cursor */
             next_cursor?: string | null;
         };
@@ -1475,6 +1731,48 @@ export interface components {
             idx?: number | null;
             bbox?: components["schemas"]["deckdna__contracts__design_dna__Bbox"] | null;
         };
+        /** PlanEntry */
+        PlanEntry: {
+            /** Strategy */
+            strategy: string;
+            deck_plan: components["schemas"]["DeckPlan-Output"];
+        };
+        /**
+         * PlanRequest
+         * @description План до вёрстки (D7): структура колоды, которую можно поправить.
+         */
+        PlanRequest: {
+            /** Content Pack Id */
+            content_pack_id: string;
+            brief: components["schemas"]["Brief"];
+            /** Strategies */
+            strategies?: ("faithful" | "balanced" | "visual" | "custom")[];
+            /** Template Id */
+            template_id?: string | null;
+            /** Provider Session Id */
+            provider_session_id?: string | null;
+            /**
+             * Use Llm
+             * @description Model mode. null (default) = auto: the model is used whenever a provider is available (provider_session_id, or a real server provider configured via DECKDNA_PROVIDER_* with mock off). true = force the model (server gateway, mock if configured so). false = deterministic path, no model calls.
+             */
+            use_llm?: boolean | null;
+        };
+        /** PlanSet */
+        PlanSet: {
+            /** Plan Id */
+            plan_id: string;
+            /** Project Id */
+            project_id: string;
+            /** Content Pack Id */
+            content_pack_id: string;
+            /** Plans */
+            plans: components["schemas"]["PlanEntry"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** Project */
         Project: {
             /** Id */
@@ -1494,6 +1792,11 @@ export interface components {
             template_id?: string | null;
             /** Content Pack Id */
             content_pack_id?: string | null;
+            /** Latest Run Id */
+            latest_run_id?: string | null;
+            latest_run_state?: components["schemas"]["JobState"] | null;
+            /** Latest Run Stage */
+            latest_run_stage?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -1528,6 +1831,19 @@ export interface components {
             default_language?: string | null;
             /** Target Slide Count */
             target_slide_count?: number | null;
+        };
+        /** Provenance */
+        "Provenance-Input": {
+            /** Planner */
+            planner: string;
+            /** Prompt Version */
+            prompt_version: string;
+            /** Schema Version */
+            schema_version: string;
+            /** Model Id */
+            model_id?: string | null;
+            /** Input Hashes */
+            input_hashes?: string[] | null;
         };
         /** ProviderCapabilities */
         ProviderCapabilities: {
@@ -1641,6 +1957,71 @@ export interface components {
             /** Deck Revision */
             deck_revision: number;
         };
+        /**
+         * RepairJobResult
+         * @description Типизированный итог repair-job: счётчики — числа, не строки.
+         *
+         *     ``applied`` — только реально исправленное (проблема исчезла из
+         *     повторного аудита); остальное — ``failed`` / ``skipped`` /
+         *     ``unresolved`` с причиной в ``outcomes``.
+         */
+        RepairJobResult: {
+            /**
+             * Applied
+             * @default 0
+             */
+            applied: number;
+            /**
+             * Skipped
+             * @default 0
+             */
+            skipped: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed: number;
+            /**
+             * Unresolved
+             * @default 0
+             */
+            unresolved: number;
+            /**
+             * Not Implemented
+             * @default 0
+             */
+            not_implemented: number;
+            /** Audit Id */
+            audit_id?: string | null;
+            /** Deck Revision */
+            deck_revision?: number | null;
+            /** Deck Artifact Id */
+            deck_artifact_id?: string | null;
+            /**
+             * Outcomes
+             * @default []
+             */
+            outcomes: components["schemas"]["IssueOutcome"][];
+        };
+        /**
+         * RepairPreview
+         * @description Ответ ``POST /audits/{id}/repairs?dry_run=true``: что было бы
+         *     сделано, без применения (D2). Ревизия и проблемы не меняются.
+         */
+        RepairPreview: {
+            /** Audit Id */
+            audit_id: string;
+            /** Deck Revision */
+            deck_revision: number;
+            /**
+             * Dry Run
+             * @default true
+             * @constant
+             */
+            dry_run: true;
+            /** Outcomes */
+            outcomes: components["schemas"]["IssueOutcome"][];
+        };
         /** RepairRequest */
         RepairRequest: {
             /** Provider Session Id */
@@ -1652,6 +2033,42 @@ export interface components {
              * @default 2
              */
             max_iterations: number;
+            /**
+             * Use Llm
+             * @description Model mode. null (default) = auto: the model is used whenever a provider is available (provider_session_id, or a real server provider configured via DECKDNA_PROVIDER_* with mock off). true = force the model (server gateway, mock if configured so). false = deterministic path, no model calls.
+             */
+            use_llm?: boolean | null;
+        };
+        /**
+         * RuleInfoOut
+         * @description Строка каталога правил аудита (D8).
+         */
+        RuleInfoOut: {
+            /** Code */
+            code: string;
+            /** Title Ru */
+            title_ru: string;
+            /** Category */
+            category: string;
+            /** Deterministic */
+            deterministic: boolean;
+            /** Default Severity */
+            default_severity: string;
+            /** Repairable */
+            repairable: boolean;
+            /** Fix Title Ru */
+            fix_title_ru?: string | null;
+            /** Threshold */
+            threshold?: string | number | null;
+        };
+        /** Section */
+        "Section-Input": {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Slide Ids */
+            slide_ids: string[];
         };
         /**
          * Severity
@@ -1681,7 +2098,7 @@ export interface components {
             preview_artifact_id?: string | null;
         };
         /** SlidePlan */
-        SlidePlan: {
+        "SlidePlan-Input": {
             /** Id */
             id: string;
             /** Index */
@@ -1697,7 +2114,32 @@ export interface components {
             /** Evidence Ids */
             evidence_ids: string[];
             /** Content Units */
-            content_units: components["schemas"]["ContentUnit"][];
+            content_units: components["schemas"]["ContentUnit-Input"][];
+            desired_visual?: components["schemas"]["DesiredVisual"] | null;
+            density_budget: components["schemas"]["DensityBudget"];
+            /** Speaker Note */
+            speaker_note?: string | null;
+            /** Mandatory */
+            mandatory?: boolean | null;
+        };
+        /** SlidePlan */
+        "SlidePlan-Output": {
+            /** Id */
+            id: string;
+            /** Index */
+            index: number;
+            purpose: components["schemas"]["Purpose"];
+            /**
+             * Title Intent
+             * @description conclusion-style title, not a topic
+             */
+            title_intent: string;
+            /** Key Message */
+            key_message: string;
+            /** Evidence Ids */
+            evidence_ids: string[];
+            /** Content Units */
+            content_units: components["schemas"]["ContentUnit-Output"][];
             desired_visual?: components["schemas"]["DesiredVisual"] | null;
             density_budget: components["schemas"]["DensityBudget"];
             /** Speaker Note */
@@ -1938,6 +2380,18 @@ export interface components {
             /** Unit */
             unit?: string | null;
         };
+        /**
+         * VariantAxes
+         * @description Оси различий вариантов, 0..1 (D11) — из configs/variants.default.yaml.
+         */
+        VariantAxes: {
+            /** Text Density */
+            text_density: number;
+            /** Layout Diversity */
+            layout_diversity: number;
+            /** Visualization */
+            visualization: number;
+        };
         /** VariantMetrics */
         VariantMetrics: {
             /** Validity */
@@ -1946,6 +2400,10 @@ export interface components {
             editability_pei?: number | null;
             /** Issues Total */
             issues_total?: number | null;
+            /** Style Fidelity */
+            style_fidelity?: number | null;
+            /** Auto Fixed */
+            auto_fixed?: number | null;
         };
         /** VariantRequest */
         VariantRequest: {
@@ -1976,6 +2434,13 @@ export interface components {
             status: components["schemas"]["JobState"];
             /** Rationale */
             rationale?: string | null;
+            /** Stage */
+            stage?: ("content" | "plan" | "compose" | "audit" | "render" | "passport") | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
+            axes?: components["schemas"]["VariantAxes"] | null;
             /** Deck Artifact Id */
             deck_artifact_id?: string | null;
             /** Montage Artifact Id */
@@ -2464,6 +2929,95 @@ export interface operations {
             };
         };
     };
+    list_project_generations_api_v1_projects__project_id__generations_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_GenerationSummary_"];
+                };
+            };
+            /** @description Client error — typed DeckDNAError envelope (API.md §1) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Server/dependency error — typed DeckDNAError envelope */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    create_generation_api_v1_projects__project_id__generations_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationAccepted"];
+                };
+            };
+            /** @description Client error — typed DeckDNAError envelope (API.md §1) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Server/dependency error — typed DeckDNAError envelope */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     upload_template_api_v1_projects__project_id__templates_post: {
         parameters: {
             query?: never;
@@ -2613,7 +3167,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DesignDNA"];
+                    "application/json": components["schemas"]["DesignDNAOut"];
                 };
             };
             /** @description Client error — typed DeckDNAError envelope (API.md §1) */
@@ -2805,12 +3359,10 @@ export interface operations {
             };
         };
     };
-    create_generation_api_v1_projects__project_id__generations_post: {
+    create_plans_api_v1_projects__project_id__plans_post: {
         parameters: {
             query?: never;
-            header?: {
-                "Idempotency-Key"?: string | null;
-            };
+            header?: never;
             path: {
                 project_id: string;
             };
@@ -2818,17 +3370,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenerationCreate"];
+                "application/json": components["schemas"]["PlanRequest"];
             };
         };
         responses: {
             /** @description Successful Response */
-            202: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenerationAccepted"];
+                    "application/json": components["schemas"]["PlanSet"];
                 };
             };
             /** @description Client error — typed DeckDNAError envelope (API.md §1) */
@@ -3258,6 +3810,44 @@ export interface operations {
             };
         };
     };
+    list_audit_rules_api_v1_audit_rules_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleInfoOut"][];
+                };
+            };
+            /** @description Client error — typed DeckDNAError envelope (API.md §1) */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description Server/dependency error — typed DeckDNAError envelope */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     create_audit_api_v1_variants__variant_id__audits_post: {
         parameters: {
             query?: never;
@@ -3351,7 +3941,7 @@ export interface operations {
                 rule_code?: string | null;
                 severity?: string | null;
                 deterministic?: boolean | null;
-                status?: string | null;
+                status?: ("open" | "selected" | "fixed" | "dismissed" | "unresolved") | null;
                 repairable?: boolean | null;
                 cursor?: string | null;
                 limit?: number;
@@ -3370,7 +3960,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Page_AuditIssue_"];
+                    "application/json": components["schemas"]["Page_AuditIssueOut_"];
                 };
             };
             /** @description Client error — typed DeckDNAError envelope (API.md §1) */
@@ -3395,7 +3985,10 @@ export interface operations {
     };
     create_repair_api_v1_audits__audit_id__repairs_post: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Только план: те же outcomes без применения (что будет сделано). */
+                dry_run?: boolean;
+            };
             header?: {
                 "Idempotency-Key"?: string | null;
             };
@@ -3410,13 +4003,22 @@ export interface operations {
             };
         };
         responses: {
+            /** @description dry_run: план без применения */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepairPreview"];
+                };
+            };
             /** @description Successful Response */
             202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RepairAccepted"];
+                    "application/json": components["schemas"]["RepairAccepted"] | components["schemas"]["RepairPreview"];
                 };
             };
             /** @description Client error — typed DeckDNAError envelope (API.md §1) */

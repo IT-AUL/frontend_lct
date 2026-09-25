@@ -1,7 +1,7 @@
 import { clsx } from 'clsx'
 import type { AnchorView, FontSizeStep, LayoutBlueprint, MasterBranch, NormalizedBox, SpacingSummary } from '@/entities/template'
 import { formatNumber, formatPercent } from '@/shared/lib/format'
-import { ANCHOR_LABEL, countLabel, formatFraction, formatPt, formatShare, FORMS, isTitlePlaceholder, OF_FORMS, ofCountLabel, partName, placeholderLabel } from '../model/labels'
+import { ANCHOR_LABEL, countLabel, formatFraction, formatPt, formatShare, FORMS, isTitlePlaceholder, OF_FORMS, layoutTypeLabel, ofCountLabel, partName, placeholderLabel, textRoleLabel } from '../model/labels'
 import styles from './DesignDna.module.css'
 
 const BLUEPRINT_LIMIT = 8
@@ -35,7 +35,7 @@ export function FontScaleSection({ scale, className }: { scale: FontSizeStep[]; 
             <div className={styles.scaleBar}>
               <div className={styles.scaleFill} style={{ width: `${Math.max(3, step.weight * 100)}%` }} />
             </div>
-            <span className={styles.barLabel}>{step.roles.length ? step.roles.join(', ') : step.fractional ? 'дробный кегль' : '—'}</span>
+            <span className={styles.barLabel}>{step.roles.length ? step.roles.map(textRoleLabel).join(', ') : step.fractional ? 'дробный кегль' : '—'}</span>
             <span className={clsx(styles.mono, styles.scaleCount)}>{formatNumber(step.count)}</span>
           </li>
         ))}
@@ -43,7 +43,7 @@ export function FontScaleSection({ scale, className }: { scale: FontSizeStep[]; 
       {steps.length > 0 && (
         <div className={clsx(styles.note, styles.divided)}>
           <span>
-            Целые кегли: <span className={styles.mono}>{steps.join(' · ')}</span>
+            Ступени шкалы: <span className={styles.mono}>{steps.join(' · ')}</span>
             {steps.length < scale.length ? '. Дробные значения — вероятные следы автоподбора текста.' : ''}
           </span>
         </div>
@@ -157,7 +157,7 @@ function Blueprint({ blueprint, aspectRatio }: { blueprint: LayoutBlueprint; asp
         </span>
         <span className={styles.blueprintCount}>×{blueprint.slides}</span>
       </div>
-      {blueprint.type && <div className={styles.blueprintType}>{blueprint.type}</div>}
+      {blueprint.type && <div className={styles.blueprintType}>{layoutTypeLabel(blueprint.type)}</div>}
     </li>
   )
 }

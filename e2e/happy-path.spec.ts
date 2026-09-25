@@ -98,6 +98,6 @@ test('demo path: template DNA, brief, three variants, audit repair, export', asy
     expect(deck.name).toMatch(/\.pptx$/)
     expect(deck.bytes.subarray(0, 2).toString('latin1')).toBe('PK')
     expect(deck.bytes.length).toBeGreaterThan(1024)
-    await expect(files.getByRole('article', { name: /\.html$/ })).toHaveCount(0)
+    await expect(files.getByRole('article', { name: /_html\.zip$/ })).toHaveCount(0)
   })
 })

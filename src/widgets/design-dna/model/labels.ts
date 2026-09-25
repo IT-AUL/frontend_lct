@@ -88,17 +88,48 @@ const ROLE_LABEL: Record<string, string> = {
 }
 
 const PLACEHOLDER_LABEL: Record<string, string> = {
-  title: 'title',
-  ctrTitle: 'title',
-  subTitle: 'subtitle',
-  body: 'body',
-  obj: 'obj',
-  pic: 'pic',
-  chart: 'chart',
-  tbl: 'table',
-  dt: 'date',
-  ftr: 'footer',
+  title: 'заголовок',
+  ctrTitle: 'заголовок',
+  subTitle: 'подзаголовок',
+  body: 'текст',
+  obj: 'объект',
+  pic: 'картинка',
+  chart: 'график',
+  tbl: 'таблица',
+  dt: 'дата',
+  ftr: 'колонтитул',
   sldNum: '№',
+}
+
+const TEXT_ROLE_LABEL: Record<string, string> = {
+  title: 'заголовок',
+  subtitle: 'подзаголовок',
+  body: 'текст',
+  caption: 'подпись',
+  footer: 'колонтитул',
+  label: 'метка',
+  display: 'акцент',
+}
+
+const LAYOUT_TYPE_LABEL: Record<string, string> = {
+  title: 'титул',
+  title_only: 'только заголовок',
+  section: 'раздел',
+  content: 'контент',
+  two_content: 'две колонки',
+  comparison: 'сравнение',
+  picture: 'картинка',
+  closing: 'финал',
+  blank: 'пустой',
+  custom: 'свой',
+}
+
+export function textRoleLabel(role: string): string {
+  return TEXT_ROLE_LABEL[role] ?? TEXT_ROLE_LABEL[role.toLowerCase()] ?? role
+}
+
+export function layoutTypeLabel(type: string): string {
+  return LAYOUT_TYPE_LABEL[type] ?? LAYOUT_TYPE_LABEL[type.toLowerCase()] ?? type.replace(/_/g, ' ')
 }
 
 export function roleLabel(role: string): string {

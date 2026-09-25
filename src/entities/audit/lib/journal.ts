@@ -59,7 +59,8 @@ export function diffRepair(
     const left = remaining.get(signature) ?? 0
     if (left > 0) remaining.set(signature, left - 1)
     const present = left > 0
-    const reported = byIssue.get(issue.id)
+    const found = byIssue.get(issue.id)
+    const reported = found?.status === 'planned' ? undefined : found
     const base = { id: `r${revision}:${index}:${signature}`, signature, revision, issue, at }
     if (!reported) return { ...base, outcome: present ? 'unresolved' : 'fixed', reason: null, detail: null }
     if (reported.status !== 'fixed') return { ...base, outcome: 'unresolved', reason: outcomeReason(reported), detail: reported.action }
@@ -84,10 +85,9 @@ export function summarizeJournal(entries: readonly JournalEntry[]): Record<Journ
   return counts
 }
 
-function previewText(preview: string | FixPreview | null | undefined): string | null {
-  if (!preview) return null
-  const value = typeof preview === 'string' ? preview : (preview.description_ru ?? null)
-  return value && value.trim() !== '' ? value.trim() : null
+function previewText(preview: FixPreview | null | undefined): string | null {
+  const value = preview?.description_ru?.trim()
+  return value ? value : null
 }
 
 export function plannedFix(issue: Pick<AuditIssue, 'rule_code' | 'proposed_actions' | 'fix_preview'>): string | null {

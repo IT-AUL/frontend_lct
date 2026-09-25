@@ -69,6 +69,12 @@ export interface PassportFallback {
   detail: string | null
 }
 
+export interface PassportAutoFix {
+  ruleCode: string
+  count: number | null
+  detail: string | null
+}
+
 export interface PassportModelProfile {
   role: string | null
   modelId: string | null
@@ -104,7 +110,7 @@ export interface QualityPassport {
   usage: PassportScore[] | null
   issues: PassportIssues
   fallbacks: PassportFallback[]
-  autoFixes: PassportFallback[]
+  autoFixes: PassportAutoFix[]
   provenance: PassportProvenance
   exports: PassportExport[]
 }

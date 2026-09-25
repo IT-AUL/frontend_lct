@@ -3,10 +3,11 @@ import type { RepairPreview } from '../model/useRepairPreview'
 import styles from './RepairBar.module.css'
 import { Check, Icon, Minus, X } from '@/shared/ui'
 
-const STATUS_MARK = { fixed: Check, failed: X, skipped: Minus } as const
+const STATUS_MARK = { fixed: Check, planned: Check, failed: X, skipped: Minus } as const
 
 export function RepairPreviewList({ preview, onClose }: { preview: RepairPreview; onClose: () => void }) {
-  const ready = preview.items.filter((item) => item.outcome?.status === 'fixed').length
+  const willFix = (status: string | undefined) => status === 'fixed' || status === 'planned'
+  const ready = preview.items.filter((item) => willFix(item.outcome?.status)).length
   return (
     <section className={styles.preview} aria-label="Что будет сделано">
       <header className={styles.previewHead}>
@@ -22,7 +23,7 @@ export function RepairPreviewList({ preview, onClose }: { preview: RepairPreview
           const number = slideNumber(issue)
           const status = outcome?.status ?? null
           const text = outcome
-            ? outcome.status === 'fixed'
+            ? willFix(outcome.status)
               ? (outcome.summary ?? plannedFix(issue) ?? 'Будет исправлено')
               : (outcome.reason ?? (outcome.status === 'skipped' ? 'Сервис пропустит эту проблему' : 'Исправить не получится'))
             : 'Действие не описано'

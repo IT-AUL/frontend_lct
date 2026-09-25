@@ -32,7 +32,8 @@ describe('export page helpers', () => {
   it('names files by strategy, format and revision', () => {
     expect(exportFileName('balanced', 'pptx', 2)).toBe('deckdna_balanced_r2.pptx')
     expect(exportFileName('visual', 'quality_passport', 1)).toBe('passport_r1.json')
-    expect(exportFileName('faithful', 'html', null)).toBe('deckdna_faithful.html')
+    expect(exportFileName('faithful', 'html', null)).toBe('deckdna_faithful_html.zip')
+    expect(exportFileName('faithful', 'html', 2, 'text/html')).toBe('deckdna_faithful_r2.html')
   })
 
   it('fills PPTX size and checksum from a fresh passport only', () => {

@@ -98,7 +98,7 @@ function ExportContent({ projectId, runId, variant, variants }: ExportContentPro
     },
     { format: 'pdf' as const, file: files?.pdf ?? null, note: 'Для рассылки и печати' },
     ...(htmlSupported || files?.html
-      ? [{ format: 'html' as const, file: files?.html ?? null, note: 'Слайды разметкой для браузера', supported: htmlSupported }]
+      ? [{ format: 'html' as const, file: files?.html ?? null, note: 'Архив: index.html и слайды — открывается в браузере', supported: htmlSupported }]
       : []),
     { format: 'quality_passport' as const, file: files?.quality_passport ?? null, note: 'Паспорт качества целиком' },
   ]
@@ -150,7 +150,7 @@ function ExportContent({ projectId, runId, variant, variants }: ExportContentPro
                 file={card.file}
                 currentRevision={currentRevision}
                 supported={card.supported ?? true}
-                fileName={exportFileName(variant.strategy, card.format, card.file?.deckRevision ?? currentRevision)}
+                fileName={exportFileName(variant.strategy, card.format, card.file?.deckRevision ?? currentRevision, card.file?.mimeType ?? null)}
                 note={card.note}
                 tag={card.tag}
                 primary={card.primary}
