@@ -60,13 +60,13 @@ export function ExportFileCard({ projectId, variantId, format, file, currentRevi
       </div>
       <div className={styles.info}>
         <div className={styles.titleRow}>
-          <h3 id={titleId} className={styles.name}>
+          <h3 id={titleId} className={styles.name} title={fileName}>
             {fileName}
           </h3>
           {tagText && <span className={clsx(styles.tag, soon ? styles.tagSoon : styles.tagOk)}>{tagText}</span>}
         </div>
         <div className={styles.note}>{soon && state.message ? state.message : note}</div>
-        <div className={styles.meta}>{metaLine(state.file)}</div>
+        {!soon && <div className={styles.meta}>{metaLine(state.file)}</div>}
         {stale && state.status !== 'unavailable' && (
           <div className={styles.warn}>
             Файл собран для ревизии{revisionLabel(state.file?.deckRevision ?? null)}, текущая —{revisionLabel(currentRevision)}.

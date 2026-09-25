@@ -1,7 +1,4 @@
-import generation from '@/shared/api/mocks/fixtures/generation.json'
-import passport from '@/shared/api/mocks/fixtures/passport.json'
-import template from '@/shared/api/mocks/fixtures/template-detail.json'
-import variants from '@/shared/api/mocks/fixtures/variants.json'
+import { generationFixture as generation, passportFixture as passport, templateDetailFixture as template, variantFixtures as variants } from '@/shared/api/mocks'
 import { buildReproductionCommand, CONTENT_PLACEHOLDER, shellQuote, TEMPLATE_PLACEHOLDER } from './reproductionCommand'
 
 describe('shellQuote', () => {
@@ -23,7 +20,7 @@ describe('buildReproductionCommand', () => {
       templateFile: template.filename,
       contentFile: null,
       strategy: variants.balanced.variant.strategy,
-      slideCount: generation.deck_plan.brief.target_slide_count,
+      slideCount: generation.deck_plan?.brief.target_slide_count ?? null,
     })
 
     expect(command).toBe(`deckdna generate 'VK Tech шаблон.pptx' ${CONTENT_PLACEHOLDER} out --strategy balanced --slides 12`)
