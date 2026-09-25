@@ -17,7 +17,7 @@
   max-width: 100%;
   border-left: 1px solid var(--line);
   background: var(--surface);
-  animation: dd-fade 0.2s ease-out;
+  animation: global(dd-fade) 0.2s ease-out;
 }
 
 .header {

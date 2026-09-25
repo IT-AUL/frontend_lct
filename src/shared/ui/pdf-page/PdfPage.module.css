@@ -7,7 +7,7 @@
 
 .frame[data-state='idle'] {
   background: var(--sunken);
-  animation: dd-pulse 1.6s infinite;
+  animation: global(dd-pulse) 1.6s infinite;
 }
 
 .canvas {

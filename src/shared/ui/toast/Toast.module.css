@@ -13,5 +13,5 @@
   color: var(--inv);
   font-size: 13px;
   box-shadow: var(--shadow-toast);
-  animation: dd-fade 0.2s ease-out;
+  animation: global(dd-fade) 0.2s ease-out;
 }
