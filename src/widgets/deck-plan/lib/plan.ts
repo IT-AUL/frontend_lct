@@ -120,19 +120,14 @@ export function slideIdea(slide: Pick<SlidePlan, 'key_message' | 'title_intent'>
 export function formatSlideRange(numbers: readonly number[]): string {
   const sorted = [...new Set(numbers)].sort((a, b) => a - b)
   if (sorted.length === 0) return 'нет слайдов'
-  const runs: string[] = []
-  let start = sorted[0]
-  let previous = sorted[0]
-  for (const value of [...sorted.slice(1), Number.NaN]) {
-    if (value === previous + 1) {
-      previous = value
-      continue
-    }
-    runs.push(start === previous ? String(start) : `${start}–${previous}`)
-    start = value
-    previous = value
+  const runs: [number, number][] = []
+  for (const value of sorted) {
+    const last = runs.at(-1)
+    if (last && value === last[1] + 1) last[1] = value
+    else runs.push([value, value])
   }
-  return `${sorted.length === 1 ? 'слайд' : 'слайды'} ${runs.join(', ')}`
+  const text = runs.map(([start, end]) => (start === end ? String(start) : `${start}–${end}`)).join(', ')
+  return `${sorted.length === 1 ? 'слайд' : 'слайды'} ${text}`
 }
 
 export function buildPlanView(plan: DeckPlan, headings: ReadonlyMap<string, string>): PlanView {

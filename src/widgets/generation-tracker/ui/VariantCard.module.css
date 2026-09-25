@@ -70,7 +70,7 @@
 
 .status_pending .dot,
 .status_running .dot {
-  animation: dd-pulse 1.6s infinite;
+  animation: global(dd-pulse) 1.6s infinite;
 }
 
 .status_queued,
@@ -98,7 +98,7 @@
 }
 
 .appear {
-  animation: dd-fade 0.5s ease-out;
+  animation: global(dd-fade) 0.5s ease-out;
 }
 
 .thumb {
@@ -110,7 +110,7 @@
   aspect-ratio: 16 / 9;
   border-radius: 3px;
   background: var(--sunken);
-  animation: dd-pulse 1.6s infinite;
+  animation: global(dd-pulse) 1.6s infinite;
 }
 
 .slotDashed {

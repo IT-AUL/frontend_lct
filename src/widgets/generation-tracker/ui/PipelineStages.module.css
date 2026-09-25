@@ -33,7 +33,7 @@
   height: 7px;
   border-radius: 50%;
   background: currentcolor;
-  animation: dd-pulse 1.6s infinite;
+  animation: global(dd-pulse) 1.6s infinite;
 }
 
 .steps {
@@ -82,7 +82,7 @@
 
 .active .number {
   color: var(--info);
-  animation: dd-pulse 1.6s infinite;
+  animation: global(dd-pulse) 1.6s infinite;
 }
 
 .done .number {

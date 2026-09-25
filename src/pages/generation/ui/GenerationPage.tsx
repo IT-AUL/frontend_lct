@@ -111,6 +111,7 @@ export function GenerationPage() {
   const { phase, generationId, canCancel } = tracker
   const tracking = isTrackingId(runId)
   const variantCount = tracker.generation?.variants.length || tracker.variantIds.length || 3
+  const lost = isTrackingLost(tracker.error)
 
   useEffect(() => {
     if (!tracking || !generationId) return
@@ -138,9 +139,14 @@ export function GenerationPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader eyebrow="Шаг 4 · Генерация" title={headline(phase, variantCount)} description={lead(phase)} actions={actions} />
+      <PageHeader
+        eyebrow="Шаг 4 · Генерация"
+        title={lost ? 'Статус запуска неизвестен' : headline(phase, variantCount)}
+        description={lost ? 'Бриф и загруженные файлы сохранены.' : lead(phase)}
+        actions={actions}
+      />
       <RecoveryNotice projectId={projectId} runId={runId} tracker={tracker} />
-      {!isTrackingLost(tracker.error) && <GenerationProgress tracker={tracker} />}
+      {!lost && <GenerationProgress tracker={tracker} />}
     </div>
   )
 }
