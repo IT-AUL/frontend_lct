@@ -1,17 +1,15 @@
 # 12 · Окружение разработки и инструменты агентов
 
-Состояние на 25.09.2026. Всё ниже — локально, в git не попадает.
+Состояние на 25.09.2026. `.claude/` лежит в репозитории; `.mcp.json` и `.claude/settings.local.json` — локальные.
 
 ## Пути и репозитории
 
 | Что | Где |
 |---|---|
-| Наш фронт | `/Users/renat/dev/frontend_lct` (GitHub `IT-AUL/frontend_lct`, публичный) |
-| Бэкенд DeckDNA (клон, только читаем) | `/Users/renat/dev/LCT-prezi-2026` (`Ranel435/LCT-prezi-2026`) |
-| Шаблоны организаторов | `~/dev/LCT-prezi-2026/dop-data/Датасет/*.pptx` (VK Tech, WorkSpace, Education) |
-| Шаблон питча (слайды 7–11 обязательны) | `~/dev/LCT-prezi-2026/dop-data/Презентация/ЛЦТ2026 Шаблон презентации.pptx` |
-| «Невиданные» шаблоны и контент для тестов | `~/dev/LCT-prezi-2026/tests/fixtures/{pptx,content}/` |
-| Первоисточники ТЗ / Q&A / чат (+ пароль к материалам) | `.claude/sources/` |
+| Наш фронт | этот репозиторий (`IT-AUL/frontend_lct`, публичный) |
+| Бэкенд DeckDNA | https://github.com/Ranel435/LCT-prezi-2026; срез нужных файлов — `.claude/backend-snapshot/` |
+| Шаблоны организаторов, шаблон питча (слайды 7–11 обязательны), «невиданные» шаблоны | в репозитории бэка: `dop-data/`, `tests/fixtures/pptx/`; у автора проекта есть локально |
+| Первоисточники ТЗ / Q&A / чат | `.claude/sources/` |
 | Scratchpad сессии | `/private/tmp/claude-501/...` — временный, не хранить там важное |
 
 Машина: macOS, Node v22, zsh. Бэкенд поднимается `docker compose up --build`
@@ -44,7 +42,7 @@ Superpowers задаёт жёсткий порядок работы; если м
   пропускаются. Нет `package.json` — хук пропускает. Если нет `node_modules` — блокирует.
   **Поэтому при создании каркаса скрипты должны называться именно `lint`, `typecheck`, `test`.**
 
-## MCP (`.mcp.json` в корне, исключён через `.git/info/exclude`)
+## MCP (`.mcp.json` в корне, в git не хранится; у облачного агента его нет)
 
 - `playwright` — Chromium; `playwright-webkit` — WebKit (≈ Safari, требование ТЗ по браузерам).
 - Браузеры ставятся командой `npx playwright install chromium webkit` (ещё не установлены).

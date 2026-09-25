@@ -1,0 +1,28 @@
+version: "1"
+official_mode: true
+deck:
+  default_slide_count: 12
+  # TZ baseline is 10-15, but user-defined lengths are allowed — widen
+  # these bounds in a custom profile; the validator reads only this config.
+  min_slides: 10
+  max_slides: 15
+# Slide indices that must never be mutated by generation or repair
+# (e.g. mandatory submission slides). Empty by default.
+protected_slide_indices: []
+variants:
+  count: 3
+  strategies: [faithful, balanced, visual]
+  parallel: true
+planning:
+  evidence_coverage_min: 0.8
+  conclusion_titles_required: true
+retrieval:
+  top_k: 5
+  vlm_rerank: true
+composition:
+  min_body_font_pt: 10
+  autofit_fallback: true
+  preserve_unsupported: true
+time_budget_seconds: 300
+degradation:
+  at_80_percent: [skip_vlm_rerank, audit_errors_only]

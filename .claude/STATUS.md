@@ -21,11 +21,10 @@
    ассистента (ни в коде, ни в коммитах — **без** трейлеров Co-Authored-By); прод-качество как для
    open source; архитектура **FSD** (app / pages / widgets / features / entities / shared);
    импорт между слайсами только через `index.ts` (public API) и алиас `@/`.
-4. **Бэкенд** — https://github.com/Ranel435/LCT-prezi-2026 (не правим, только читаем; истина API —
-   `backend/deckdna/api/app.py`). Поднять локально:
-   `docker pull mirror.gcr.io/library/python:3.12-slim && docker tag mirror.gcr.io/library/python:3.12-slim python:3.12-slim`
-   (Docker Hub может отдавать 401), затем в клоне бэка `cp .env.example .env && docker compose build api && docker compose up -d --no-deps api`
-   → API на :8000. Postgres/Redis не нужны (хранилище в памяти).
+4. **Бэкенд** — https://github.com/Ranel435/LCT-prezi-2026. Если репозиторий недоступен (нет прав), всё нужное
+   лежит в `.claude/backend-snapshot/` (OpenAPI, исходник API, аудит/repair, контракты, документация; см. его README).
+   Истина по API — `backend-snapshot/backend/deckdna/api.py`. Запуск живого бэка — в README среза
+   (Docker Hub может отдавать 401 — там есть обход через зеркало).
 5. Без бэка всё равно можно работать: **реальные ответы API записаны** в
    `src/shared/api/mocks/fixtures/*.json`, PDF трёх вариантов — в `public/mocks/`.
    Режим `VITE_API_MODE=mock` предусмотрен в `shared/config`, но **MSW-хендлеры ещё не написаны**.
