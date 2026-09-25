@@ -1,29 +1,25 @@
-# AI-assistant workspace (local only)
-.claude/
-CLAUDE.md
+# Local workspace
 CLAUDE.local.md
+.claude/settings.local.json
+.mcp.json
 
 # Secrets
 .env
 .env.*
 !.env.example
 
-# Dependencies / builds
+# Dependencies and builds
 node_modules/
 dist/
-build/
-.next/
-out/
 coverage/
-.venv/
-venv/
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+*.tsbuildinfo
+.npm-cache/
 
-# OS / editors
+# Tests
+playwright-report/
+test-results/
+
+# OS and editors
 .DS_Store
 Thumbs.db
 .idea/

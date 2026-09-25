@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=1280">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Play:wght@400;700&amp;display=swap">
+<script src="deckdna-data.js"></script>
+<style>
+:root,[data-theme="light"]{--bg:#F3F3F1;--surface:#FFFFFF;--surface-2:#F8F8F6;--sunken:#ECECE9;--line:#E2E2DE;--line-2:#CBCBC6;--ink:#17181B;--ink-2:#4E5057;--ink-3:#6B6D74;--inv:#FFFFFF;--stage:#E4E4E0;--focus:oklch(0.55 0.15 265);--ok:oklch(0.48 0.11 155);--ok-bg:oklch(0.95 0.04 155);--blocker:oklch(0.44 0.16 12);--blocker-bg:oklch(0.94 0.04 12);--error:oklch(0.52 0.18 32);--error-bg:oklch(0.95 0.04 32);--warn:oklch(0.5 0.11 70);--warn-bg:oklch(0.95 0.05 85);--info:oklch(0.48 0.09 250);--info-bg:oklch(0.95 0.02 250)}
+[data-theme="dark"]{--bg:#111214;--surface:#191A1D;--surface-2:#1F2024;--sunken:#26272B;--line:#2B2C31;--line-2:#3D3F45;--ink:#EDEDEA;--ink-2:#B3B5BB;--ink-3:#91939A;--inv:#111214;--stage:#0B0C0D;--focus:oklch(0.72 0.13 265);--ok:oklch(0.78 0.12 155);--ok-bg:oklch(0.3 0.05 155);--blocker:oklch(0.74 0.14 12);--blocker-bg:oklch(0.3 0.07 12);--error:oklch(0.76 0.14 35);--error-bg:oklch(0.3 0.07 35);--warn:oklch(0.82 0.12 80);--warn-bg:oklch(0.32 0.05 80);--info:oklch(0.78 0.08 250);--info-bg:oklch(0.3 0.04 250)}
+html,body{margin:0;background:var(--bg)}
+*{box-sizing:border-box}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+a{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+a:hover{color:var(--ink-2)}
+@keyframes ddfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes ddpulse{0%,100%{opacity:1}50%{opacity:.35}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="min-height:{{ minH }};height:100%;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:'Onest',system-ui,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased">
+  <header style="height:56px;flex:none;display:flex;align-items:center;gap:16px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--line)">
+    <button onClick="{{ goProjects }}" aria-label="DeckDNA — к проектам" style="display:flex;align-items:center;gap:10px;background:none;border:none;padding:0;cursor:pointer">
+      <div style="display:grid;grid-template-columns:8px 8px;gap:2px">
+        <div style="width:8px;height:8px;background:var(--ink)"></div>
+        <div style="width:8px;height:8px;border:1.5px solid var(--ink)"></div>
+        <div style="width:8px;height:8px;border:1.5px solid var(--ink)"></div>
+        <div style="width:8px;height:8px;background:var(--ink)"></div>
+      </div>
+      <div style="font-weight:700;font-size:16px;letter-spacing:-0.01em">DeckDNA</div>
+    </button>
+    <sc-if value="{{ inProject }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:8px;color:var(--ink-3)">
+        <div>/</div>
+        <button onClick="{{ goProjects }}" style="background:none;border:none;padding:0;cursor:pointer;color:var(--ink-3)">Проекты</button>
+        <div>/</div>
+        <div style="color:var(--ink);font-weight:500">Защита продукта DeckDNA</div>
+      </div>
+    </sc-if>
+    <div style="flex:1"></div>
+    <sc-if value="{{ inProject }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:8px;height:28px;padding:0 10px;border-radius:14px;background:{{ run.bg }};color:{{ run.c }};font-size:12px;font-weight:500">
+        <div style="width:6px;height:6px;border-radius:50%;background:currentColor"></div>
+        <div>{{ run.l }}</div>
+      </div>
+    </sc-if>
+    <button onClick="{{ openSettings }}" style="white-space:nowrap;flex:none;display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:13px">
+      <div style="width:6px;height:6px;border-radius:50%;background:var(--ok)"></div>
+      <div>Провайдер моделей</div>
+    </button>
+    <button onClick="{{ openAbout }}" style="white-space:nowrap;flex:none;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:13px">О системе</button>
+    <button onClick="{{ toggleTheme }}" aria-label="Переключить тему" style="white-space:nowrap;flex:none;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:13px">{{ themeLabel }}</button>
+  </header>
+  <div style="flex:1;display:flex;min-height:0">
+    <sc-if value="{{ inProject }}" hint-placeholder-val="{{ false }}">
+      <nav aria-label="Шаги проекта" style="width:{{ railW }};flex:none;background:var(--surface);border-right:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:20px;overflow:auto">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ steps }}" as="st" hint-placeholder-count="7">
+            <button onClick="{{ st.go }}" disabled="{{ st.locked }}" aria-current="{{ st.aria }}" title="{{ st.label }}" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 8px;border-radius:8px;border:none;background:{{ st.bg }};cursor:{{ st.cursor }};text-align:left;color:{{ st.fg }}">
+              <div style="flex:none;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;background:{{ st.dotBg }};color:{{ st.dotFg }};border:1.5px solid {{ st.dotLine }}">{{ st.mark }}</div>
+              <sc-if value="{{ railFull }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;min-width:0">
+                  <div style="font-size:13px;font-weight:500">{{ st.label }}</div>
+                  <div style="font-size:11px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ st.meta }}</div>
+                </div>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
+        <sc-if value="{{ railFull }}" hint-placeholder-val="{{ true }}">
+          <div style="border-top:1px solid var(--line);padding:16px 8px 0;display:flex;flex-direction:column;gap:10px">
+            <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-3)">Цепочка доказательств</div>
+            <sc-for list="{{ proof }}" as="pf" hint-placeholder-count="8">
+              <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:{{ pf.fg }}">
+                <div style="flex:none;width:8px;height:8px;border-radius:2px;background:{{ pf.dot }};border:1px solid {{ pf.line }}"></div>
+                <div>{{ pf.l }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </nav>
+    </sc-if>
+    <main style="flex:1;min-width:0;overflow:auto;position:relative">
+      <sc-if value="{{ sProjects }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:1120px;margin:0 auto;padding:40px 32px 64px;display:flex;flex-direction:column;gap:28px">
+          <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+            <div style="flex:1;min-width:280px;display:flex;flex-direction:column;gap:6px">
+              <h1 style="margin:0;font-size:28px;font-weight:600;letter-spacing:-0.02em">Проекты</h1>
+              <div style="color:var(--ink-2);max-width:560px">Загрузите корпоративный шаблон и бриф — получите три редактируемые колоды с аудитом качества.</div>
+            </div>
+            <button onClick="{{ toggleEmpty }}" style="white-space:nowrap;flex:none;height:36px;padding:0 12px;border-radius:8px;border:1px dashed var(--line-2);background:transparent;cursor:pointer;font-size:12px;color:var(--ink-3)">Состояние: пусто / есть проекты</button>
+            <button onClick="{{ newProject }}" style="white-space:nowrap;flex:none;height:40px;padding:0 16px;border-radius:8px;border:none;background:var(--ink);color:var(--inv);font-weight:500;cursor:pointer">+ Новый проект</button>
+          </div>
+          <button onClick="{{ openDemo }}" style="display:flex;align-items:center;gap:20px;padding:18px 20px;border-radius:12px;border:1px solid var(--line);background:var(--surface);cursor:pointer;text-align:left">
+            <div style="flex:none;width:44px;height:44px;border-radius:10px;background:var(--sunken);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500">▶</div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+              <div style="font-weight:600">Демо-сценарий</div>
+              <div style="color:var(--ink-2);font-size:13px">Готовый прогон на «VK Tech шаблон.pptx»: ДНК шаблона → план → 3 варианта → аудит → экспорт. Работает без сети и модели.</div>
+            </div>
+            <div style="font-size:13px;color:var(--ink-2)">Открыть →</div>
+          </button>
+          <sc-if value="{{ hasProjects }}" hint-placeholder-val="{{ true }}">
+            <div style="border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden">
+              <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,2fr) 150px minmax(0,1.6fr) 130px;gap:16px;padding:10px 20px;font-size:12px;color:var(--ink-3);border-bottom:1px solid var(--line);background:var(--surface-2)">
+                <div>Проект</div><div>Шаблон</div><div>Статус</div><div>Этап прогона</div><div>Дата</div>
+              </div>
+              <sc-for list="{{ projects }}" as="p" hint-placeholder-count="6">
+                <button onClick="{{ p.open }}" style="width:100%;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,2fr) 150px minmax(0,1.6fr) 130px;gap:16px;align-items:center;padding:14px 20px;border:none;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;text-align:left" style-hover="background:var(--surface-2)">
+                  <div style="font-weight:500">{{ p.n }}</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.f }}</div>
+                  <div><div style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:12px;background:{{ p.sbg }};color:{{ p.sc }};font-size:12px;font-weight:500"><div style="width:6px;height:6px;border-radius:50%;background:currentColor"></div>{{ p.sl }}</div></div>
+                  <div style="font-size:13px;color:var(--ink-2)">{{ p.stage }}</div>
+                  <div style="font-size:13px;color:var(--ink-3)">{{ p.d }}</div>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noProjects }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px dashed var(--line-2);border-radius:12px;padding:56px 32px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
+              <div style="font-size:20px;font-weight:600">Проектов пока нет</div>
+              <div style="color:var(--ink-2);max-width:460px">Начните с корпоративного шаблона .pptx или прошлой презентации. Система разберёт его на правила и покажет, что поняла.</div>
+              <div style="display:flex;gap:10px;margin-top:6px">
+                <button onClick="{{ newProject }}" style="white-space:nowrap;flex:none;height:40px;padding:0 16px;border-radius:8px;border:none;background:var(--ink);color:var(--inv);font-weight:500;cursor:pointer">Создать первый проект</button>
+                <button onClick="{{ openDemo }}" style="white-space:nowrap;flex:none;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer">Открыть демо</button>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ sTemplate }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:1280px;margin:0 auto;padding:28px 32px 64px;display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+            <div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:12px;color:var(--ink-3);font-family:'JetBrains Mono',monospace">ШАГ 1 · ШАБЛОН</div>
+              <h1 style="margin:0;font-size:28px;font-weight:600;letter-spacing:-0.02em">ДНК шаблона</h1>
+              <div style="color:var(--ink-2);max-width:640px">Шаблон разобран на правила: цвета, шрифты, кегли, сетку, якоря и макеты. По этим правилам будут собираться новые слайды.</div>
+            </div>
+            <sc-if value="{{ tplDone }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;gap:10px">
+                <button onClick="{{ replaceTpl }}" style="white-space:nowrap;flex:none;height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer">Заменить шаблон</button>
+                <button onClick="{{ toBrief }}" style="white-space:nowrap;flex:none;height:40px;padding:0 16px;border-radius:8px;border:none;background:var(--ink);color:var(--inv);font-weight:500;cursor:pointer">Дальше: бриф →</button>
+              </div>
+            </sc-if>
+          </div>
+          <sc-if value="{{ tplUpload }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ startUpload }}" style="min-height:360px;border:1.5px dashed var(--line-2);border-radius:16px;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer" style-hover="border-color:var(--ink)">
+              <div style="font-size:20px;font-weight:600">Перетащите шаблон сюда</div>
+              <div style="color:var(--ink-2)">или нажмите, чтобы выбрать файл</div>
+              <div style="display:flex;gap:8px;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3)">
+                <div style="padding:4px 8px;border-radius:6px;background:var(--sunken)">.pptx</div><div style="padding:4px 8px;border-radius:6px;background:var(--sunken)">.potx</div><div style="padding:4px 8px">до 200 МБ</div>
+              </div>
+              <div style="max-width:440px;color:var(--ink-3);font-size:13px;text-align:center">Подойдёт и прошлая презентация: стиль будет извлечён из обычных слайдов.</div>
+            </button>
+          </sc-if>
+          <sc-if value="{{ tplBusy }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:28px;display:flex;flex-direction:column;gap:18px">
+              <div style="display:flex;align-items:center;gap:14px">
+                <div style="width:40px;height:48px;border-radius:6px;background:var(--sunken);display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-2)">PPTX</div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+                  <div style="font-weight:500">VK Tech шаблон.pptx</div>
+                  <div style="font-size:13px;color:var(--ink-2);font-family:'JetBrains Mono',monospace">{{ upMb }} из 20.4 МБ</div>
+                </div>
+                <sc-if value="{{ tplUploading }}" hint-placeholder-val="{{ true }}"><div style="font-family:'JetBrains Mono',monospace;font-size:13px">Загрузка · {{ upPct }}</div></sc-if>
+                <sc-if value="{{ tplAnalyzing }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:var(--info);animation:ddpulse 1.2s infinite">Разбираю мастер, макеты и 54 слайда…</div></sc-if>
+              </div>
+              <div style="height:6px;border-radius:3px;background:var(--sunken);overflow:hidden"><div style="height:100%;width:{{ upPct }};background:var(--ink);transition:width .1s"></div></div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-size:13px;color:var(--ink-3)">
+                <div>Тема и палитра</div><div>Шрифты заявленные и фактические</div><div>Сетка, поля и якоря</div><div>Макеты и роли слайдов</div>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ tplDone }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:13px">
+              <div style="font-weight:600">VK Tech шаблон.pptx</div>
+              <div style="font-family:'JetBrains Mono',monospace;color:var(--ink-2)">20.4 МБ</div>
+              <div style="color:var(--ink-2)">16:9 · 25.4 × 14.29 см</div>
+              <div style="color:var(--ink-2)">2 мастера · 39 макетов · 54 слайда</div>
+              <div style="color:var(--ink-2)">разобран за 4.1 с</div>
+            </div>
+            <section aria-label="Что система поняла" style="border:1px solid var(--ink);border-radius:16px;background:var(--surface);padding:24px;display:grid;grid-template-columns:220px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);gap:28px">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-3)">Что система поняла</div>
+                <div style="font-size:56px;font-weight:600;letter-spacing:-0.03em;line-height:1">146</div>
+                <div style="color:var(--ink-2)">правил извлечено из незнакомого шаблона без подготовки</div>
+                <div style="margin-top:auto;font-size:12px;color:var(--ink-3)">Порог уверенности 0.75: ниже — правило применяется, но помечается в отчёте.</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <div style="font-size:13px;font-weight:600">Уверенность по группам</div>
+                <sc-for list="{{ conf }}" as="c" hint-placeholder-count="7">
+                  <div style="display:grid;grid-template-columns:112px 1fr 38px;gap:10px;align-items:center;font-size:13px">
+                    <div style="color:var(--ink-2)">{{ c.l }}</div>
+                    <div style="position:relative;height:6px;border-radius:3px;background:var(--sunken)"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ c.w }};border-radius:3px;background:{{ c.c }}"></div><div style="position:absolute;left:75%;top:-3px;bottom:-3px;width:1px;background:var(--ink-3)"></div></div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right;color:{{ c.c }}">{{ c.v }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:600">Конфликты</div><div style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:1px 7px;border-radius:10px;background:var(--warn-bg);color:var(--warn)">2</div></div>
+                <div style="padding:12px;border-radius:10px;background:var(--warn-bg);display:flex;flex-direction:column;gap:4px">
+                  <div style="font-size:13px;font-weight:600;color:var(--warn)">⇄ Шрифт</div>
+                  <div style="font-size:13px">Заявлен <b>Arial</b>, на слайдах <b>Play</b> (50%) и <b>Calibri</b> (48%).</div>
+                  <div style="font-size:12px;color:var(--ink-2)">Решение: основной — Play, Calibri считается нарушением.</div>
+                </div>
+                <div style="padding:12px;border-radius:10px;background:var(--warn-bg);display:flex;flex-direction:column;gap:4px">
+                  <div style="font-size:13px;font-weight:600;color:var(--warn)">⇄ Цвет текста</div>
+                  <div style="font-size:13px">Серый <b>#8F8F8F</b> — самый частый цвет, но его нет в теме.</div>
+                  <div style="font-size:12px;color:var(--ink-2)">Решение: разрешён для подписей, если контраст ≥ 4.5.</div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:600">Пробелы</div><div style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:1px 7px;border-radius:10px;background:var(--sunken);color:var(--ink-2)">2</div></div>
+                <div style="padding:12px;border-radius:10px;border:1px solid var(--line);display:flex;flex-direction:column;gap:4px">
+                  <div style="font-size:13px">У 17 из 39 макетов есть только заголовок. Правила для тела слайда взяты из 36 обычных слайдов.</div>
+                </div>
+                <div style="padding:12px;border-radius:10px;border:1px solid var(--line);display:flex;flex-direction:column;gap:4px">
+                  <div style="font-size:13px">Макет «DEFAULT» пустой — для сборки не используется.</div>
+                </div>
+              </div>
+            </section>
+            <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px">
+              <section style="grid-column:span 7;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:16px">
+                <div style="display:flex;align-items:baseline;gap:10px"><h2 style="margin:0;font-size:16px;font-weight:600">Палитра</h2><div style="font-size:13px;color:var(--ink-3)">12 слотов темы · 8 реально используемых цветов</div></div>
+                <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px">
+                  <sc-for list="{{ palette }}" as="c" hint-placeholder-count="12">
+                    <div style="display:flex;flex-direction:column;gap:6px">
+                      <div style="height:44px;border-radius:8px;background:{{ c.hex }};box-shadow:inset 0 0 0 1px {{ c.line }}"></div>
+                      <div style="display:flex;flex-direction:column;font-size:11px;line-height:1.3"><div style="color:var(--ink-3)">{{ c.slot }}</div><div style="font-family:'JetBrains Mono',monospace">{{ c.hex }}</div></div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line);padding-top:14px">
+                  <div style="font-size:13px;font-weight:600">Фактически на слайдах</div>
+                  <div style="display:flex;height:14px;border-radius:4px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)">
+                    <sc-for list="{{ used }}" as="u" hint-placeholder-count="8"><div style="width:{{ u.w }};background:{{ u.hex }}"></div></sc-for>
+                  </div>
+                  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px 16px">
+                    <sc-for list="{{ used }}" as="u" hint-placeholder-count="8">
+                      <div style="display:flex;align-items:center;gap:8px;font-size:12px">
+                        <div style="flex:none;width:14px;height:14px;border-radius:3px;background:{{ u.hex }};box-shadow:inset 0 0 0 1px var(--line-2)"></div>
+                        <div style="font-family:'JetBrains Mono',monospace">{{ u.hex }}</div>
+                        <div style="color:var(--ink-3)">{{ u.pct }}</div>
+                        <div style="margin-left:auto;color:{{ u.tagC }}">{{ u.tag }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </section>
+              <section style="grid-column:span 5;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;align-items:center;gap:10px"><h2 style="margin:0;font-size:16px;font-weight:600">Шрифты</h2><div style="font-size:12px;font-weight:500;padding:2px 8px;border-radius:10px;background:var(--warn-bg);color:var(--warn)">⇄ конфликт правил</div></div>
+                <div style="display:grid;grid-template-columns:1fr 24px 1fr;gap:10px;align-items:stretch">
+                  <div style="padding:14px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);display:flex;flex-direction:column;gap:6px">
+                    <div style="font-size:12px;color:var(--ink-3)">Заявлено в теме</div>
+                    <div style="font-family:Arial,sans-serif;font-size:30px;line-height:1">Аа Бб</div>
+                    <div style="font-size:13px">Arial · заголовки и текст</div>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:center;color:var(--warn);font-size:18px">≠</div>
+                  <div style="padding:14px;border-radius:10px;background:var(--surface-2);border:1px solid var(--warn);display:flex;flex-direction:column;gap:6px">
+                    <div style="font-size:12px;color:var(--ink-3)">Фактически · 1 956 фрагментов</div>
+                    <div style="font-family:'Play',sans-serif;font-size:30px;line-height:1">Аа Бб</div>
+                    <div style="font-size:13px">Play · основной</div>
+                  </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <div style="display:grid;grid-template-columns:80px 1fr 40px;gap:10px;align-items:center;font-size:13px"><div style="font-family:'Play',sans-serif">Play</div><div style="height:8px;border-radius:4px;background:var(--sunken)"><div style="width:50.7%;height:100%;border-radius:4px;background:var(--ink)"></div></div><div style="font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right">50%</div></div>
+                  <div style="display:grid;grid-template-columns:80px 1fr 40px;gap:10px;align-items:center;font-size:13px"><div style="font-family:Calibri,Carlito,sans-serif">Calibri</div><div style="height:8px;border-radius:4px;background:var(--sunken)"><div style="width:48%;height:100%;border-radius:4px;background:var(--ink-3)"></div></div><div style="font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right">48%</div></div>
+                  <div style="display:grid;grid-template-columns:80px 1fr 40px;gap:10px;align-items:center;font-size:13px"><div style="font-family:Arial,sans-serif">Arial</div><div style="height:8px;border-radius:4px;background:var(--sunken)"><div style="width:1.3%;height:100%;border-radius:4px;background:var(--ink-3)"></div></div><div style="font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right">1%</div></div>
+                </div>
+                <div style="font-size:12px;color:var(--ink-2)">Calibri встречается в таблицах и подписях — вероятно, остался от вставки из Excel. В новых слайдах используется только Play.</div>
+              </section>
+              <section style="grid-column:span 6;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:baseline;gap:10px"><h2 style="margin:0;font-size:16px;font-weight:600">Шкала кеглей</h2><div style="font-size:13px;color:var(--ink-3)">pt · частота · роль</div></div>
+                <sc-for list="{{ sizes }}" as="z" hint-placeholder-count="12">
+                  <div style="display:grid;grid-template-columns:52px 1fr 110px 34px;gap:10px;align-items:center;font-size:12px;color:{{ z.fg }}">
+                    <div style="font-family:'JetBrains Mono',monospace">{{ z.pt }}</div>
+                    <div style="height:8px"><div style="width:{{ z.w }};height:100%;border-radius:2px;background:{{ z.bar }}"></div></div>
+                    <div>{{ z.role }}</div>
+                    <div style="font-family:'JetBrains Mono',monospace;text-align:right;color:var(--ink-3)">{{ z.n }}</div>
+                  </div>
+                </sc-for>
+                <div style="font-size:12px;color:var(--ink-2);border-top:1px solid var(--line);padding-top:10px">Итоговая шкала: <span style="font-family:'JetBrains Mono',monospace">6 · 7 · 9 · 10 · 12 · 14 · 18</span>. Дробные значения — следы автоподбора, в шкалу не включены.</div>
+              </section>
+              <section style="grid-column:span 6;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;align-items:baseline;gap:10px"><h2 style="margin:0;font-size:16px;font-weight:600">Сетка, поля и якоря</h2><div style="font-size:13px;color:var(--ink-3)">в долях слайда 16:9</div></div>
+                <div style="position:relative;width:100%;aspect-ratio:16/9;background:var(--surface-2);border:1px solid var(--line-2);border-radius:4px">
+                  <div style="position:absolute;left:5.5%;right:5.5%;top:8%;bottom:10%;border:1px dashed var(--ink-3);display:grid;grid-template-columns:repeat(12,1fr);gap:0 2%">
+                    <div style="background:var(--sunken)"></div><div style="background:var(--sunken)"></div><div style="background:var(--sunken)"></div><div style="background:var(--sunken)"></div><div style="background:var(--sunken)"></div><div style="background:var(--sunken)"></div><div style="background:var(--sunken)"></div><div style="background:var(--sunken)"></div><div style="background:var(--sunken)"></div><div style="background:var(--sunken)"></div><div style="background:var(--sunken)"></div><div style="background:var(--sunken)"></div>
+                  </div>
+                  <div style="position:absolute;left:84%;top:4%;width:12%;height:8%;border:2px solid var(--ink);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600">Лого · 94%</div>
+                  <div style="position:absolute;left:5.5%;top:91%;width:36%;height:5%;border:2px solid var(--ink);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600">Колонтитул · 81%</div>
+                  <div style="position:absolute;left:90%;top:91%;width:6%;height:5%;border:2px solid var(--ink);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600">№ · 76%</div>
+                  <div style="position:absolute;left:0;top:50%;width:5.5%;border-top:1px solid var(--info)"></div>
+                  <div style="position:absolute;left:0.5%;top:44%;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--info)">.055</div>
+                  <div style="position:absolute;left:40%;top:0;height:8%;border-left:1px solid var(--info)"></div>
+                  <div style="position:absolute;left:41%;top:1.5%;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--info)">.080</div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:12px">
+                  <div style="display:flex;flex-direction:column"><div style="color:var(--ink-3)">Поля</div><div style="font-family:'JetBrains Mono',monospace">.055 / .080</div></div>
+                  <div style="display:flex;flex-direction:column"><div style="color:var(--ink-3)">Колонки</div><div style="font-family:'JetBrains Mono',monospace">12 · шаг .020</div></div>
+                  <div style="display:flex;flex-direction:column"><div style="color:var(--ink-3)">Лого</div><div style="font-family:'JetBrains Mono',monospace">0.88; 0.06</div></div>
+                  <div style="display:flex;flex-direction:column"><div style="color:var(--ink-3)">Линии выравнивания</div><div style="font-family:'JetBrains Mono',monospace">7 вертик.</div></div>
+                </div>
+              </section>
+              <section style="grid-column:span 4;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:12px">
+                <h2 style="margin:0;font-size:16px;font-weight:600">Мастер → макеты → слайды</h2>
+                <div style="display:flex;flex-direction:column;gap:2px;font-size:13px">
+                  <div style="display:flex;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--sunken);font-weight:600"><div>Мастер 1 · светлый</div><div style="font-family:'JetBrains Mono',monospace;font-weight:400">19 · 38</div></div>
+                  <div style="display:flex;justify-content:space-between;padding:6px 10px 6px 26px;border-left:1px solid var(--line-2);margin-left:12px"><div>1_Контент</div><div style="font-family:'JetBrains Mono',monospace">36 слайдов</div></div>
+                  <div style="display:flex;justify-content:space-between;padding:6px 10px 6px 26px;border-left:1px solid var(--line-2);margin-left:12px;color:var(--ink-2)"><div>Разделители, титулы</div><div style="font-family:'JetBrains Mono',monospace">7</div></div>
+                  <div style="display:flex;justify-content:space-between;padding:6px 10px 6px 26px;border-left:1px solid var(--line-2);margin-left:12px;color:var(--ink-3)"><div>16 макетов без слайдов</div><div style="font-family:'JetBrains Mono',monospace">0</div></div>
+                  <div style="display:flex;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--sunken);font-weight:600;margin-top:6px"><div>Мастер 2 · тёмный</div><div style="font-family:'JetBrains Mono',monospace;font-weight:400">20 · 16</div></div>
+                  <div style="display:flex;justify-content:space-between;padding:6px 10px 6px 26px;border-left:1px solid var(--line-2);margin-left:12px;color:var(--ink-2)"><div>Контент 2–14</div><div style="font-family:'JetBrains Mono',monospace">12</div></div>
+                  <div style="display:flex;justify-content:space-between;padding:6px 10px 6px 26px;border-left:1px solid var(--line-2);margin-left:12px;color:var(--ink-2)"><div>Титулы, «Спасибо!»</div><div style="font-family:'JetBrains Mono',monospace">4</div></div>
+                </div>
+              </section>
+              <section style="grid-column:span 8;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;align-items:baseline;gap:10px"><h2 style="margin:0;font-size:16px;font-weight:600">Макеты</h2><div style="font-size:13px;color:var(--ink-3)">чертежи плейсхолдеров · 8 из 39</div></div>
+                <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px">
+                  <sc-for list="{{ layouts }}" as="l" hint-placeholder-count="8">
+                    <div style="display:flex;flex-direction:column;gap:6px">
+                      <div style="position:relative;aspect-ratio:16/9;border:1px solid var(--line-2);border-radius:4px;background:var(--surface-2);overflow:hidden">
+                        <sc-for list="{{ l.boxes }}" as="b">
+                          <div style="position:absolute;left:{{ b.x }};top:{{ b.y }};width:{{ b.w }};height:{{ b.h }};border:1px solid var(--ink-2);background:var(--surface);font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--ink-3);padding:1px 3px;overflow:hidden">{{ b.l }}</div>
+                        </sc-for>
+                        <sc-if value="{{ l.empty }}"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink-3)">пусто</div></sc-if>
+                      </div>
+                      <div style="display:flex;justify-content:space-between;gap:6px;font-size:12px"><div style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.n }}</div><div style="font-family:'JetBrains Mono',monospace;color:var(--ink-3)">×{{ l.c }}</div></div>
+                      <div style="font-size:11px;color:var(--ink-3)">{{ l.type }}<sc-if value="{{ l.hasNote }}"> · {{ l.note }}</sc-if></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </section>
+              <section style="grid-column:span 6;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:10px">
+                <h2 style="margin:0;font-size:16px;font-weight:600">Роли слайдов</h2>
+                <sc-for list="{{ roles }}" as="r" hint-placeholder-count="6">
+                  <div style="display:grid;grid-template-columns:100px 36px 1fr 40px;gap:10px;align-items:center;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)">
+                    <div style="font-weight:500">{{ r.l }}</div>
+                    <div style="font-family:'JetBrains Mono',monospace;color:var(--ink-3)">{{ r.n }}</div>
+                    <div style="display:flex;flex-direction:column;gap:4px"><div style="height:4px;border-radius:2px;background:var(--sunken)"><div style="width:{{ r.w }};height:100%;border-radius:2px;background:{{ r.c }}"></div></div><div style="font-size:11px;color:var(--ink-3)">{{ r.why }}</div></div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right;color:{{ r.c }}">{{ r.v }}</div>
+                  </div>
+                </sc-for>
+              </section>
+              <section style="grid-column:span 6;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:baseline;gap:10px"><h2 style="margin:0;font-size:16px;font-weight:600">Что система не умеет</h2><div style="font-size:13px;color:var(--ink-3)">и как поступает</div></div>
+                <div style="display:grid;grid-template-columns:1fr auto;gap:10px 16px;font-size:13px;align-items:baseline">
+                  <div>SmartArt · 3 объекта на слайдах 12, 27, 40</div><div style="font-size:12px;padding:2px 8px;border-radius:10px;background:var(--sunken)">растрируется, в отчёте</div>
+                  <div>Видео · 1 объект</div><div style="font-size:12px;padding:2px 8px;border-radius:10px;background:var(--sunken)">сохраняется как есть</div>
+                  <div>Анимации и переходы · 14 слайдов</div><div style="font-size:12px;padding:2px 8px;border-radius:10px;background:var(--sunken)">сохраняются, не проверяются</div>
+                  <div>Шрифт Play не встроен в файл</div><div style="font-size:12px;padding:2px 8px;border-radius:10px;background:var(--warn-bg);color:var(--warn)">раскрыто в паспорте</div>
+                </div>
+              </section>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ sBrief }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:1200px;margin:0 auto;padding:28px 32px 64px;display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:12px;color:var(--ink-3);font-family:'JetBrains Mono',monospace">ШАГ 2 · БРИФ И КОНТЕНТ</div>
+            <h1 style="margin:0;font-size:28px;font-weight:600;letter-spacing:-0.02em">О чём презентация</h1>
+            <div style="color:var(--ink-2)">Обязательны только назначение и контент. Остальное заполнено разумными значениями.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start">
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <section style="border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;gap:6px;align-items:baseline"><h2 style="margin:0;font-size:16px;font-weight:600">Назначение</h2><div style="font-size:12px;color:var(--error)">обязательно</div></div>
+                <div role="radiogroup" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px">
+                  <sc-for list="{{ purposes }}" as="p" hint-placeholder-count="5">
+                    <button role="radio" aria-checked="{{ p.on }}" onClick="{{ p.pick }}" style="min-height:64px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:10px 12px;border-radius:10px;border:1px solid {{ p.line }};background:{{ p.bg }};color:{{ p.fg }};cursor:pointer;text-align:left">
+                      <div style="font-weight:600;font-size:14px">{{ p.l }}</div>
+                      <div style="font-size:11px;line-height:1.3;color:{{ p.hc }}">{{ p.hint }}</div>
+                    </button>
+                  </sc-for>
+                </div>
+              </section>
+              <section style="border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;gap:6px;align-items:center"><h2 style="margin:0;font-size:16px;font-weight:600">Контент</h2><div style="font-size:12px;color:var(--error)">обязательно</div><div style="flex:1"></div>
+                  <div style="display:flex;padding:3px;border-radius:8px;background:var(--sunken)"><sc-for list="{{ cmTabs }}" as="t"><button onClick="{{ t.pick }}" style="white-space:nowrap;flex:none;height:28px;padding:0 12px;border:none;border-radius:6px;background:{{ t.bg }};box-shadow:{{ t.sh }};cursor:pointer;font-size:13px">{{ t.l }}</button></sc-for></div>
+                </div>
+                <sc-if value="{{ cmFile }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px solid var(--line-2)">
+                      <div style="width:32px;height:40px;border-radius:4px;background:var(--sunken);display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;font-family:'JetBrains Mono',monospace;font-size:8px">DOCX</div>
+                      <div style="flex:1;display:flex;flex-direction:column"><div style="font-weight:500">deckdna_brief.docx</div><div style="font-size:12px;color:var(--ink-3)">184 КБ · разобран</div></div>
+                      <div style="font-size:12px;padding:2px 8px;border-radius:10px;background:var(--ok-bg);color:var(--ok)">используется</div>
+                    </div>
+                    <sc-if value="{{ twoFiles }}" hint-placeholder-val="{{ true }}">
+                      <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px dashed var(--line-2);opacity:0.8">
+                        <div style="width:32px;height:40px;border-radius:4px;background:var(--sunken);display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;font-family:'JetBrains Mono',monospace;font-size:8px">XLSX</div>
+                        <div style="flex:1;display:flex;flex-direction:column"><div style="font-weight:500">metrics_q3.xlsx</div><div style="font-size:12px;color:var(--warn)">Не будет разобран: сейчас обрабатывается один файл. Перенесите таблицы в основной документ.</div></div>
+                        <button onClick="{{ dropSecond }}" aria-label="Убрать файл" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer">×</button>
+                      </div>
+                    </sc-if>
+                    <div style="font-size:12px;color:var(--ink-3)">.md .txt .json .docx .pdf .xlsx — перетащите ещё или замените</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ cmText }}" hint-placeholder-val="{{ false }}">
+                  <textarea aria-label="Текст контента" rows="7" style="width:100%;resize:vertical;padding:12px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);font-size:14px;line-height:1.5">DeckDNA — сервис, собирающий презентации по корпоративному шаблону. Каждую неделю команда делает 30+ колод, на вёрстку одной уходит 3–4 часа…</textarea>
+                </sc-if>
+              </section>
+              <section style="border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                <label style="display:flex;flex-direction:column;gap:6px"><div style="font-size:13px;font-weight:500">Аудитория</div><input value="{{ audience }}" onChange="{{ setAudience }}" style="height:40px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface)"></label>
+                <label style="display:flex;flex-direction:column;gap:6px"><div style="font-size:13px;font-weight:500">Тон <span style="color:var(--ink-3);font-weight:400">· необязательно</span></div><input value="{{ tone }}" onChange="{{ setTone }}" style="height:40px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface)"></label>
+                <div style="display:flex;flex-direction:column;gap:6px"><div style="font-size:13px;font-weight:500">Язык</div><div style="display:flex;padding:3px;border-radius:8px;background:var(--sunken);align-self:flex-start"><sc-for list="{{ langs }}" as="t"><button onClick="{{ t.pick }}" style="white-space:nowrap;flex:none;height:32px;padding:0 14px;border:none;border-radius:6px;background:{{ t.bg }};box-shadow:{{ t.sh }};cursor:pointer;font-size:13px">{{ t.l }}</button></sc-for></div></div>
+                <div style="display:flex;flex-direction:column;gap:6px"><div style="font-size:13px;font-weight:500">Число слайдов <span style="color:var(--ink-3);font-weight:400">· 3–40</span></div>
+                  <div style="display:flex;align-items:center;gap:0;align-self:flex-start;border:1px solid var(--line-2);border-radius:8px;overflow:hidden">
+                    <button onClick="{{ decSlides }}" aria-label="Меньше" style="width:40px;height:38px;border:none;background:var(--surface);cursor:pointer;font-size:16px">−</button>
+                    <div style="width:52px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:15px">{{ slidesN }}</div>
+                    <button onClick="{{ incSlides }}" aria-label="Больше" style="width:40px;height:38px;border:none;background:var(--surface);cursor:pointer;font-size:16px">+</button>
+                  </div>
+                </div>
+                <div style="grid-column:span 2;display:flex;flex-direction:column;gap:6px"><div style="font-size:13px;font-weight:500">Обязательные разделы</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:40px;padding:5px;border-radius:8px;border:1px solid var(--line-2)">
+                    <sc-for list="{{ sectionTags }}" as="t"><div style="display:flex;align-items:center;gap:4px;height:28px;padding:0 4px 0 10px;border-radius:6px;background:var(--sunken);font-size:13px">{{ t.t }}<button onClick="{{ t.rm }}" aria-label="Убрать раздел" style="width:22px;height:22px;border:none;background:none;cursor:pointer;color:var(--ink-3)">×</button></div></sc-for>
+                    <input onKeyDown="{{ addSection }}" placeholder="Добавить и Enter" style="flex:1;min-width:120px;height:28px;border:none;background:transparent;outline:none;font-size:13px">
+                  </div>
+                </div>
+                <label style="grid-column:span 2;display:flex;flex-direction:column;gap:6px"><div style="font-size:13px;font-weight:500">Запрещённые утверждения <span style="color:var(--ink-3);font-weight:400">· необязательно</span></div><input value="{{ forbidden }}" onChange="{{ setForbidden }}" style="height:40px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface)"></label>
+              </section>
+              <section style="border:1px solid var(--line);border-radius:12px;background:var(--surface)">
+                <button onClick="{{ toggleAdv }}" aria-expanded="{{ showAdv }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:16px 20px;border:none;background:none;cursor:pointer;text-align:left">
+                  <div style="font-weight:600">Режим сборки</div><div style="font-size:13px;color:var(--ink-2)">{{ modelLabel }}</div><div style="flex:1"></div><div style="font-family:'JetBrains Mono',monospace">{{ advArrow }}</div>
+                </button>
+                <sc-if value="{{ showAdv }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:0 20px 18px;display:flex;flex-direction:column;gap:12px">
+                    <button onClick="{{ toggleModel }}" role="switch" aria-checked="{{ modelMode }}" style="display:flex;align-items:center;gap:12px;border:none;background:none;padding:0;cursor:pointer;text-align:left">
+                      <div style="position:relative;width:36px;height:20px;border-radius:10px;background:{{ modelTrack }}"><div style="position:absolute;top:2px;left:{{ modelKnobX }};width:16px;height:16px;border-radius:50%;background:var(--surface);transition:left .15s"></div></div>
+                      <div style="display:flex;flex-direction:column"><div style="font-weight:500">Использовать языковую модель</div><div style="font-size:12px;color:var(--ink-3)">План, заголовки-выводы и 11 контекстных проверок. Без модели — только 24 правила, за секунды.</div></div>
+                    </button>
+                    <button onClick="{{ openSettings }}" style="align-self:flex-start;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:13px">Настроить провайдера моделей</button>
+                  </div>
+                </sc-if>
+              </section>
+            </div>
+            <aside style="position:sticky;top:20px;display:flex;flex-direction:column;gap:16px">
+              <section style="border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;flex-direction:column;gap:2px"><h2 style="margin:0;font-size:16px;font-weight:600">Что система поняла из контента</h2><div style="font-size:12px;color:var(--ink-3)">deckdna_brief.docx · 1 840 слов</div></div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+                  <div style="padding:10px;border-radius:8px;background:var(--surface-2);display:flex;flex-direction:column"><div style="font-size:22px;font-weight:600">6</div><div style="font-size:12px;color:var(--ink-3)">разделов</div></div>
+                  <div style="padding:10px;border-radius:8px;background:var(--surface-2);display:flex;flex-direction:column"><div style="font-size:22px;font-weight:600">2</div><div style="font-size:12px;color:var(--ink-3)">таблицы</div></div>
+                  <div style="padding:10px;border-radius:8px;background:var(--surface-2);display:flex;flex-direction:column"><div style="font-size:22px;font-weight:600">14</div><div style="font-size:12px;color:var(--ink-3)">чисел</div></div>
+                  <div style="padding:10px;border-radius:8px;background:var(--surface-2);display:flex;flex-direction:column"><div style="font-size:22px;font-weight:600">1</div><div style="font-size:12px;color:var(--ink-3)">схема</div></div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:0;font-size:13px">
+                  <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="font-family:'JetBrains Mono',monospace;color:var(--ink-3);width:24px">§1</div><div>Контекст и команда</div></div>
+                  <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="font-family:'JetBrains Mono',monospace;color:var(--ink-3);width:24px">§2</div><div>Боль: ручная вёрстка</div></div>
+                  <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="font-family:'JetBrains Mono',monospace;color:var(--ink-3);width:24px">§3</div><div>Суть продукта и как работает</div></div>
+                  <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="font-family:'JetBrains Mono',monospace;color:var(--ink-3);width:24px">§4</div><div>Варианты сборки</div></div>
+                  <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)"><div style="font-family:'JetBrains Mono',monospace;color:var(--ink-3);width:24px">§5</div><div>Качество и проверки</div></div>
+                  <div style="display:flex;gap:10px;padding:7px 0"><div style="font-family:'JetBrains Mono',monospace;color:var(--ink-3);width:24px">§6</div><div>Отзывы пилота</div></div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <div style="font-size:12px;font-weight:600;color:var(--ink-2)">Таблицы → графики</div>
+                  <div style="display:flex;justify-content:space-between;padding:8px 10px;border-radius:8px;border:1px solid var(--line);font-size:13px"><div>Табл. 1 · Время вёрстки <span style="color:var(--ink-3)">4 × 3</span></div><div style="color:var(--ink-2)">→ столбцы</div></div>
+                  <div style="display:flex;justify-content:space-between;padding:8px 10px;border-radius:8px;border:1px solid var(--line);font-size:13px"><div>Табл. 2 · План пилота <span style="color:var(--ink-3)">4 × 2</span></div><div style="color:var(--ink-2)">→ таймлайн</div></div>
+                </div>
+              </section>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <button onClick="{{ briefGo }}" style="white-space:nowrap;flex:none;height:48px;border-radius:10px;border:none;background:var(--ink);color:var(--inv);font-weight:600;font-size:15px;cursor:pointer">{{ briefCta }} →</button>
+                <div style="font-size:12px;color:var(--ink-3);text-align:center">Шаблон: VK Tech шаблон.pptx · 146 правил</div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ sPlan }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:1200px;margin:0 auto;padding:28px 32px 64px;display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+            <div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:12px;color:var(--ink-3);font-family:'JetBrains Mono',monospace">ШАГ 3 · ПЛАН</div>
+              <h1 style="margin:0;font-size:28px;font-weight:600;letter-spacing:-0.02em">Сначала план, потом вёрстка</h1>
+              <div style="color:var(--ink-2);max-width:620px">Проверьте историю до сборки: порядок, заголовки-выводы и источники. Поправить план дешевле, чем перегенерировать колоду.</div>
+            </div>
+            <button onClick="{{ resetPlan }}" style="white-space:nowrap;flex:none;height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer">Сбросить правки</button>
+            <sc-if value="{{ planBefore }}" hint-placeholder-val="{{ true }}"><button onClick="{{ planGo }}" style="white-space:nowrap;flex:none;height:40px;padding:0 16px;border-radius:8px;border:none;background:var(--ink);color:var(--inv);font-weight:500;cursor:pointer">Собрать 3 варианта →</button></sc-if>
+            <sc-if value="{{ planAfter }}" hint-placeholder-val="{{ false }}"><button onClick="{{ planRebuild }}" style="white-space:nowrap;flex:none;height:40px;padding:0 16px;border-radius:8px;border:none;background:var(--ink);color:var(--inv);font-weight:500;cursor:pointer">Изменить план и пересобрать →</button></sc-if>
+          </div>
+          <sc-if value="{{ planAfter }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:12px;align-items:center;padding:12px 16px;border-radius:10px;background:var(--info-bg);color:var(--ink);font-size:13px">
+              <div style="font-weight:600;color:var(--info)">Версия 1</div>
+              <div>План построен во время генерации — вы видите его после сборки. Правки запустят пересборку трёх вариантов.</div>
+            </div>
+          </sc-if>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:grid;grid-template-columns:32px 100px minmax(0,1fr) 150px 76px;gap:12px;padding:0 14px;font-size:12px;color:var(--ink-3)"><div>№</div><div>Назначение</div><div>Заголовок-вывод и мысль</div><div>Источник</div><div></div></div>
+              <sc-for list="{{ plan }}" as="p" hint-placeholder-count="12">
+                <div style="display:grid;grid-template-columns:32px 100px minmax(0,1fr) 150px 76px;gap:12px;align-items:start;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface)">
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink-3);padding-top:8px">{{ p.n }}</div>
+                  <div style="padding-top:6px"><div style="display:inline-block;font-size:12px;padding:3px 8px;border-radius:6px;background:var(--sunken)">{{ p.p }}</div></div>
+                  <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+                    <input value="{{ p.t }}" onChange="{{ p.setT }}" aria-label="Заголовок слайда" style="height:34px;padding:0 8px;margin-left:-8px;border-radius:6px;border:1px solid transparent;background:transparent;font-weight:600;font-size:14px" style-hover="border-color:var(--line-2)" style-focus="border-color:var(--ink);background:var(--surface)">
+                    <div style="font-size:13px;color:var(--ink-2)">{{ p.idea }} · <span style="color:var(--ink-3)">{{ p.v }}</span></div>
+                  </div>
+                  <div style="display:flex;flex-wrap:wrap;gap:4px;padding-top:6px">
+                    <sc-for list="{{ p.src }}" as="s"><div style="font-size:11px;padding:2px 7px;border-radius:5px;border:1px solid var(--line-2);color:var(--ink-2);font-family:'JetBrains Mono',monospace">↳ {{ s.t }}</div></sc-for>
+                    <sc-if value="{{ p.noSrc }}"><div style="font-size:11px;color:var(--ink-3)">служебный слайд</div></sc-if>
+                  </div>
+                  <div style="display:flex;gap:2px;padding-top:4px">
+                    <button onClick="{{ p.up }}" disabled="{{ p.isFirst }}" aria-label="Выше" style="width:24px;height:28px;border:none;border-radius:6px;background:transparent;cursor:pointer;color:var(--ink-2)">↑</button>
+                    <button onClick="{{ p.down }}" disabled="{{ p.isLast }}" aria-label="Ниже" style="width:24px;height:28px;border:none;border-radius:6px;background:transparent;cursor:pointer;color:var(--ink-2)">↓</button>
+                    <button onClick="{{ p.rm }}" aria-label="Убрать слайд" style="width:24px;height:28px;border:none;border-radius:6px;background:transparent;cursor:pointer;color:var(--ink-3)">×</button>
+                  </div>
+                </div>
+              </sc-for>
+              <button onClick="{{ addPlan }}" style="white-space:nowrap;flex:none;height:44px;border-radius:10px;border:1px dashed var(--line-2);background:transparent;cursor:pointer;color:var(--ink-2)">+ Добавить слайд</button>
+            </div>
+            <aside style="position:sticky;top:20px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:14px">
+              <h2 style="margin:0;font-size:16px;font-weight:600">Почему такая структура</h2>
+              <div style="font-size:13px;color:var(--ink-2)">Назначение «продукт» и аудитория «руководство»: сначала боль в цифрах, затем решение и доказательства, в конце — конкретный шаг.</div>
+              <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px">
+                <div style="flex:3;background:var(--ink)"></div><div style="flex:3;background:var(--ink-2)"></div><div style="flex:2;background:var(--ink-3)"></div><div style="flex:1;background:var(--line-2)"></div><div style="flex:3;background:var(--sunken)"></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ planWhy }}" as="w" hint-placeholder-count="5">
+                  <div style="display:flex;justify-content:space-between;font-size:13px"><div style="font-weight:500">{{ w.l }}</div><div style="color:var(--ink-3)">{{ w.d }}</div></div>
+                </sc-for>
+              </div>
+              <div style="border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:6px;font-size:13px">
+                <div style="display:flex;justify-content:space-between"><div style="color:var(--ink-2)">Слайдов</div><div style="font-family:'JetBrains Mono',monospace">{{ planCount }}</div></div>
+                <div style="display:flex;justify-content:space-between"><div style="color:var(--ink-2)">С источником</div><div style="font-family:'JetBrains Mono',monospace">11</div></div>
+                <div style="display:flex;justify-content:space-between"><div style="color:var(--ink-2)">Чисел из контента</div><div style="font-family:'JetBrains Mono',monospace">9 из 14</div></div>
+                <div style="display:flex;justify-content:space-between"><div style="color:var(--ink-2)">Обязательные разделы</div><div style="color:var(--ok)">3 из 3 ✓</div></div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ sGen }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:1200px;margin:0 auto;padding:28px 32px 64px;display:flex;flex-direction:column;gap:24px">
+          <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+            <div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:12px;color:var(--ink-3);font-family:'JetBrains Mono',monospace">ШАГ 4 · ГЕНЕРАЦИЯ</div>
+              <h1 style="margin:0;font-size:28px;font-weight:600;letter-spacing:-0.02em">Собираем три варианта</h1>
+              <div style="color:var(--ink-2)">Можно уйти со страницы — прогон продолжится, результат сохранится в проекте.</div>
+            </div>
+            <sc-if value="{{ genRunning }}" hint-placeholder-val="{{ true }}"><button onClick="{{ cancelGen }}" style="white-space:nowrap;flex:none;height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer">Отменить</button></sc-if>
+            <sc-if value="{{ genDone }}" hint-placeholder-val="{{ false }}"><button onClick="{{ toVariants }}" style="white-space:nowrap;flex:none;height:40px;padding:0 16px;border-radius:8px;border:none;background:var(--ink);color:var(--inv);font-weight:500;cursor:pointer">Сравнить варианты →</button></sc-if>
+          </div>
+          <section style="border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:24px 28px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:40px;align-items:center">
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:12px;color:var(--ink-3)">Прошло</div>
+              <div style="display:flex;align-items:baseline;gap:10px"><div style="font-family:'JetBrains Mono',monospace;font-size:64px;font-weight:500;letter-spacing:-0.03em;line-height:1">{{ genTime }}</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--ink-3)">/ 5:00</div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="position:relative;height:10px;border-radius:5px;background:var(--sunken)"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ genBudgetW }};border-radius:5px;background:var(--ink)"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);font-family:'JetBrains Mono',monospace"><div>0:00</div><div>1:00</div><div>2:00</div><div>3:00</div><div>4:00</div><div>лимит ТЗ 5:00</div></div>
+              <div style="font-size:13px;color:var(--ink-2)">Шкала показывает время, а не готовность: сервис сообщает статус каждого варианта, но не процент.</div>
+            </div>
+          </section>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+            <sc-for list="{{ genVariants }}" as="g" hint-placeholder-count="3">
+              <div style="border:1px solid {{ g.line }};border-radius:14px;background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:14px;min-height:300px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="font-weight:600;font-size:16px">{{ g.name }}</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)">{{ g.en }}</div>
+                  <div style="flex:1"></div>
+                  <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:{{ g.stc }}"><div style="width:7px;height:7px;border-radius:50%;background:currentColor"></div>{{ g.stl }}</div>
+                </div>
+                <div style="font-size:13px;color:var(--ink-2)">{{ g.axis }}</div>
+                <sc-if value="{{ g.done }}">
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;animation:ddfade .5s ease-out">
+                    <sc-for list="{{ g.thumbs }}" as="t"><div style="border-radius:3px;overflow:hidden;box-shadow:0 0 0 1px var(--line)"><dc-import name="Slide" kind="{{ t.k }}" title="{{ t.t }}" sub="{{ t.s }}" items="{{ t.i }}" n="{{ t.n }}" hint-size="100%,40px"></dc-import></div></sc-for>
+                  </div>
+                  <div style="font-size:12px;color:var(--ok)">✓ Файл открыт повторно без ошибок</div>
+                </sc-if>
+                <sc-if value="{{ g.running }}">
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                    <div style="aspect-ratio:16/9;border-radius:3px;background:var(--sunken);animation:ddpulse 1.6s infinite"></div><div style="aspect-ratio:16/9;border-radius:3px;background:var(--sunken);animation:ddpulse 1.6s .2s infinite"></div><div style="aspect-ratio:16/9;border-radius:3px;background:var(--sunken);animation:ddpulse 1.6s .4s infinite"></div>
+                  </div>
+                  <div style="font-size:12px;color:var(--ink-3)">Слайды появятся, когда вариант будет готов целиком.</div>
+                </sc-if>
+                <sc-if value="{{ g.queued }}">
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+                    <div style="aspect-ratio:16/9;border-radius:3px;border:1px dashed var(--line-2)"></div><div style="aspect-ratio:16/9;border-radius:3px;border:1px dashed var(--line-2)"></div><div style="aspect-ratio:16/9;border-radius:3px;border:1px dashed var(--line-2)"></div>
+                  </div>
+                  <div style="font-size:12px;color:var(--ink-3)">Ждёт свободного исполнителя.</div>
+                </sc-if>
+                <sc-if value="{{ g.error }}">
+                  <div style="padding:12px;border-radius:10px;background:var(--error-bg);display:flex;flex-direction:column;gap:6px">
+                    <div style="font-weight:600;color:var(--error);font-size:13px">Вёрстка не завершилась</div>
+                    <div style="font-size:13px">Модель не вернула план в срок: превышено время ответа провайдера.</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-2)">LLM_TIMEOUT · этап: план структуры · можно повторить</div>
+                  </div>
+                  <div style="display:flex;gap:8px">
+                    <button onClick="{{ retryGen }}" style="white-space:nowrap;flex:none;height:36px;padding:0 14px;border-radius:8px;border:none;background:var(--ink);color:var(--inv);cursor:pointer;font-size:13px">Повторить вариант</button>
+                    <button onClick="{{ toBriefBack }}" style="white-space:nowrap;flex:none;height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:13px">Вернуться к брифу</button>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <section style="display:flex;flex-direction:column;gap:12px">
+            <div style="font-size:13px;font-weight:600">Конвейер каждого варианта</div>
+            <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px">
+              <sc-for list="{{ stages }}" as="s" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:13px">
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)">{{ s.n }}</div><div>{{ s.l }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-size:12px;color:var(--ink-3)">Аудит идёт внутри генерации: вариант не считается готовым, пока не проверен всеми 24 правилами.</div>
+          </section>
+        </div>
+      </sc-if>
+      <sc-if value="{{ sVariants }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:28px 28px 64px;display:flex;flex-direction:column;gap:20px;max-width:1440px;margin:0 auto">
+          <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+            <div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:12px;color:var(--ink-3);font-family:'JetBrains Mono',monospace">ШАГ 5 · ТРИ ВАРИАНТА</div>
+              <h1 style="margin:0;font-size:28px;font-weight:600;letter-spacing:-0.02em">Один контент, один шаблон, три стратегии</h1>
+              <div style="color:var(--ink-2)">Варианты различаются осознанно: сколько текста, насколько разнообразны макеты, сколько визуализации.</div>
+            </div>
+            <div style="display:flex;padding:3px;border-radius:8px;background:var(--sunken)"><sc-for list="{{ viewTabs }}" as="t"><button onClick="{{ t.pick }}" style="white-space:nowrap;flex:none;height:32px;padding:0 14px;border:none;border-radius:6px;background:{{ t.bg }};box-shadow:{{ t.sh }};cursor:pointer;font-size:13px">{{ t.l }}</button></sc-for></div>
+            <button onClick="{{ backToPlan }}" style="white-space:nowrap;flex:none;height:38px;padding:0 14px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer">Изменить план</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+            <sc-for list="{{ vcards }}" as="c" hint-placeholder-count="3">
+              <section style="border:1px solid {{ c.line }};border-radius:14px;background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <h2 style="margin:0;font-size:18px;font-weight:600">{{ c.name }}</h2>
+                  <sc-if value="{{ c.isRec }}"><div style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--ink);color:var(--inv)">по умолчанию</div></sc-if>
+                  <div style="flex:1"></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)">{{ c.en }}</div>
+                </div>
+                <div style="font-size:13px;color:var(--ink);min-height:38px">{{ c.who }}</div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <sc-for list="{{ c.axes }}" as="a"><div style="display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:center;font-size:12px;color:var(--ink-2)"><div>{{ a.l }}</div><div style="height:6px;border-radius:3px;background:var(--sunken)"><div style="width:{{ a.w }};height:100%;border-radius:3px;background:var(--ink)"></div></div></div></sc-for>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+                  <div style="display:flex;flex-direction:column;gap:2px"><div style="font-size:11px;color:var(--ink-3)">Открывается</div><div style="font-weight:600;color:var(--ok)">✓ без ошибок</div></div>
+                  <div style="display:flex;flex-direction:column;gap:2px"><div style="font-size:11px;color:var(--ink-3)">Редактируемость</div><div style="font-weight:600;font-family:'JetBrains Mono',monospace">{{ c.pei }}</div><div style="font-size:11px;color:var(--ink-3)">{{ c.peiNote }}</div></div>
+                  <div style="display:flex;flex-direction:column;gap:2px"><div style="font-size:11px;color:var(--ink-3)">Соответствие</div><div style="font-weight:600;font-family:'JetBrains Mono',monospace">{{ c.style }}</div></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                  <div style="font-size:13px;font-weight:600;margin-right:4px">{{ c.issues }} проблем</div>
+                  <sc-for list="{{ c.sevs }}" as="s"><div style="display:flex;align-items:center;gap:4px;height:22px;padding:0 7px;border-radius:6px;background:{{ s.bg }};color:{{ s.c }};font-size:11px;font-weight:500"><span style="font-family:'JetBrains Mono',monospace">{{ s.n }}</span> {{ s.l }}</div></sc-for>
+                </div>
+                <sc-if value="{{ grid }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
+                    <sc-for list="{{ c.thumbs }}" as="t"><button onClick="{{ t.pick }}" aria-label="Открыть слайд {{ t.n }}" style="padding:0;border:none;background:none;cursor:pointer;border-radius:3px;overflow:hidden;box-shadow:0 0 0 1px var(--line)" style-hover="box-shadow:0 0 0 2px var(--ink)"><dc-import name="Slide" kind="{{ t.k }}" title="{{ t.t }}" sub="{{ t.s }}" items="{{ t.i }}" n="{{ t.n }}" hint-size="100%,40px"></dc-import></button></sc-for>
+                  </div>
+                </sc-if>
+                <div style="display:flex;gap:8px;margin-top:auto">
+                  <button onClick="{{ c.openAudit }}" style="flex:1;height:38px;border-radius:8px;border:none;background:var(--ink);color:var(--inv);cursor:pointer;font-weight:500">Открыть и проверить</button>
+                  <button onClick="{{ c.download }}" style="white-space:nowrap;flex:none;height:38px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer">PPTX</button>
+                </div>
+              </section>
+            </sc-for>
+          </div>
+          <sc-if value="{{ compare }}" hint-placeholder-val="{{ false }}">
+            <section style="border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden">
+              <div style="display:grid;grid-template-columns:56px repeat(3,minmax(0,1fr));gap:16px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink-3);position:sticky;top:0;background:var(--surface);z-index:2">
+                <div>Слайд</div><div>Близко к шаблону</div><div>Сбалансированный</div><div>Визуальный</div>
+              </div>
+              <sc-for list="{{ vrows }}" as="r" hint-placeholder-count="4">
+                <div style="display:grid;grid-template-columns:56px repeat(3,minmax(0,1fr));gap:16px;padding:12px 16px;border-bottom:1px solid var(--line);align-items:start">
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:500;padding-top:4px">{{ r.n }}</div>
+                  <sc-for list="{{ r.cells }}" as="t"><button onClick="{{ t.pick }}" style="padding:0;border:none;background:none;cursor:pointer;border-radius:4px;overflow:hidden;box-shadow:0 0 0 1px var(--line)" style-hover="box-shadow:0 0 0 2px var(--ink)"><dc-import name="Slide" kind="{{ t.k }}" title="{{ t.t }}" sub="{{ t.s }}" items="{{ t.i }}" n="{{ t.n }}" hint-size="100%,80px"></dc-import></button></sc-for>
+                </div>
+              </sc-for>
+            </section>
+          </sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ sAudit }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;min-height:0">
+          <section aria-label="Сводка аудита" style="flex:none;display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface)">
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:12px;color:var(--ink-3)">Вариант · ревизия</div>
+              <div style="display:flex;align-items:center;gap:8px"><button onClick="{{ toVariantsBack }}" style="white-space:nowrap;border:none;background:none;padding:0;cursor:pointer;font-weight:600;font-size:15px">{{ auVariant }} ▾</button><div style="font-family:'JetBrains Mono',monospace;font-size:12px;padding:1px 6px;border-radius:5px;background:var(--sunken)">{{ auRev }}</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding-left:14px;border-left:1px solid var(--line);flex:none">
+              <div title="Палитра 0.97 · Шрифты 1.00 · Макеты 0.92 · Якоря 0.83" style="display:flex;flex-direction:column;gap:2px"><div style="font-size:12px;color:var(--ink-3);white-space:nowrap">Соответствие</div><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:500;line-height:1">{{ complianceTotal }}</div></div>
+              
+            </div>
+            <div style="display:flex;gap:4px;padding-left:14px;border-left:1px solid var(--line);flex:none">
+              <sc-for list="{{ sevCounts }}" as="s" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;gap:2px;min-width:44px;padding:4px 7px;border-radius:8px;background:{{ s.bg }}"><div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:500;color:{{ s.c }};line-height:1.1">{{ s.n }}</div><div style="font-size:11px;color:{{ s.c }}">{{ s.l }}</div></div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px"><div style="font-size:12px;color:var(--ink-3);white-space:nowrap">Автоисправимо</div><div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:500">{{ fixableCount }}</div></div>
+            <div style="flex:1"></div>
+            <button onClick="{{ runN }}" style="white-space:nowrap;flex:none;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;width:18px;height:18px;border-radius:50%;border:1px dashed var(--ink-2);display:inline-flex;align-items:center;justify-content:center">N</span>Смысл моделью</button>
+            <button onClick="{{ reaudit }}" style="white-space:nowrap;flex:none;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:13px">{{ reauditLabel }}</button>
+            <button onClick="{{ toExport }}" style="white-space:nowrap;flex:none;height:36px;padding:0 14px;border-radius:8px;border:none;background:var(--ink);color:var(--inv);cursor:pointer;font-size:13px;font-weight:500">Экспорт →</button>
+          </section>
+          <sc-if value="{{ reSuccess }}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="flex:none;display:flex;align-items:center;gap:16px;padding:14px 20px;background:var(--ok-bg);border-bottom:1px solid var(--line);animation:ddfade .4s ease-out">
+              <div style="width:36px;height:36px;border-radius:50%;background:var(--ok);color:var(--inv);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700">✓</div>
+              <div style="display:flex;flex-direction:column"><div style="font-weight:700;font-size:16px;color:var(--ok)">Повторный аудит: 0 критических проблем</div><div style="font-size:13px">Ревизия {{ auRev }} · исправлено {{ stats.fixed }}, отклонено с причиной {{ stats.rejected }}, не удалось {{ stats.failed }} — раскрыто в журнале и паспорте.</div></div>
+              <div style="flex:1"></div>
+              <button onClick="{{ toExport }}" style="white-space:nowrap;flex:none;height:36px;padding:0 14px;border-radius:8px;border:none;background:var(--ink);color:var(--inv);cursor:pointer;font-size:13px;font-weight:500">Скачать PPTX и паспорт →</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ rePartial }}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="flex:none;display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--warn-bg);border-bottom:1px solid var(--line)">
+              <div style="font-weight:600;color:var(--warn)">Повторный аудит: осталось {{ openCrit }} критических</div><div style="font-size:13px">Исправьте или отклоните их с причиной — экспорт доступен, но паспорт это отметит.</div><div style="flex:1"></div><button onClick="{{ dismissRe }}" style="white-space:nowrap;flex:none;height:30px;padding:0 10px;border-radius:6px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:12px">Понятно</button>
+            </div>
+          </sc-if>
+          <div style="flex:1;min-height:0;display:grid;grid-template-columns:148px minmax(0,1fr) 420px">
+            <nav aria-label="Слайды" style="overflow:auto;padding:12px;border-right:1px solid var(--line);background:var(--surface-2);display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ film }}" as="f" hint-placeholder-count="8">
+                <button onClick="{{ f.pick }}" aria-label="Слайд {{ f.n }}" style="position:relative;display:flex;gap:6px;padding:0;border:none;background:none;cursor:pointer;text-align:left">
+                  <div style="width:16px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);padding-top:2px">{{ f.n }}</div>
+                  <div style="flex:1;border-radius:3px;overflow:hidden;box-shadow:0 0 0 2px {{ f.line }}, 0 0 0 3px var(--line)"><dc-import name="Slide" kind="{{ f.k }}" title="{{ f.t }}" sub="{{ f.s }}" items="{{ f.i }}" n="{{ f.n }}" hint-size="100%,56px"></dc-import></div>
+                  <sc-if value="{{ f.has }}"><div style="position:absolute;right:-4px;top:-4px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:{{ f.bc }};color:#FFFFFF;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;display:flex;align-items:center;justify-content:center">{{ f.cnt }}</div></sc-if>
+                  <sc-if value="{{ f.clean }}"><div style="position:absolute;right:-4px;top:-4px;width:18px;height:18px;border-radius:9px;background:var(--ok);color:#FFFFFF;font-size:10px;display:flex;align-items:center;justify-content:center">✓</div></sc-if>
+                </button>
+              </sc-for>
+            </nav>
+            <div style="overflow:auto;background:var(--stage);padding:20px 28px;display:flex;flex-direction:column;gap:14px;min-width:0">
+              <div style="display:flex;align-items:center;gap:10px">
+                <button onClick="{{ prevSlide }}" aria-label="Предыдущий слайд" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer">←</button>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:13px">{{ curNp }} / 12</div>
+                <button onClick="{{ nextSlide }}" aria-label="Следующий слайд" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer">→</button>
+                <div style="font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">{{ curTitle }}</div>
+                <div style="display:flex;padding:3px;border-radius:8px;background:var(--sunken)"><sc-for list="{{ baTabs }}" as="t"><button onClick="{{ t.pick }}" style="white-space:nowrap;flex:none;height:28px;padding:0 12px;border:none;border-radius:6px;background:{{ t.bg }};box-shadow:{{ t.sh }};cursor:pointer;font-size:12px">{{ t.l }}</button></sc-for></div>
+              </div>
+              <sc-if value="{{ notBa }}" hint-placeholder-val="{{ true }}">
+                <div style="position:relative;box-shadow:0 1px 2px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.08)">
+                  <dc-import name="Slide" kind="{{ cur.k }}" title="{{ cur.t }}" sub="{{ cur.s }}" items="{{ cur.i }}" n="{{ curN }}" hint-size="100%,300px"></dc-import>
+                  <sc-for list="{{ slideIssues }}" as="i">
+                    <button onClick="{{ i.pick }}" onMouseEnter="{{ i.enter }}" onMouseLeave="{{ i.leave }}" aria-label="{{ i.name }}" style="position:absolute;left:{{ i.box.x }};top:{{ i.box.y }};width:{{ i.box.w }};height:{{ i.box.h }};border:{{ i.boxW }} {{ i.boxStyle }} {{ i.boxC }};background:{{ i.boxBg }};z-index:{{ i.boxZ }};padding:0;cursor:pointer;border-radius:2px">
+                      <sc-if value="{{ i.tagShow }}"><div style="position:absolute;left:-2px;bottom:100%;margin-bottom:3px;display:flex;gap:4px;align-items:center;white-space:nowrap;padding:2px 6px;border-radius:4px;background:{{ i.boxC }};color:#FFFFFF;font-family:'Onest',sans-serif;font-size:11px;font-weight:500">{{ i.t }} · {{ i.name }}</div></sc-if>
+                    </button>
+                  </sc-for>
+                </div>
+                <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)">
+                  <div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:10px;border:2px solid var(--blocker)"></div>блокер</div>
+                  <div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:10px;border:2px solid var(--error)"></div>ошибка</div>
+                  <div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:10px;border:2px solid var(--warn)"></div>предупреждение</div>
+                  <div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:10px;border:2px solid var(--info)"></div>инфо</div>
+                  <div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:10px;border:2px dashed var(--ok)"></div>исправлено</div>
+                  <div style="margin-left:auto">Рамки — в координатах слайда, наведите на пункт списка справа</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ ba }}" hint-placeholder-val="{{ false }}">
+                <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start">
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <div style="font-size:12px;font-weight:600;color:var(--ink-2)">До · {{ auRevPrev }}</div>
+                    <div style="position:relative;box-shadow:0 1px 2px rgba(0,0,0,.08)">
+                      <dc-import name="Slide" kind="{{ cur.k }}" title="{{ cur.t }}" sub="{{ cur.s }}" items="{{ cur.i }}" n="{{ curN }}" hint-size="100%,200px"></dc-import>
+                      <sc-for list="{{ slideIssues }}" as="i"><div style="position:absolute;left:{{ i.box.x }};top:{{ i.box.y }};width:{{ i.box.w }};height:{{ i.box.h }};border:2px solid {{ i.sc }};border-radius:2px"></div></sc-for>
+                    </div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <div style="font-size:12px;font-weight:600;color:var(--ink-2)">После · {{ auRev }} · что изменено</div>
+                    <div style="border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:10px">
+                      <sc-for list="{{ slJournal }}" as="j">
+                        <div style="display:grid;grid-template-columns:18px 1fr;gap:8px;font-size:13px">
+                          <div style="color:{{ j.mc }};font-weight:700">{{ j.mark }}</div>
+                          <div style="display:flex;flex-direction:column;gap:2px"><div>{{ j.act }}</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)">{{ j.rule }} · {{ j.revL }}</div></div>
+                        </div>
+                      </sc-for>
+                      <sc-if value="{{ slNoJournal }}"><div style="font-size:13px;color:var(--ink-3)">На этом слайде ещё ничего не менялось. Выберите проблемы и нажмите «Исправить выбранное».</div></sc-if>
+                      <div style="font-size:12px;color:var(--ink-3);border-top:1px solid var(--line);padding-top:8px">Картинка «после» появится, когда сервис научится перерисовывать PDF после правок. Сейчас — точный список действий над PPTX.</div>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+            <aside aria-label="Проблемы" style="min-height:0;display:flex;flex-direction:column;border-left:1px solid var(--line);background:var(--surface)">
+              <div style="flex:none;display:flex;gap:18px;padding:0 16px;border-bottom:1px solid var(--line)">
+                <sc-for list="{{ rTabs }}" as="t"><button onClick="{{ t.pick }}" style="white-space:nowrap;flex:none;height:44px;border:none;border-bottom:2px solid {{ t.line }};background:none;cursor:pointer;font-weight:600;font-size:13px;color:{{ t.fg }}">{{ t.l }}</button></sc-for>
+              </div>
+              <sc-if value="{{ rtIssues }}" hint-placeholder-val="{{ true }}">
+                <div style="flex:none;padding:10px 16px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--line)">
+                  <div style="display:flex;gap:2px;padding:2px;border-radius:7px;background:var(--sunken)"><sc-for list="{{ fTabs }}" as="t"><button onClick="{{ t.pick }}" style="flex:1;height:26px;border:none;border-radius:5px;background:{{ t.bg }};color:{{ t.fg }};cursor:pointer;font-size:12px">{{ t.l }}</button></sc-for></div>
+                  <div style="display:flex;gap:2px;flex-wrap:wrap"><sc-for list="{{ fSevTabs }}" as="t"><button onClick="{{ t.pick }}" style="white-space:nowrap;flex:none;height:24px;padding:0 8px;border:1px solid var(--line);border-radius:5px;background:{{ t.bg }};color:{{ t.fg }};cursor:pointer;font-size:11px">{{ t.l }}</button></sc-for></div>
+                  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                    <sc-for list="{{ groupTabs }}" as="t"><button onClick="{{ t.pick }}" style="white-space:nowrap;flex:none;height:24px;padding:0 8px;border:1px solid var(--line);border-radius:5px;background:{{ t.bg }};color:{{ t.fg }};cursor:pointer;font-size:11px">{{ t.l }}</button></sc-for>
+                    <div style="width:1px;height:16px;background:var(--line)"></div>
+                    <sc-for list="{{ fStatusTabs }}" as="t"><button onClick="{{ t.pick }}" style="white-space:nowrap;flex:none;height:24px;padding:0 8px;border:1px solid var(--line);border-radius:5px;background:{{ t.bg }};color:{{ t.fg }};cursor:pointer;font-size:11px">{{ t.l }}</button></sc-for>
+                    <button onClick="{{ toggleFix }}" role="checkbox" aria-checked="{{ fFix }}" style="display:flex;align-items:center;gap:5px;height:24px;border:none;background:none;cursor:pointer;font-size:11px;color:var(--ink-2)"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid var(--ink-2);background:{{ fFixBg }};color:var(--inv);font-size:10px;display:flex;align-items:center;justify-content:center">{{ fFixMark }}</div>только исправимые</button>
+                  </div>
+                </div>
+                <div style="flex:1;min-height:0;overflow:auto;padding:10px 12px 12px;display:flex;flex-direction:column;gap:14px">
+                  <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+                    <div style="display:flex;flex-direction:column;gap:6px">
+                      <div style="font-size:11px;font-weight:600;color:var(--ink-3);padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ g.l }}</div>
+                      <sc-for list="{{ g.items }}" as="i">
+                        <div onClick="{{ i.pick }}" onMouseEnter="{{ i.enter }}" onMouseLeave="{{ i.leave }}" style="border:1px solid {{ i.cardLine }};border-radius:10px;background:{{ i.cardBg }};padding:10px 12px;display:flex;flex-direction:column;gap:8px;cursor:pointer">
+                          <div style="display:flex;align-items:center;gap:7px">
+                            <sc-if value="{{ i.canCheck }}"><button onClick="{{ i.toggle }}" role="checkbox" aria-checked="{{ i.checked }}" aria-label="Выбрать для исправления" style="flex:none;width:18px;height:18px;border-radius:4px;border:1.5px solid var(--ink-2);background:{{ i.checkBg }};color:var(--inv);font-size:11px;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center">{{ i.checkMark }}</button></sc-if>
+                            <div style="flex:none;height:20px;padding:0 6px;border-radius:5px;background:{{ i.sbg }};color:{{ i.sc }};font-size:11px;font-weight:600;display:flex;align-items:center">{{ i.sl }}</div>
+                            <sc-if value="{{ i.isD }}"><div title="Детерминированная: правило в коде" style="flex:none;width:20px;height:20px;border-radius:4px;background:var(--ink);color:var(--inv);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center">D</div></sc-if>
+                            <sc-if value="{{ i.isN }}"><div title="Контекстная: проверяет модель" style="flex:none;width:20px;height:20px;border-radius:50%;border:1.5px dashed var(--ink);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center">N</div></sc-if>
+                            <div style="flex:1;min-width:0;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ i.name }}</div>
+                            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)">сл. {{ i.slide }}</div>
+                          </div>
+                          <sc-if value="{{ i.collapsed }}">
+                            <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--ink-2)"><div style="font-family:'JetBrains Mono',monospace">{{ i.m }}</div><div style="color:var(--ink-3)">при норме {{ i.th }}</div><div style="flex:1"></div><div style="font-size:11px;padding:1px 6px;border-radius:5px;background:{{ i.stbg }};color:{{ i.stc }}">{{ i.stl }}</div></div>
+                          </sc-if>
+                          <sc-if value="{{ i.expanded }}">
+                            <div style="display:flex;flex-direction:column;gap:10px">
+                              <div style="font-size:13px">{{ i.msg }}</div>
+                              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;border-radius:8px;overflow:hidden;background:var(--line)">
+                                <div style="background:var(--surface-2);padding:8px 10px;display:flex;flex-direction:column;gap:2px"><div style="font-size:11px;color:var(--ink-3)">Измерено</div><div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:{{ i.sc }};font-weight:500">{{ i.m }}</div></div>
+                                <div style="background:var(--surface-2);padding:8px 10px;display:flex;flex-direction:column;gap:2px"><div style="font-size:11px;color:var(--ink-3)">Порог</div><div style="font-family:'JetBrains Mono',monospace;font-size:13px">{{ i.th }}</div></div>
+                              </div>
+                              <div style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11px;color:var(--ink-3)">
+                                <div style="font-family:'JetBrains Mono',monospace">{{ i.rule }}</div><div>{{ i.cat }}</div>
+                                <sc-if value="{{ i.hasEv }}"><div>{{ i.ev }}</div></sc-if>
+                              </div>
+                              <sc-if value="{{ i.hasConf }}">
+                                <div style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-size:12px"><div style="color:var(--ink-2)">Уверенность модели</div><div style="height:4px;border-radius:2px;background:var(--sunken)"><div style="width:{{ i.confW }};height:100%;border-radius:2px;background:var(--ink)"></div></div><div style="font-family:'JetBrains Mono',monospace">{{ i.conf }}</div></div>
+                              </sc-if>
+                              <div style="padding:10px;border-radius:8px;border:1px dashed var(--line-2);display:flex;flex-direction:column;gap:2px"><div style="font-size:11px;color:var(--ink-3)">Что будет сделано</div><div style="font-size:13px">{{ i.fix }}</div></div>
+                              <sc-if value="{{ i.isFailed }}"><div style="padding:10px;border-radius:8px;background:var(--error-bg);font-size:13px"><b style="color:var(--error)">Не удалось исправить.</b> {{ i.failNote }}</div></sc-if>
+                              <sc-if value="{{ i.isRejected }}"><div style="padding:10px;border-radius:8px;background:var(--sunken);font-size:13px">Отклонено: {{ i.rejectNote }}</div></sc-if>
+                              <sc-if value="{{ i.isFixed }}"><div style="padding:10px;border-radius:8px;background:var(--ok-bg);font-size:13px;color:var(--ok);font-weight:500">✓ Исправлено в новой ревизии</div></sc-if>
+                              <sc-if value="{{ i.isOpen }}">
+                                <sc-if value="{{ i.notRejecting }}">
+                                  <div style="display:flex;gap:8px">
+                                    <sc-if value="{{ i.fixable }}"><button onClick="{{ i.fixOne }}" style="white-space:nowrap;flex:none;height:32px;padding:0 12px;border-radius:7px;border:none;background:var(--ink);color:var(--inv);cursor:pointer;font-size:13px;font-weight:500">Исправить</button></sc-if>
+                                    <button onClick="{{ i.startReject }}" style="white-space:nowrap;flex:none;height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:13px">Отклонить…</button>
+                                  </div>
+                                </sc-if>
+                                <sc-if value="{{ i.rejecting }}">
+                                  <div style="display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:8px;background:var(--surface-2)">
+                                    <div style="font-size:12px;font-weight:600">Причина отклонения — обязательно</div>
+                                    <div style="display:flex;gap:4px;flex-wrap:wrap"><sc-for list="{{ rejectReasons }}" as="r"><button onClick="{{ r.pick }}" style="white-space:nowrap;flex:none;height:26px;padding:0 9px;border-radius:6px;border:1px solid var(--line-2);background:{{ r.bg }};color:{{ r.fg }};cursor:pointer;font-size:12px">{{ r.l }}</button></sc-for></div>
+                                    <input value="{{ rejectReason }}" onChange="{{ setRejectReason }}" placeholder="или своими словами" style="height:32px;padding:0 10px;border-radius:6px;border:1px solid var(--line-2);background:var(--surface);font-size:13px">
+                                    <div style="display:flex;gap:6px"><button onClick="{{ confirmReject }}" disabled="{{ noReason }}" style="white-space:nowrap;flex:none;height:30px;padding:0 12px;border-radius:6px;border:none;background:var(--ink);color:var(--inv);cursor:pointer;font-size:12px">Отклонить</button><button onClick="{{ i.cancelReject }}" style="white-space:nowrap;flex:none;height:30px;padding:0 12px;border-radius:6px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:12px">Отмена</button></div>
+                                  </div>
+                                </sc-if>
+                              </sc-if>
+                              <sc-if value="{{ i.isRejected }}"><button onClick="{{ i.reopen }}" style="align-self:flex-start;height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:12px">Вернуть в открытые</button></sc-if>
+                            </div>
+                          </sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ noResults }}"><div style="padding:32px 12px;text-align:center;color:var(--ink-3);font-size:13px">По этим фильтрам проблем нет.</div></sc-if>
+                </div>
+                <div style="flex:none;padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center;background:var(--surface)">
+                  <sc-if value="{{ noSel }}"><button onClick="{{ selectAllFixable }}" style="white-space:nowrap;flex:none;height:40px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:13px">Выбрать все исправимые ({{ fixableCount }})</button></sc-if>
+                  <sc-if value="{{ hasSel }}"><button onClick="{{ clearSel }}" style="white-space:nowrap;flex:none;height:40px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:13px">Снять</button></sc-if>
+                  <button onClick="{{ fixSelected }}" disabled="{{ noSel }}" style="flex:1;height:40px;border-radius:8px;border:none;background:var(--ink);color:var(--inv);cursor:pointer;font-size:13px;font-weight:600;opacity:{{ selOpacity }}">{{ fixBtnLabel }}</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ rtJournal }}" hint-placeholder-val="{{ false }}">
+                <div style="flex:1;min-height:0;overflow:auto;padding:12px 16px;display:flex;flex-direction:column;gap:0">
+                  <sc-if value="{{ noJournal }}"><div style="padding:32px 12px;text-align:center;color:var(--ink-3);font-size:13px">Журнал пуст. Каждое исправление и отклонение попадёт сюда с правилом и ревизией.</div></sc-if>
+                  <sc-for list="{{ journal }}" as="j">
+                    <div style="display:grid;grid-template-columns:18px 1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px">
+                      <div style="color:{{ j.mc }};font-weight:700">{{ j.mark }}</div>
+                      <div style="display:flex;flex-direction:column;gap:2px"><div style="font-weight:500">{{ j.name }} · сл. {{ j.slide }}</div><div style="color:var(--ink-2)">{{ j.act }}</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)">{{ j.rule }}</div></div>
+                      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;padding:1px 6px;border-radius:5px;background:var(--sunken);height:18px">{{ j.revL }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </aside>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ sExport }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:1200px;margin:0 auto;padding:28px 32px 64px;display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+            <div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:6px">
+              <div style="font-size:12px;color:var(--ink-3);font-family:'JetBrains Mono',monospace">ШАГ 7 · ЭКСПОРТ И ПАСПОРТ</div>
+              <h1 style="margin:0;font-size:28px;font-weight:600;letter-spacing:-0.02em">Редактируемый PPTX в стиле шаблона</h1>
+              <div style="color:var(--ink-2)">Сбалансированный вариант · ревизия {{ exportRev }}. Файл собран, повторно открыт и проверен.</div>
+            </div>
+            <button onClick="{{ toAudit }}" style="white-space:nowrap;flex:none;height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer">← К аудиту</button>
+          </div>
+          <section style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;border-radius:14px;overflow:hidden;border:1px solid var(--ink);background:var(--line)">
+            <div style="background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:4px"><div style="font-size:24px;font-weight:600;color:var(--ok)">✓</div><div style="font-size:13px;font-weight:600">Файл повторно открыт</div><div style="font-size:12px;color:var(--ink-3)">round-trip без потерь</div></div>
+            <div style="background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:4px"><div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:500">0</div><div style="font-size:13px;font-weight:600">ошибок OOXML</div><div style="font-size:12px;color:var(--ink-3)">валидация схемы</div></div>
+            <div style="background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:4px"><div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:500">100%</div><div style="font-size:13px;font-weight:600">нативного текста</div><div style="font-size:12px;color:var(--ink-3)">правится в PowerPoint</div></div>
+            <div style="background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:4px"><div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:500">0</div><div style="font-size:13px;font-weight:600">слайдов-картинок</div><div style="font-size:12px;color:var(--ink-3)">графики и таблицы — объекты</div></div>
+            <div style="background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:4px"><div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:500">5/5</div><div style="font-size:13px;font-weight:600">редактируемость PEI</div><div style="font-size:12px;color:var(--ink-3)">всё нативное</div></div>
+          </section>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:20px;align-items:start">
+            <section style="display:flex;flex-direction:column;gap:10px">
+              <h2 style="margin:0;font-size:16px;font-weight:600">Файлы</h2>
+              <sc-for list="{{ files }}" as="f" hint-placeholder-count="4">
+                <div style="border:1px solid {{ f.line }};border-radius:12px;background:var(--surface);padding:14px 16px;display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:14px;align-items:center;opacity:{{ f.op }}">
+                  <div style="width:48px;height:48px;border-radius:8px;background:var(--sunken);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500">{{ f.f }}</div>
+                  <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+                    <div style="display:flex;gap:8px;align-items:center"><div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.n }}</div><sc-if value="{{ f.hasTag }}"><div style="flex:none;font-size:11px;padding:1px 7px;border-radius:10px;background:{{ f.tagBg }};color:{{ f.tagC }};font-weight:500">{{ f.tag }}</div></sc-if></div>
+                    <div style="font-size:12px;color:var(--ink-2)">{{ f.note }}</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)">{{ f.size }} · {{ f.sha }}</div>
+                  </div>
+                  <sc-if value="{{ f.ready }}"><button onClick="{{ f.dl }}" style="white-space:nowrap;flex:none;height:36px;padding:0 14px;border-radius:8px;border:none;background:var(--ink);color:var(--inv);cursor:pointer;font-size:13px">Скачать</button></sc-if>
+                  <sc-if value="{{ f.soon }}"><div style="font-size:12px;color:var(--ink-3)">в разработке</div></sc-if>
+                </div>
+              </sc-for>
+              <div style="border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+                <div style="font-size:13px;font-weight:600">Воспроизвести прогон</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;padding:10px;border-radius:8px;background:var(--sunken);color:var(--ink-2);word-break:break-all">deckdna run --template tpl_7f3a --brief brief_12c0 --variant balanced --skill 1.4.2 --prompts 2026.09.3 --seed 4172</div>
+                <button onClick="{{ copyCmd }}" style="align-self:flex-start;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:13px">{{ copyLabel }}</button>
+              </div>
+            </section>
+            <section style="border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:22px;display:flex;flex-direction:column;gap:20px">
+              <div style="display:flex;align-items:baseline;gap:10px"><h2 style="margin:0;font-size:18px;font-weight:600">Паспорт качества</h2><div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3)">passport {{ exportRev }} · 25.09.2026 14:31</div></div>
+              <div style="display:grid;grid-template-columns:28px 1fr;gap:12px">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:2px">01</div>
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="font-weight:600">В стиле шаблона</div>
+                  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+                    <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:12px;color:var(--ink-3)">Палитра</div><div style="font-family:'JetBrains Mono',monospace;font-size:18px">0.97</div><div style="height:4px;border-radius:2px;background:var(--sunken)"><div style="width:97%;height:100%;background:var(--ink);border-radius:2px"></div></div></div>
+                    <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:12px;color:var(--ink-3)">Шрифты</div><div style="font-family:'JetBrains Mono',monospace;font-size:18px">1.00</div><div style="height:4px;border-radius:2px;background:var(--sunken)"><div style="width:100%;height:100%;background:var(--ink);border-radius:2px"></div></div></div>
+                    <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:12px;color:var(--ink-3)">Макеты</div><div style="font-family:'JetBrains Mono',monospace;font-size:18px">0.92</div><div style="height:4px;border-radius:2px;background:var(--sunken)"><div style="width:92%;height:100%;background:var(--ink);border-radius:2px"></div></div></div>
+                    <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:12px;color:var(--ink-3)">Якоря</div><div style="font-family:'JetBrains Mono',monospace;font-size:18px">0.83</div><div style="height:4px;border-radius:2px;background:var(--sunken)"><div style="width:83%;height:100%;background:var(--ink);border-radius:2px"></div></div></div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:28px 1fr;gap:12px">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:2px">02</div>
+                <div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:600">По источникам</div>
+                  <div style="font-size:13px;color:var(--ink-2)"><b style="color:var(--ink)">31 из 33</b> утверждений со ссылкой на фрагмент контента · <b style="color:var(--ink)">9 из 9</b> чисел сверены с брифом · 2 утверждения без источника — служебные (титул, финал).</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:28px 1fr;gap:12px">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:2px">03</div>
+                <div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:600">Читаемо</div>
+                  <div style="font-size:13px;color:var(--ink-2)">0 провалов контраста · 0 переполнений · средняя заполненность 54% (норма 25–75%).</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:28px 1fr;gap:12px">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:2px">04</div>
+                <div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:baseline;gap:8px"><div style="font-weight:600">Быстро</div><div style="font-family:'JetBrains Mono',monospace;font-size:13px">{{ timeTotal }} из 5:00</div><div style="font-size:12px;color:var(--ink-3)">· 48 200 токенов · 27 вызовов модели</div></div>
+                  <div style="display:flex;height:14px;border-radius:4px;background:var(--sunken);overflow:hidden"><sc-for list="{{ stageBars }}" as="b"><div title="{{ b.l }} · {{ b.sec }}" style="width:{{ b.w }};background:{{ b.c }};border-right:1px solid var(--surface)"></div></sc-for></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11px;color:var(--ink-3)"><sc-for list="{{ stageBars }}" as="b"><div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:2px;background:{{ b.c }}"></div>{{ b.l }} <span style="font-family:'JetBrains Mono',monospace">{{ b.sec }}</span></div></sc-for></div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:28px 1fr;gap:12px">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:2px">05</div>
+                <div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:600">Где система упростила</div>
+                  <div style="display:flex;flex-direction:column;gap:4px;font-size:13px">
+                    <div style="display:flex;gap:8px"><div style="color:var(--warn)">●</div><div>Слайд 09: наложение подписей не исправлено автоматически — отмечено для правки вручную.</div></div>
+                    <div style="display:flex;gap:8px"><div style="color:var(--warn)">●</div><div>Шрифт Play не встроен в файл: на машине без него PowerPoint подставит замену.</div></div>
+                    <div style="display:flex;gap:8px"><div style="color:var(--ink-3)">●</div><div>Слайд 11: предупреждение отклонено — «Так задумано: цитата закрывает историю».</div></div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:28px 1fr;gap:12px">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-3);padding-top:2px">06</div>
+                <div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:600">Происхождение</div>
+                  <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 16px;font-size:12px">
+                    <div style="color:var(--ink-3)">Скилл</div><div style="font-family:'JetBrains Mono',monospace">deck-compiler 1.4.2 <span style="color:var(--info)">· было 1.4.1 — изменены правила плотности</span></div>
+                    <div style="color:var(--ink-3)">Промпты</div><div style="font-family:'JetBrains Mono',monospace">2026.09.3 · plan · title-claim · rewrite</div>
+                    <div style="color:var(--ink-3)">Модели</div><div style="font-family:'JetBrains Mono',monospace">gpt-oss-120b · qwen2.5-vl-72b</div>
+                    <div style="color:var(--ink-3)">Конфиг аудита</div><div style="font-family:'JetBrains Mono',monospace">rules 24 · llm-checks 11 · sha 5e19c2</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+  <sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDrawer }}" style="position:fixed;inset:0;background:rgba(10,10,12,0.32);z-index:40"></div>
+    <aside role="dialog" aria-modal="true" style="position:fixed;top:0;right:0;bottom:0;width:460px;max-width:100%;background:var(--surface);border-left:1px solid var(--line);z-index:41;display:flex;flex-direction:column;animation:ddfade .2s ease-out">
+      <sc-if value="{{ drawerSettings }}">
+        <div style="flex:none;display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)"><h2 style="margin:0;font-size:16px;font-weight:600;flex:1">Провайдер моделей</h2><button onClick="{{ closeDrawer }}" aria-label="Закрыть" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer">×</button></div>
+        <div style="flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:16px">
+          <label style="display:flex;flex-direction:column;gap:6px"><div style="font-size:13px;font-weight:500">Адрес API</div><input value="https://llm.internal.example/v1" style="height:40px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);font-family:'JetBrains Mono',monospace;font-size:13px"></label>
+          <label style="display:flex;flex-direction:column;gap:6px"><div style="font-size:13px;font-weight:500">Модель для текста</div><input value="gpt-oss-120b" style="height:40px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);font-family:'JetBrains Mono',monospace;font-size:13px"></label>
+          <label style="display:flex;flex-direction:column;gap:6px"><div style="font-size:13px;font-weight:500">Модель для картинок слайдов</div><input value="qwen2.5-vl-72b" style="height:40px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);font-family:'JetBrains Mono',monospace;font-size:13px"></label>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="font-size:13px;font-weight:500">Токен</div>
+            <sc-if value="{{ tokenSaved }}"><div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 6px 0 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2)"><div style="flex:1;font-size:13px;color:var(--ink-2)">Сохранён · не показывается</div><button onClick="{{ editToken }}" style="white-space:nowrap;flex:none;height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:12px">Заменить</button></div></sc-if>
+            <sc-if value="{{ tokenEdit }}"><div style="display:flex;gap:8px"><input type="password" placeholder="Вставьте новый токен" style="flex:1;height:40px;padding:0 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface)"><button onClick="{{ saveToken }}" style="white-space:nowrap;flex:none;height:40px;padding:0 14px;border-radius:8px;border:none;background:var(--ink);color:var(--inv);cursor:pointer">Сохранить</button></div></sc-if>
+          </div>
+          <button onClick="{{ checkConn }}" style="align-self:flex-start;height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer">{{ checkLabel }}</button>
+          <sc-if value="{{ checked }}">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:13px;font-weight:600">Проверка возможностей</div>
+              <sc-for list="{{ caps }}" as="c">
+                <div style="display:grid;grid-template-columns:44px 1fr;gap:10px;align-items:start;padding:10px;border-radius:8px;border:1px solid var(--line)">
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;text-align:center;padding:2px 0;border-radius:5px;background:{{ c.bg }};color:{{ c.c }}">{{ c.st }}</div>
+                  <div style="display:flex;flex-direction:column;gap:2px"><div style="font-size:13px;font-weight:500">{{ c.l }}</div><div style="font-size:12px;color:var(--ink-2)">{{ c.note }}</div></div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ drawerAbout }}">
+        <div style="flex:none;display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)"><h2 style="margin:0;font-size:16px;font-weight:600;flex:1">О системе</h2><button onClick="{{ closeDrawer }}" aria-label="Закрыть" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer">×</button></div>
+        <div style="flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px">
+            <div style="color:var(--ink-3)">Интерфейс</div><div style="font-family:'JetBrains Mono',monospace">0.9.0</div>
+            <div style="color:var(--ink-3)">Сервис</div><div style="font-family:'JetBrains Mono',monospace">deckdna-api 0.7.3</div>
+            <div style="color:var(--ink-3)">Скилл</div><div style="font-family:'JetBrains Mono',monospace">deck-compiler 1.4.2</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:13px;font-weight:600">Возможности сервиса</div>
+            <div style="font-size:12px;color:var(--ink-3)">Интерфейс подстраивается под этот список: чего нет — помечено, а не сломано.</div>
+            <sc-for list="{{ about }}" as="a">
+              <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)">
+                <div style="display:flex;flex-direction:column"><div style="font-size:13px;font-weight:500">{{ a.l }}</div><div style="font-size:12px;color:var(--ink-3)">{{ a.d }}</div></div>
+                <sc-if value="{{ a.on }}"><div style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--ok-bg);color:var(--ok)">есть</div></sc-if>
+                <sc-if value="{{ a.soon }}"><div style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--sunken);color:var(--ink-3)">скоро</div></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </aside>
+  </sc-if>
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;padding:10px 16px;border-radius:10px;background:var(--ink);color:var(--inv);font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2)">{{ toast }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;projects&quot;,&quot;projects-empty&quot;,&quot;template-upload&quot;,&quot;template&quot;,&quot;brief&quot;,&quot;plan&quot;,&quot;plan-after&quot;,&quot;gen&quot;,&quot;gen-error&quot;,&quot;variants&quot;,&quot;variants-compare&quot;,&quot;audit&quot;,&quot;audit-ba&quot;,&quot;audit-fixed&quot;,&quot;export&quot;,&quot;settings&quot;,&quot;about&quot;],&quot;default&quot;:&quot;projects&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;planMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;before&quot;,&quot;after&quot;],&quot;default&quot;:&quot;before&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;genError&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    const preset = p.screen;
+    let saved = {};
+    if (!preset) { try { saved = JSON.parse(localStorage.getItem('deckdna.v1') || '{}'); } catch (e) {} }
+    const base = {
+      screen: 'projects', theme: p.theme || 'light', maxStep: 7, tpl: 'done', upPct: 0,
+      purpose: 'Продукт', slidesN: 12, lang: 'ru', audience: 'Руководство', tone: 'Деловой, спокойный',
+      sections: ['Проблема', 'Решение', 'План пилота'], forbidden: 'Сравнения с конкурентами по цене', contentMode: 'file', twoFiles: true, modelMode: true, showAdv: false,
+      planEdits: {}, planOrder: null, planRemoved: [], planMode: p.planMode || 'before',
+      genStart: 0, genError: !!p.genError, variant: 'balanced', compare: false, cur: 4,
+      statuses: {}, active: 1, hover: 0, rejectFor: 0, rejectReason: '', fixing: false, rev: 1, journal: [], reaudit: 'none', rtab: 'issues',
+      fT: 'all', fSev: 'all', fFix: false, fStatus: 'all', group: 'slide', ba: false,
+      drawer: null, tokenSaved: true, checked: true, checking: false, copied: false, emptyProjects: !!p.emptyProjects, toast: ''
+    };
+    this.state = { ...base, ...saved };
+    if (preset) this.applyPreset(preset);
+  }
+  applyPreset(s) {
+    const st = this.state;
+    const map = { 'projects-empty': 'projects', 'template-upload': 'template', 'plan-after': 'plan', 'gen-error': 'gen', 'variants-compare': 'variants', 'audit-fixed': 'audit', 'audit-ba': 'audit', settings: 'audit', about: 'template' };
+    st.screen = map[s] || s;
+    if (s === 'projects-empty') st.emptyProjects = true;
+    if (s === 'template-upload') { st.tpl = 'uploading'; st.upPct = 64; }
+    if (s === 'plan-after') st.planMode = 'after';
+    if (s === 'gen' || s === 'gen-error') { st.genStart = -1; st.genFrozen = 4.4; st.genError = s === 'gen-error'; }
+    if (s === 'variants-compare') st.compare = true;
+    if (s === 'audit-ba') { st.ba = true; st.active = 1; }
+    if (s === 'audit-fixed') {
+      const DD = window.DD; if (DD) this.fixAll(true);
+      st.reaudit = 'done'; st.rtab = 'journal';
+    }
+    if (s === 'settings') st.drawer = 'settings';
+    if (s === 'about') st.drawer = 'about';
+  }
+  componentDidMount() {
+    if (!window.DD) { this.poll = setInterval(() => { if (window.DD) { clearInterval(this.poll); if (this.props.screen === 'audit-fixed') this.fixAll(true); this.forceUpdate(); } }, 50); }
+    this.tick = setInterval(() => { if (this.state.screen === 'gen' && this.state.genStart > 0) this.forceUpdate(); }, 250);
+  }
+  componentWillUnmount() { clearInterval(this.tick); clearInterval(this.poll); clearTimeout(this.upT); }
+  componentDidUpdate(pp) {
+    if (pp.screen !== this.props.screen && this.props.screen) { this.state = { ...this.state, statuses: {}, journal: [], rev: 1, reaudit: 'none', ba: false, compare: false, drawer: null, tpl: 'done', emptyProjects: false, genError: false }; this.applyPreset(this.props.screen); this.forceUpdate(); }
+    if (pp.theme !== this.props.theme && this.props.theme) this.setState({ theme: this.props.theme });
+    if (pp.planMode !== this.props.planMode && this.props.planMode) this.setState({ planMode: this.props.planMode });
+    if (!this.props.screen) {
+      const { drawer, toast, genStart, ...rest } = this.state;
+      try { localStorage.setItem('deckdna.v1', JSON.stringify(rest)); } catch (e) {}
+    }
+  }
+  set(o) { this.setState(o); }
+  go(screen) { this.setState({ screen, drawer: null }); const m = document.querySelector('main'); if (m) m.scrollTop = 0; }
+  flash(t) { this.setState({ toast: t }); clearTimeout(this.tT); this.tT = setTimeout(() => this.setState({ toast: '' }), 2600); }
+  status(id) { return this.state.statuses[id] || 'open'; }
+  fixAll(sync) {
+    const DD = window.DD; const statuses = { ...this.state.statuses }; const journal = [];
+    DD.ISSUES.forEach(i => { if (i.ok && (statuses[i.id] || 'open') !== 'rejected') { statuses[i.id] = i.fail ? 'failed' : 'fixed'; journal.push(this.jEntry(i, 2)); } });
+    statuses[12] = 'rejected';
+    const upd = { statuses, journal, rev: 2, rejectNotes: { 12: 'Намеренно: цитата закрывает историю' } };
+    if (sync) Object.assign(this.state, upd); else this.setState(upd);
+  }
+  jEntry(i, rev) { return { id: i.id, rev, s: i.s, rule: i.rule, name: i.name, act: i.fail ? 'Не удалось: ' + i.fail : i.fix, ok: !i.fail, t: i.t }; }
+  startUpload() {
+    this.setState({ tpl: 'uploading', upPct: 0 });
+    const step = () => {
+      const p = Math.min(100, this.state.upPct + 9);
+      if (p < 100) { this.setState({ upPct: p }); this.upT = setTimeout(step, 110); }
+      else { this.setState({ upPct: 100, tpl: 'analyzing' }); this.upT = setTimeout(() => this.setState({ tpl: 'done', maxStep: Math.max(this.state.maxStep, 1) }), 1800); }
+    };
+    this.upT = setTimeout(step, 120);
+  }
+  startGen() { this.setState({ screen: 'gen', genStart: Date.now(), genFrozen: 0, genError: this.props.genError || false, maxStep: Math.max(this.state.maxStep, 3) }); }
+  planList() {
+    const DD = window.DD; const s = this.state;
+    const base = DD.B.map((x, i) => ({ ...x, key: i }));
+    const order = s.planOrder || base.map(x => x.key);
+    const extra = (s.planExtra || []);
+    const all = [...base, ...extra];
+    const ord = [...order, ...extra.map(e => e.key).filter(k => !order.includes(k))];
+    return ord.filter(k => !s.planRemoved.includes(k)).map(k => all.find(x => x.key === k)).filter(Boolean);
+  }
+  renderVals() {
+    const DD = window.DD; const s = this.state;
+    const sc = s.screen;
+    const ready = !!DD;
+    const inProject = sc !== 'projects';
+    const v = {
+      minH: this.props.screen ? '0' : '100vh', theme: s.theme, themeLabel: s.theme === 'dark' ? 'Светлая тема' : 'Тёмная тема', inProject, ready,
+      toggleTheme: () => this.set({ theme: s.theme === 'dark' ? 'light' : 'dark' }),
+      goProjects: () => this.go('projects'), openSettings: () => this.set({ drawer: 'settings' }), openAbout: () => this.set({ drawer: 'about' }),
+      closeDrawer: () => this.set({ drawer: null }),
+      sProjects: sc === 'projects', sTemplate: sc === 'template', sBrief: sc === 'brief', sPlan: sc === 'plan', sGen: sc === 'gen', sVariants: sc === 'variants', sAudit: sc === 'audit', sExport: sc === 'export',
+      drawerSettings: s.drawer === 'settings', drawerAbout: s.drawer === 'about', drawerOpen: !!s.drawer,
+      toast: s.toast, hasToast: !!s.toast,
+      railFull: !(sc === 'audit' || sc === 'variants'), railW: (sc === 'audit' || sc === 'variants') ? '64px' : '232px'
+    };
+    if (!ready) return { ...v, steps: [], proof: [], run: {} };
+    const issues = DD.ISSUES;
+    const stOf = id => s.statuses[id] || 'open';
+    const openCrit = issues.filter(i => (i.sev === 'blocker' || i.sev === 'error') && ['open', 'selected'].includes(stOf(i.id))).length;
+    const allCritOk = openCrit === 0 && s.rev > 1;
+    const runs = {
+      template: ['Шаблон разобран', 'var(--ok)', 'var(--ok-bg)'], brief: ['Черновик брифа', 'var(--ink-2)', 'var(--sunken)'], plan: ['Ждёт решения: план', 'var(--warn)', 'var(--warn-bg)'],
+      gen: [s.genError ? 'Ошибка генерации' : 'Идёт генерация', s.genError ? 'var(--error)' : 'var(--info)', s.genError ? 'var(--error-bg)' : 'var(--info-bg)'],
+      variants: ['Готово · 3 варианта', 'var(--ok)', 'var(--ok-bg)'],
+      audit: allCritOk && s.reaudit === 'done' ? ['Повторный аудит пройден', 'var(--ok)', 'var(--ok-bg)'] : ['Ждёт решения: ' + openCrit + ' критич.', 'var(--warn)', 'var(--warn-bg)'],
+      export: ['Готово к экспорту', 'var(--ok)', 'var(--ok-bg)']
+    };
+    const r = runs[sc] || runs.template; v.run = { l: r[0], c: r[1], bg: r[2] };
+    const stepDefs = [['template', 'Шаблон', '146 правил · 39 макетов'], ['brief', 'Бриф и контент', 'продукт · 12 слайдов'], ['plan', 'План', s.planMode === 'after' ? 'после генерации (v1)' : 'подтвердить до вёрстки'], ['gen', 'Генерация', 'бюджет 5:00'], ['variants', 'Три варианта', '16 · 22 · 20 проблем'], ['audit', 'Аудит и правки', s.rev > 1 ? 'ревизия r' + s.rev : '22 проблемы · 20 исправимы'], ['export', 'Экспорт', 'PPTX · PDF · паспорт']];
+    const idx = stepDefs.findIndex(d => d[0] === sc);
+    v.steps = stepDefs.map((d, i) => {
+      const cur = i === idx, done = i < idx || (i <= s.maxStep && i !== idx && i < s.maxStep), locked = i > s.maxStep;
+      return { label: d[1], meta: d[2], mark: done && !cur ? '✓' : String(i + 1), go: () => !locked && this.go(d[0]), locked, aria: cur ? 'step' : undefined,
+        bg: cur ? 'var(--sunken)' : 'transparent', fg: locked ? 'var(--ink-3)' : 'var(--ink)', cursor: locked ? 'not-allowed' : 'pointer',
+        dotBg: cur ? 'var(--ink)' : done ? 'var(--surface)' : 'transparent', dotFg: cur ? 'var(--inv)' : done ? 'var(--ok)' : 'var(--ink-3)', dotLine: cur ? 'var(--ink)' : done ? 'var(--ok)' : 'var(--line-2)' };
+    });
+        v.proof = ['Неизвестный PPTX', 'Извлечённые правила', 'План', 'Три стратегии', 'Подсвеченные нарушения', 'Выбранные исправления', 'Нативный PPTX', 'Повторный аудит: 0 критичных'].map((l, i) => {
+      const d = [true, s.tpl === 'done', s.maxStep >= 3, s.maxStep >= 5, s.maxStep >= 5, s.rev > 1, s.maxStep >= 7, s.reaudit === 'done' && openCrit === 0][i];
+      return { l, fg: d ? 'var(--ink)' : 'var(--ink-3)', dot: d ? 'var(--ok)' : 'transparent', line: d ? 'var(--ok)' : 'var(--line-2)' };
+    });
+    Object.assign(v, this.valsProjects(DD), this.valsTemplate(DD), this.valsBrief(DD), this.valsPlan(DD), this.valsGen(DD), this.valsVariants(DD), this.valsAudit(DD, stOf, openCrit, allCritOk), this.valsExport(DD), this.valsDrawers(DD));
+    return v;
+  }
+  valsProjects(DD) {
+    const s = this.state;
+    return {
+      projects: DD.PROJECTS.map(p => ({ ...p, sl: DD.PSTATUS[p.st][0], sc: DD.PSTATUS[p.st][1], sbg: DD.PSTATUS[p.st][2], open: () => this.go(p.st === 'running' ? 'gen' : 'audit') })),
+      hasProjects: !s.emptyProjects, noProjects: s.emptyProjects,
+      newProject: () => this.setState({ screen: 'template', tpl: 'upload', maxStep: 0, statuses: {}, journal: [], rev: 1, reaudit: 'none' }),
+      openDemo: () => this.setState({ screen: 'template', tpl: 'done', maxStep: 7 }),
+      toggleEmpty: () => this.set({ emptyProjects: !s.emptyProjects })
+    };
+  }
+  valsTemplate(DD) {
+    const s = this.state;
+    const usedTotal = DD.USED.reduce((a, u) => a + u[1], 0);
+    const sizeMax = Math.max(...DD.SIZES.map(x => x[1]));
+    return {
+      tplUpload: s.tpl === 'upload', tplUploading: s.tpl === 'uploading', tplAnalyzing: s.tpl === 'analyzing', tplDone: s.tpl === 'done', tplBusy: s.tpl === 'uploading' || s.tpl === 'analyzing',
+      upPct: s.upPct + '%', upMb: (20.4 * s.upPct / 100).toFixed(1), upPctN: s.upPct,
+      startUpload: () => this.startUpload(), replaceTpl: () => this.set({ tpl: 'upload' }),
+      toBrief: () => { this.setState({ maxStep: Math.max(s.maxStep, 1) }); this.go('brief'); },
+      conf: DD.CONF.map(c => ({ l: c[0], v: c[1].toFixed(2), w: Math.round(c[1] * 100) + '%', low: c[1] < .75, c: c[1] < .75 ? 'var(--warn)' : 'var(--ink)' })),
+      palette: DD.PALETTE.map(p => ({ slot: p[0], hex: '#' + p[1], line: ['FAFCFF', 'FEFFFF', 'FFFFFF', 'F7FAFE'].includes(p[1]) ? 'var(--line-2)' : 'transparent' })),
+      used: DD.USED.map(u => ({ hex: '#' + u[0], n: u[1], pct: Math.round(u[1] / usedTotal * 100) + '%', w: (u[1] / usedTotal * 100) + '%', tag: u[2], off: u[2] === 'вне темы', near: u[2].startsWith('≈'), tagC: u[2] === 'вне темы' ? 'var(--warn)' : u[2].startsWith('≈') ? 'var(--info)' : 'var(--ink-3)' })),
+      sizes: DD.SIZES.map(x => ({ pt: x[0], n: x[1], role: x[2], w: Math.max(3, x[1] / sizeMax * 100) + '%', auto: x[2] === 'автоподбор', bar: x[2] === 'автоподбор' ? 'var(--line-2)' : 'var(--ink)', fg: x[2] === 'автоподбор' ? 'var(--ink-3)' : 'var(--ink)' })),
+      layouts: DD.LAYOUTS.map(l => ({ ...l, boxes: l.ph.map(b => ({ x: b[0] * 100 + '%', y: b[1] * 100 + '%', w: b[2] * 100 + '%', h: b[3] * 100 + '%', l: b[4], title: b[4] === 'title' })), empty: !l.ph.length, hasNote: !!l.note, big: l.c > 20 })),
+      roles: DD.ROLES.map(x => ({ l: x[0], n: x[1], v: x[2].toFixed(2), w: x[2] * 100 + '%', why: x[3], c: x[2] < .7 ? 'var(--warn)' : 'var(--ink)' }))
+    };
+  }
+  valsBrief(DD) {
+    const s = this.state;
+    const P = [['Фича', 'отдельная функция продукта'], ['Продукт', 'приложение или услуга'], ['Проект', 'работа с результатами и отчётом'], ['Инициатива', 'предлагаемая деятельность'], ['Другое', 'опишу сам']];
+    return {
+      purposes: P.map(p => ({ l: p[0], hint: p[1], on: s.purpose === p[0], pick: () => this.set({ purpose: p[0] }), bg: s.purpose === p[0] ? 'var(--ink)' : 'var(--surface)', fg: s.purpose === p[0] ? 'var(--inv)' : 'var(--ink)', hc: s.purpose === p[0] ? 'var(--inv)' : 'var(--ink-3)', line: s.purpose === p[0] ? 'var(--ink)' : 'var(--line-2)' })),
+      slidesN: s.slidesN, incSlides: () => this.set({ slidesN: Math.min(40, s.slidesN + 1) }), decSlides: () => this.set({ slidesN: Math.max(3, s.slidesN - 1) }),
+      langs: ['ru', 'en'].map(l => ({ l: l === 'ru' ? 'Русский' : 'English', pick: () => this.set({ lang: l }), bg: s.lang === l ? 'var(--surface)' : 'transparent', sh: s.lang === l ? '0 0 0 1px var(--line-2)' : 'none' })),
+      audience: s.audience, setAudience: e => this.set({ audience: e.target.value }), tone: s.tone, setTone: e => this.set({ tone: e.target.value }),
+      forbidden: s.forbidden, setForbidden: e => this.set({ forbidden: e.target.value }),
+      sectionTags: s.sections.map(t => ({ t, rm: () => this.set({ sections: s.sections.filter(x => x !== t) }) })),
+      addSection: e => { if (e.key === 'Enter' && e.target.value.trim()) { this.set({ sections: [...s.sections, e.target.value.trim()] }); e.target.value = ''; } },
+      cmFile: s.contentMode === 'file', cmText: s.contentMode === 'text',
+      cmTabs: [['file', 'Файл'], ['text', 'Вставить текст']].map(c => ({ l: c[1], pick: () => this.set({ contentMode: c[0] }), bg: s.contentMode === c[0] ? 'var(--surface)' : 'transparent', sh: s.contentMode === c[0] ? '0 0 0 1px var(--line-2)' : 'none' })),
+      twoFiles: s.twoFiles, dropSecond: () => this.set({ twoFiles: false }),
+      modelMode: s.modelMode, modelLabel: s.modelMode ? 'С языковой моделью · 1–5 мин' : 'Быстрый детерминированный · секунды',
+      toggleModel: () => this.set({ modelMode: !s.modelMode }), modelKnobX: s.modelMode ? '18px' : '2px', modelTrack: s.modelMode ? 'var(--ink)' : 'var(--line-2)',
+      showAdv: s.showAdv, toggleAdv: () => this.set({ showAdv: !s.showAdv }), advArrow: s.showAdv ? '−' : '+',
+      briefCta: s.planMode === 'after' ? 'Сгенерировать 3 варианта' : 'Составить план',
+      briefGo: () => { this.setState({ maxStep: Math.max(s.maxStep, 2) }); if (s.planMode === 'after') this.startGen(); else this.go('plan'); }
+    };
+  }
+  valsPlan(DD) {
+    const s = this.state;
+    const list = this.planList();
+    const move = (k, d) => { const ord = list.map(x => x.key); const i = ord.indexOf(k); const j = i + d; if (j < 0 || j >= ord.length) return; [ord[i], ord[j]] = [ord[j], ord[i]]; this.set({ planOrder: ord }); };
+    return {
+      planAfter: s.planMode === 'after', planBefore: s.planMode !== 'after',
+      planCount: list.length,
+      plan: list.map((x, i) => ({
+        n: String(i + 1).padStart(2, '0'), p: x.p || 'Контент', t: s.planEdits[x.key] ?? x.t, v: x.v || '', idea: x.idea || ideaOf(x), src: (x.src || []).map(t => ({ t })), noSrc: !(x.src || []).length,
+        setT: e => this.set({ planEdits: { ...s.planEdits, [x.key]: e.target.value } }),
+        up: () => move(x.key, -1), down: () => move(x.key, 1), rm: () => this.set({ planRemoved: [...s.planRemoved, x.key] }),
+        edited: s.planEdits[x.key] !== undefined && s.planEdits[x.key] !== x.t, isFirst: i === 0, isLast: i === list.length - 1
+      })),
+      addPlan: () => { const key = 100 + (s.planExtra || []).length; this.set({ planExtra: [...(s.planExtra || []), { key, k: 'bullets', p: 'Контент', t: 'Новый слайд: сформулируйте вывод', v: 'Список', src: [] }] }); },
+      resetPlan: () => this.set({ planEdits: {}, planOrder: null, planRemoved: [], planExtra: [] }),
+      planWhy: DD.PLAN_WHY.map(w => ({ l: w[0], n: w[1], d: w[2], f: w[1] })),
+      planGo: () => this.startGen(),
+      planRebuild: () => { this.startGen(); }
+    };
+    function ideaOf(x) { return ({ 'Титул': 'Кто мы и что защищаем', 'Повестка': 'Пять шагов истории', 'Проблема': 'Ручная вёрстка стоит часов каждую неделю', 'Процесс': 'Пять шагов конвейера', 'Решение': 'Шаблон становится исполняемыми правилами', 'Сравнение': 'Стратегии различаются осознанно', 'Данные': 'Выигрыш во времени на порядок', 'Таймлайн': 'Пилот укладывается в полтора месяца', 'Выгоды': 'Качество доказано проверками', 'Цитата': 'Голос пользователя пилота', 'Финал': 'Переход к обсуждению' })[x.p] || 'Ключевая мысль слайда'; }
+  }
+  valsGen(DD) {
+    const s = this.state;
+    const el = s.genFrozen ? s.genFrozen : s.genStart > 0 ? (Date.now() - s.genStart) / 1000 : 0;
+    const fin = [3.2, 5.4, 7.6];
+    const fmt = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+    const all = el >= fin[2] && !s.genError;
+    return {
+      genTime: fmt(el), genBudgetW: Math.min(100, el / 300 * 100) + '%', genDone: all, genRunning: !all,
+      genVariants: DD.VARIANTS.map((vr, i) => {
+        let st = el < 0.6 * (i + 1) ? 'queued' : el < fin[i] ? 'running' : 'done';
+        if (s.genError && i === 2) st = el < 0.6 * 3 ? 'queued' : 'error';
+        if (s.genError && i === 1 && st === 'done') st = 'running';
+        return { name: vr.name, en: vr.en, axis: vr.axis, queued: st === 'queued', running: st === 'running', done: st === 'done', error: st === 'error',
+          stl: { queued: 'В очереди', running: 'Идёт', done: 'Готово · ' + fmt(fin[i]), error: 'Ошибка' }[st], stc: { queued: 'var(--ink-3)', running: 'var(--info)', done: 'var(--ok)', error: 'var(--error)' }[st],
+          thumbs: vr.slides.slice(0, 3).map((x, j) => ({ ...x, n: String(j + 1) })), line: st === 'done' ? 'var(--line-2)' : st === 'error' ? 'var(--error)' : 'var(--line)' };
+      }),
+      stages: DD.STAGES.map((x, i) => ({ n: i + 1, l: x[0] })),
+      cancelGen: () => { this.setState({ genStart: 0, genFrozen: 0 }); this.go('brief'); this.flash('Генерация отменена. Бриф сохранён.'); },
+      retryGen: () => this.setState({ genError: false, genStart: Date.now() - 5600, genFrozen: 0 }),
+      toVariants: () => { this.setState({ maxStep: Math.max(s.maxStep, 5) }); this.go('variants'); },
+      toBriefBack: () => this.go('brief'),
+      genErrorFlag: s.genError
+    };
+  }
+  valsVariants(DD) {
+    const s = this.state;
+    const sevL = ['blocker', 'error', 'warning', 'info'];
+    const cards = DD.VARIANTS.map(vr => ({
+      ...vr, isRec: !!vr.rec, pei: vr.pei + '/5', peiLow: vr.pei < 5, peiNote: vr.peiNote || 'всё нативное', style: vr.style.toFixed(2), styleW: vr.style * 100 + '%',
+      sevs: vr.sev.map((n, i) => ({ n, l: DD.SEV[sevL[i]].l, c: DD.SEV[sevL[i]].c, bg: DD.SEV[sevL[i]].bg, zero: n === 0 })),
+      axes: [['Текст', vr.bars[0]], ['Разнообразие макетов', vr.bars[1]], ['Визуализация', vr.bars[2]]].map(a => ({ l: a[0], w: a[1] * 100 + '%' })),
+      thumbs: vr.slides.map((x, j) => ({ ...x, n: String(j + 1), pick: () => { this.setState({ variant: vr.id, cur: j + 1 }); this.go('audit'); } })),
+      line: s.variant === vr.id ? 'var(--ink)' : 'var(--line)',
+      openAudit: () => { this.setState({ variant: vr.id, maxStep: Math.max(s.maxStep, 5) }); this.go('audit'); },
+      download: () => this.flash('PPTX «' + vr.name + '» скачивается · 3.8 МБ')
+    }));
+    const rows = DD.B.map((_, i) => ({ n: String(i + 1).padStart(2, '0'), cells: DD.VARIANTS.map(vr => ({ ...(vr.slides[i] || {}), n: String(i + 1), name: vr.name, pick: () => { this.setState({ variant: vr.id, cur: i + 1 }); this.go('audit'); } })) }));
+    return {
+      vcards: cards, vrows: rows, compare: s.compare, grid: !s.compare,
+      viewTabs: [['grid', 'Карточки'], ['compare', 'Слайд N во всех трёх']].map(t => ({ l: t[1], pick: () => this.set({ compare: t[0] === 'compare' }), bg: (s.compare === (t[0] === 'compare')) ? 'var(--surface)' : 'transparent', sh: (s.compare === (t[0] === 'compare')) ? '0 0 0 1px var(--line-2)' : 'none' })),
+      backToPlan: () => this.go('plan')
+    };
+  }
+  valsAudit(DD, stOf, openCrit, allCritOk) {
+    const s = this.state;
+    const vr = DD.VARIANTS.find(x => x.id === s.variant) || DD.VARIANTS[1];
+    const deck = DD.B;
+    const act = DD.ISSUES.find(i => i.id === s.active);
+    const decor = i => {
+      const st = stOf(i.id), sv = DD.SEV[i.sev], S = DD.STATUS[st];
+      const isAct = s.active === i.id, isHov = s.hover === i.id;
+      return { ...i, sl: sv.l, sc: sv.c, sbg: sv.bg, st, stl: S.l, stc: S.c, stbg: S.bg, cat: DD.CATS[i.cat], slide: String(i.s).padStart(2, '0'),
+        isD: i.t === 'D', isN: i.t === 'N', conf: i.conf ? i.conf.toFixed(2) : '', confW: (i.conf || 0) * 100 + '%', hasConf: !!i.conf,
+        fixable: i.ok, notFixable: !i.ok, isOpen: st === 'open' || st === 'selected', isFixed: st === 'fixed', isFailed: st === 'failed', isRejected: st === 'rejected',
+        checked: st === 'selected', checkBg: st === 'selected' ? 'var(--ink)' : 'var(--surface)', checkMark: st === 'selected' ? '✓' : '',
+        canCheck: i.ok && (st === 'open' || st === 'selected'),
+        expanded: isAct, collapsed: !isAct, rejecting: s.rejectFor === i.id, notRejecting: s.rejectFor !== i.id,
+        rejectNote: (s.rejectNotes || {})[i.id] || '', failNote: i.fail || '', hasEv: !!i.ev,
+        cardLine: isAct ? 'var(--ink)' : isHov ? 'var(--line-2)' : 'var(--line)', cardBg: isAct ? 'var(--surface)' : 'var(--surface)',
+        pick: () => this.setState({ active: i.id, cur: i.s, rejectFor: 0 }),
+        enter: () => this.set({ hover: i.id }), leave: () => this.set({ hover: 0 }),
+        toggle: e => { e && e.stopPropagation(); if (!(i.ok && (st === 'open' || st === 'selected'))) return; this.set({ statuses: { ...s.statuses, [i.id]: st === 'selected' ? 'open' : 'selected' } }); },
+        fixOne: e => { e && e.stopPropagation(); this.setState({ statuses: { ...s.statuses, [i.id]: i.fail ? 'failed' : 'fixed' }, journal: [this.jEntry(i, s.rev + 1), ...s.journal], rev: s.rev + 1, reaudit: 'none' }); this.flash(i.fail ? 'Не удалось исправить: ' + i.name : 'Исправлено: ' + i.name + ' · ревизия r' + (s.rev + 1)); },
+        startReject: e => { e && e.stopPropagation(); this.set({ rejectFor: i.id, rejectReason: '' }); },
+        cancelReject: e => { e && e.stopPropagation(); this.set({ rejectFor: 0 }); },
+        reopen: e => { e && e.stopPropagation(); const n = { ...s.statuses }; delete n[i.id]; this.set({ statuses: n }); },
+        box: { x: i.box[0] * 100 + '%', y: i.box[1] * 100 + '%', w: i.box[2] * 100 + '%', h: i.box[3] * 100 + '%' },
+        boxW: isAct || isHov ? '3px' : '2px', boxC: st === 'fixed' ? 'var(--ok)' : st === 'rejected' ? 'var(--ink-3)' : sv.c, boxStyle: st === 'fixed' || st === 'rejected' ? 'dashed' : 'solid',
+        boxBg: isAct || isHov ? 'color-mix(in oklch, ' + (st === 'fixed' ? 'var(--ok)' : sv.c) + ' 12%, transparent)' : 'transparent', boxZ: isAct ? 3 : 2, tagShow: isAct || isHov
+      };
+    };
+    let list = DD.ISSUES.map(decor);
+    const counts = { all: list.length, D: list.filter(i => i.t === 'D').length, N: list.filter(i => i.t === 'N').length };
+    const sevCounts = ['blocker', 'error', 'warning', 'info'].map(k => ({ k, l: DD.SEV[k].l, c: DD.SEV[k].c, bg: DD.SEV[k].bg, n: list.filter(i => i.sev === k && i.isOpen).length, total: list.filter(i => i.sev === k).length }));
+    let f = list;
+    if (s.fT !== 'all') f = f.filter(i => i.t === s.fT);
+    if (s.fSev !== 'all') f = f.filter(i => i.sev === s.fSev);
+    if (s.fFix) f = f.filter(i => i.ok);
+    if (s.fStatus === 'open') f = f.filter(i => i.isOpen); else if (s.fStatus === 'done') f = f.filter(i => !i.isOpen);
+    f = f.slice().sort((a, b) => DD.SEV[a.sev].o - DD.SEV[b.sev].o || a.s - b.s);
+    let groups;
+    if (s.group === 'slide') { const ks = [...new Set(f.map(i => i.s))].sort((a, b) => a - b); groups = ks.map(k => ({ l: 'Слайд ' + String(k).padStart(2, '0') + ' · ' + (deck[k - 1] ? deck[k - 1].t : ''), items: f.filter(i => i.s === k) })); }
+    else { const ks = Object.keys(DD.CATS).filter(k => f.some(i => i.cat === k)); groups = ks.map(k => ({ l: DD.CATS[k], items: f.filter(i => i.cat === k) })); }
+    const selected = list.filter(i => i.st === 'selected');
+    const fixableOpen = list.filter(i => i.ok && i.isOpen);
+    const slideIssues = list.filter(i => i.s === s.cur);
+    const seg = (key, opts) => opts.map(o => ({ l: o[1], pick: () => this.set({ [key]: o[0] }), bg: s[key] === o[0] ? 'var(--ink)' : 'transparent', fg: s[key] === o[0] ? 'var(--inv)' : 'var(--ink-2)' }));
+    const cs = deck[s.cur - 1] || deck[0];
+    const slJournal = s.journal.filter(j => j.s === s.cur);
+    return {
+      auVariant: vr.name, auRev: 'r' + s.rev, auRevPrev: 'r' + Math.max(1, s.rev - 1),
+      film: deck.map((x, i) => { const iss = list.filter(k => k.s === i + 1 && k.isOpen); const worst = iss.slice().sort((a, b) => DD.SEV[a.sev].o - DD.SEV[b.sev].o)[0];
+        return { ...x, n: String(i + 1), cnt: iss.length, has: iss.length > 0, clean: iss.length === 0, bc: worst ? worst.sc : 'var(--ok)', line: s.cur === i + 1 ? 'var(--ink)' : 'transparent', pick: () => this.set({ cur: i + 1, active: (list.find(k => k.s === i + 1) || {}).id || s.active }) }; }),
+      cur: cs, curN: String(s.cur), curNp: String(s.cur).padStart(2, '0'), curTitle: cs.t, slideIssues, slideIssueCount: slideIssues.filter(i => i.isOpen).length,
+      prevSlide: () => this.set({ cur: Math.max(1, s.cur - 1) }), nextSlide: () => this.set({ cur: Math.min(deck.length, s.cur + 1) }),
+      groups, fCount: f.length, noResults: f.length === 0,
+      fTabs: seg('fT', [['all', 'Все ' + counts.all], ['D', 'D · правило ' + counts.D], ['N', 'N · модель ' + counts.N]]),
+      fSevTabs: seg('fSev', [['all', 'Любая'], ['blocker', 'Блокер'], ['error', 'Ошибка'], ['warning', 'Предупр.'], ['info', 'Инфо']]),
+      fStatusTabs: seg('fStatus', [['all', 'Все статусы'], ['open', 'Открытые'], ['done', 'Решённые']]),
+      groupTabs: seg('group', [['slide', 'По слайдам'], ['rule', 'По правилам']]),
+      fFix: s.fFix, fFixBg: s.fFix ? 'var(--ink)' : 'var(--surface)', fFixMark: s.fFix ? '✓' : '', toggleFix: () => this.set({ fFix: !s.fFix }),
+      sevCounts, openCrit, fixableCount: fixableOpen.length, selCount: selected.length, hasSel: selected.length > 0, noSel: selected.length === 0,
+      selectAllFixable: () => { const n = { ...s.statuses }; fixableOpen.forEach(i => { n[i.id] = 'selected'; }); this.set({ statuses: n }); },
+      clearSel: () => { const n = { ...s.statuses }; selected.forEach(i => { delete n[i.id]; }); this.set({ statuses: n }); },
+      fixSelected: () => {
+        this.setState({ fixing: true });
+        setTimeout(() => { const n = { ...this.state.statuses }; const j = [];
+          DD.ISSUES.forEach(i => { if (n[i.id] === 'selected') { n[i.id] = i.fail ? 'failed' : 'fixed'; j.push(this.jEntry(i, this.state.rev + 1)); } });
+          const fails = j.filter(x => !x.ok).length;
+          this.setState({ statuses: n, journal: [...j, ...this.state.journal], rev: this.state.rev + 1, fixing: false, reaudit: 'none', rtab: 'journal', maxStep: Math.max(this.state.maxStep, 6) });
+          this.flash('Ревизия r' + this.state.rev + ': исправлено ' + (j.length - fails) + (fails ? ', не удалось ' + fails : ''));
+        }, 1300);
+      },
+      fixing: s.fixing, notFixing: !s.fixing, selOpacity: selected.length || s.fixing ? '1' : '0.4', fixBtnLabel: s.fixing ? 'Применяю правки…' : 'Исправить выбранное (' + selected.length + ')',
+      rejectReasons: ['Так задумано', 'Ложное срабатывание', 'Поправлю в PowerPoint'].map(r => ({ l: r, pick: () => this.set({ rejectReason: r }), bg: s.rejectReason === r ? 'var(--ink)' : 'var(--surface)', fg: s.rejectReason === r ? 'var(--inv)' : 'var(--ink)' })),
+      rejectReason: s.rejectReason, setRejectReason: e => this.set({ rejectReason: e.target.value }), noReason: !s.rejectReason.trim(),
+      confirmReject: () => { if (!s.rejectReason.trim()) return; const id = s.rejectFor; this.setState({ statuses: { ...s.statuses, [id]: 'rejected' }, rejectNotes: { ...(s.rejectNotes || {}), [id]: s.rejectReason }, rejectFor: 0, journal: [{ id, rev: s.rev, s: DD.ISSUES.find(i => i.id === id).s, rule: DD.ISSUES.find(i => i.id === id).rule, name: DD.ISSUES.find(i => i.id === id).name, act: 'Отклонено: ' + s.rejectReason, ok: true, rej: true }, ...s.journal] }); },
+      rtIssues: s.rtab === 'issues', rtJournal: s.rtab === 'journal',
+      rTabs: [['issues', 'Проблемы · ' + list.filter(i => i.isOpen).length], ['journal', 'Журнал · ' + s.journal.length]].map(t => ({ l: t[1], pick: () => this.set({ rtab: t[0] }), line: s.rtab === t[0] ? 'var(--ink)' : 'transparent', fg: s.rtab === t[0] ? 'var(--ink)' : 'var(--ink-3)' })),
+      journal: s.journal.map(j => ({ ...j, revL: 'r' + j.rev, slide: String(j.s).padStart(2, '0'), mark: j.rej ? '—' : j.ok ? '✓' : '×', mc: j.rej ? 'var(--ink-3)' : j.ok ? 'var(--ok)' : 'var(--error)' })),
+      noJournal: s.journal.length === 0, hasJournal: s.journal.length > 0,
+      stats: { fixed: list.filter(i => i.isFixed).length, failed: list.filter(i => i.isFailed).length, rejected: list.filter(i => i.isRejected).length, open: list.filter(i => i.isOpen).length },
+      reaudit: () => { this.setState({ reaudit: 'running' }); setTimeout(() => this.setState({ reaudit: 'done' }), 1400); },
+      reRunning: s.reaudit === 'running', reDone: s.reaudit === 'done', reIdle: s.reaudit === 'none',
+      reSuccess: s.reaudit === 'done' && openCrit === 0, rePartial: s.reaudit === 'done' && openCrit > 0,
+      reauditLabel: s.reaudit === 'running' ? 'Идёт повторный аудит…' : 'Повторный аудит',
+      dismissRe: () => this.set({ reaudit: 'none' }),
+      compliance: [['Палитра', .97], ['Шрифты', 1], ['Макеты', .92], ['Якоря', .83]].map(c => ({ l: c[0], v: c[1].toFixed(2), w: c[1] * 100 + '%' })),
+      complianceTotal: '0.93',
+      ba: s.ba, notBa: !s.ba, baTabs: [[false, 'Слайд'], [true, 'До / после']].map(t => ({ l: t[1], pick: () => this.set({ ba: t[0] }), bg: s.ba === t[0] ? 'var(--surface)' : 'transparent', sh: s.ba === t[0] ? '0 0 0 1px var(--line-2)' : 'none' })),
+      slJournal: slJournal.map(j => ({ ...j, mark: j.rej ? '—' : j.ok ? '✓' : '×', mc: j.rej ? 'var(--ink-3)' : j.ok ? 'var(--ok)' : 'var(--error)', revL: 'r' + j.rev })), slHasJournal: slJournal.length > 0, slNoJournal: slJournal.length === 0,
+      runN: () => this.flash('Контекстные проверки уже выполнены: 11 вопросов × 12 слайдов'),
+      toExport: () => { this.setState({ maxStep: 7 }); this.go('export'); }, toVariantsBack: () => this.go('variants')
+    };
+  }
+  valsExport(DD) {
+    const s = this.state;
+    const tot = DD.STAGES.reduce((a, x) => a + x[1], 0);
+    return {
+      files: [
+        { n: 'deckdna_balanced_r' + s.rev + '.pptx', f: 'PPTX', tag: 'Редактируемый', note: 'Всё нативное: текст, таблицы и графики правятся в PowerPoint', size: '3.8 МБ', sha: 'sha256 · 9f2c…41ae', soon: false, ready: true, primary: true },
+        { n: 'deckdna_balanced_r' + s.rev + '.pdf', f: 'PDF', tag: '', note: 'Для рассылки и печати', size: '2.1 МБ', sha: 'sha256 · 03bd…e7c9', soon: false, ready: true },
+        { n: 'deckdna_balanced.html', f: 'HTML', tag: 'Скоро', note: 'Экспорт в разработке на стороне сервиса', size: '—', sha: '—', soon: true, ready: false },
+        { n: 'passport_r' + s.rev + '.json', f: 'JSON', tag: '', note: 'Паспорт качества целиком', size: '14 КБ', sha: 'sha256 · c81a…5d02', soon: false, ready: true }
+      ].map(x => ({ ...x, hasTag: !!x.tag, dl: () => this.flash('Скачивается ' + x.n), tagC: x.soon ? 'var(--ink-3)' : 'var(--ok)', tagBg: x.soon ? 'var(--sunken)' : 'var(--ok-bg)', line: x.primary ? 'var(--ink)' : 'var(--line)', op: x.soon ? '0.7' : '1' })),
+      timeTotal: '1:45', timeW: tot / 300 * 100 + '%',
+      stageBars: DD.STAGES.map((x, i) => ({ l: x[0], sec: x[1] + ' с', w: x[1] / 300 * 100 + '%', c: ['var(--ink)', 'var(--ink-2)', 'var(--ink-3)', 'var(--line-2)'][i % 4] })),
+      copyCmd: () => { try { navigator.clipboard.writeText('deckdna run --template tpl_7f3a --brief brief_12c0 --variant balanced --skill 1.4.2 --prompts 2026.09.3 --seed 4172'); } catch (e) {} this.setState({ copied: true }); setTimeout(() => this.setState({ copied: false }), 1800); },
+      copyLabel: s.copied ? 'Скопировано' : 'Скопировать команду',
+      exportRev: 'r' + s.rev, toAudit: () => this.go('audit')
+    };
+  }
+  valsDrawers(DD) {
+    const s = this.state;
+    return {
+      tokenSaved: s.tokenSaved, tokenEdit: !s.tokenSaved, editToken: () => this.set({ tokenSaved: false }), saveToken: () => this.set({ tokenSaved: true }),
+      checkConn: () => { this.setState({ checking: true, checked: false }); setTimeout(() => this.setState({ checking: false, checked: true }), 1200); },
+      checking: s.checking, checked: s.checked, checkLabel: s.checking ? 'Проверяю…' : 'Проверить подключение',
+      caps: [['Текст (план, правки)', 'ok', 'gpt-oss-120b · 1.2 с'], ['Зрение (N-проверки по картинке)', 'ok', 'qwen2.5-vl-72b · 2.8 с'], ['JSON-режим', 'fail', 'Модель вернула невалидный JSON — включим ремонт ответа'], ['Эмбеддинги', 'skip', 'Не настроены — поиск источников по ключевым словам']].map(c => ({ l: c[0], st: { ok: 'ok', fail: 'fail', skip: 'skip' }[c[1]], note: c[2], c: { ok: 'var(--ok)', fail: 'var(--error)', skip: 'var(--ink-3)' }[c[1]], bg: { ok: 'var(--ok-bg)', fail: 'var(--error-bg)', skip: 'var(--sunken)' }[c[1]] })),
+      about: [
+        ['Форматы шаблона', '.pptx · .potx · прошлые презентации', 'on'], ['Форматы контента', '.md .txt .json .docx .pdf .xlsx · 1 файл за раз', 'on'],
+        ['Детерминированные проверки', '24 правила в 7 группах', 'on'], ['Контекстные проверки', '11 вопросов модели', 'on'], ['Экспорт PPTX / PDF', 'round-trip проверка', 'on'],
+        ['Экспорт HTML', 'в разработке', 'soon'], ['Стриминг прогресса этапов', 'сейчас только статус варианта', 'soon'], ['Рендер PDF после правок', 'после правок показывается журнал', 'soon'], ['План до вёрстки', 'API плана', 'on']
+      ].map(a => ({ l: a[0], d: a[1], on: a[2] === 'on', soon: a[2] === 'soon' }))
+    };
+  }
+}
+</script>
+</body>
+</html>

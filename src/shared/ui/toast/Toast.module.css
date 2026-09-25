@@ -1,0 +1,17 @@
+.region {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  z-index: 50;
+  transform: translateX(-50%);
+}
+
+.toast {
+  padding: 10px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--ink);
+  color: var(--inv);
+  font-size: 13px;
+  box-shadow: var(--shadow-toast);
+  animation: dd-fade 0.2s ease-out;
+}
