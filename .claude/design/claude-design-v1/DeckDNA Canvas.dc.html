@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Play:wght@400;700&amp;display=swap">
+<style>
+:root,[data-theme="light"]{--bg:#F3F3F1;--surface:#FFFFFF;--surface-2:#F8F8F6;--sunken:#ECECE9;--line:#E2E2DE;--line-2:#CBCBC6;--ink:#17181B;--ink-2:#4E5057;--ink-3:#6B6D74;--inv:#FFFFFF;--stage:#E4E4E0;--focus:oklch(0.55 0.15 265);--ok:oklch(0.48 0.11 155);--ok-bg:oklch(0.95 0.04 155);--blocker:oklch(0.44 0.16 12);--blocker-bg:oklch(0.94 0.04 12);--error:oklch(0.52 0.18 32);--error-bg:oklch(0.95 0.04 32);--warn:oklch(0.5 0.11 70);--warn-bg:oklch(0.95 0.05 85);--info:oklch(0.48 0.09 250);--info-bg:oklch(0.95 0.02 250)}
+[data-theme="dark"]{--bg:#111214;--surface:#191A1D;--surface-2:#1F2024;--sunken:#26272B;--line:#2B2C31;--line-2:#3D3F45;--ink:#EDEDEA;--ink-2:#B3B5BB;--ink-3:#91939A;--inv:#111214;--stage:#0B0C0D;--focus:oklch(0.72 0.13 265);--ok:oklch(0.78 0.12 155);--ok-bg:oklch(0.3 0.05 155);--blocker:oklch(0.74 0.14 12);--blocker-bg:oklch(0.3 0.07 12);--error:oklch(0.76 0.14 35);--error-bg:oklch(0.3 0.07 35);--warn:oklch(0.82 0.12 80);--warn-bg:oklch(0.32 0.05 80);--info:oklch(0.78 0.08 250);--info-bg:oklch(0.3 0.04 250)}
+html,body{margin:0;background:#DADAD6}
+*{box-sizing:border-box}
+a{color:var(--ink);text-decoration:none}
+a:hover{color:var(--ink-2)}
+</style>
+</helmet>
+<section data-screen-label="Turn 1" style="padding:64px;display:flex;flex-direction:column;gap:56px;font-family:'Onest',system-ui,sans-serif;color:#17181B">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:900px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#6B6D74">DeckDNA · дизайн интерфейса · итерация 1</div>
+    <div style="font-size:56px;font-weight:600;letter-spacing:-0.03em;line-height:1.05">Компилятор корпоративных презентаций</div>
+    <div style="font-size:20px;color:#4E5057;max-width:760px">Нейтральная оболочка, в которой главный цвет — цвет чужого шаблона. Все экраны ниже — живой прототип: кликабелен, хранит состояние после перезагрузки.</div>
+  </div>
+  <div data-theme="light" style="display:grid;grid-template-columns:repeat(3,minmax(0,460px));gap:24px;color:var(--ink)">
+    <div style="grid-column:span 3;font-size:28px;font-weight:600">Визуальное направление и токены</div>
+    <div style="background:var(--surface);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px">
+      <div style="font-weight:600">Характер</div>
+      <div style="font-size:14px;color:var(--ink-2)">Инструмент инженера-чертёжника: тёплый нейтральный серый, чёрные чернила, моноширинные цифры для всего измеримого. Единственные цвета — семантика серьёзности и «проверено». Всё остальное цветное на экране принадлежит шаблону пользователя.</div>
+      <div style="display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--line);padding-top:12px">
+        <div style="font-size:40px;font-weight:600;letter-spacing:-0.03em;line-height:1.1">Onest 600</div>
+        <div style="font-size:14px;color:var(--ink-2)">Интерфейс · кириллица без компромиссов · 12 / 13 / 14 / 16 / 20 / 28 / 56</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:24px;margin-top:8px">118% ≤ 100% · 0.82</div>
+        <div style="font-size:14px;color:var(--ink-2)">JetBrains Mono · измерения, пороги, версии, ID правил</div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px">
+      <div style="font-weight:600">Цвет · светлая / тёмная</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:11px;font-family:'JetBrains Mono',monospace">
+        <div style="display:flex;flex-direction:column;gap:4px"><div style="height:36px;border-radius:6px;background:#F3F3F1;box-shadow:inset 0 0 0 1px #E2E2DE"></div>bg</div>
+        <div style="display:flex;flex-direction:column;gap:4px"><div style="height:36px;border-radius:6px;background:#FFFFFF;box-shadow:inset 0 0 0 1px #E2E2DE"></div>surface</div>
+        <div style="display:flex;flex-direction:column;gap:4px"><div style="height:36px;border-radius:6px;background:#E2E2DE"></div>line</div>
+        <div style="display:flex;flex-direction:column;gap:4px"><div style="height:36px;border-radius:6px;background:#17181B"></div>ink</div>
+        <div style="display:flex;flex-direction:column;gap:4px"><div style="height:36px;border-radius:6px;background:#111214"></div>bg dark</div>
+        <div style="display:flex;flex-direction:column;gap:4px"><div style="height:36px;border-radius:6px;background:#191A1D"></div>surface dark</div>
+        <div style="display:flex;flex-direction:column;gap:4px"><div style="height:36px;border-radius:6px;background:#4E5057"></div>ink-2</div>
+        <div style="display:flex;flex-direction:column;gap:4px"><div style="height:36px;border-radius:6px;background:#6B6D74"></div>ink-3 · 4.9:1</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;font-size:11px">
+        <div style="display:flex;flex-direction:column;gap:4px"><div style="height:36px;border-radius:6px;background:var(--blocker)"></div>блокер</div>
+        <div style="display:flex;flex-direction:column;gap:4px"><div style="height:36px;border-radius:6px;background:var(--error)"></div>ошибка</div>
+        <div style="display:flex;flex-direction:column;gap:4px"><div style="height:36px;border-radius:6px;background:var(--warn)"></div>предупр.</div>
+        <div style="display:flex;flex-direction:column;gap:4px"><div style="height:36px;border-radius:6px;background:var(--info)"></div>инфо</div>
+        <div style="display:flex;flex-direction:column;gap:4px"><div style="height:36px;border-radius:6px;background:var(--ok)"></div>проверено</div>
+      </div>
+      <div style="font-size:12px;color:var(--ink-3)">Семантика задана в oklch с общей светлотой; каждая пара «цвет на тинте» проходит 4.5:1.</div>
+    </div>
+    <div style="background:var(--surface);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px">
+      <div style="font-weight:600">Отступы и радиусы</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;font-family:'JetBrains Mono',monospace;font-size:11px">
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="width:4px;height:4px;background:var(--ink)"></div>4</div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="width:8px;height:8px;background:var(--ink)"></div>8</div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="width:12px;height:12px;background:var(--ink)"></div>12</div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="width:16px;height:16px;background:var(--ink)"></div>16</div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="width:20px;height:20px;background:var(--ink)"></div>20</div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="width:28px;height:28px;background:var(--ink)"></div>28</div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="width:40px;height:40px;background:var(--ink)"></div>40</div>
+      </div>
+      <div style="display:flex;gap:12px;font-family:'JetBrains Mono',monospace;font-size:11px">
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="width:44px;height:44px;border:1.5px solid var(--ink);border-radius:5px"></div>5 · чипы</div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="width:44px;height:44px;border:1.5px solid var(--ink);border-radius:8px"></div>8 · кнопки</div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="width:44px;height:44px;border:1.5px solid var(--ink);border-radius:12px"></div>12 · карточки</div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center"><div style="width:44px;height:44px;border:1.5px solid var(--ink);border-radius:16px"></div>16 · блоки</div>
+      </div>
+      <div style="font-size:12px;color:var(--ink-3)">Кнопки 32/36/40/48 px. Фокус — 2 px кольцо --focus со смещением 2 px. Все токены — CSS-переменные, переносятся в код как есть.</div>
+    </div>
+    <div style="grid-column:span 3;font-size:28px;font-weight:600;margin-top:16px">Библиотека компонентов</div>
+    <div style="background:var(--surface);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--ink-3)">Бейджи серьёзности · D/N · статусы</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <div style="height:22px;padding:0 7px;border-radius:5px;background:var(--blocker-bg);color:var(--blocker);font-size:12px;font-weight:600;display:flex;align-items:center">Блокер</div>
+        <div style="height:22px;padding:0 7px;border-radius:5px;background:var(--error-bg);color:var(--error);font-size:12px;font-weight:600;display:flex;align-items:center">Ошибка</div>
+        <div style="height:22px;padding:0 7px;border-radius:5px;background:var(--warn-bg);color:var(--warn);font-size:12px;font-weight:600;display:flex;align-items:center">Предупреждение</div>
+        <div style="height:22px;padding:0 7px;border-radius:5px;background:var(--info-bg);color:var(--info);font-size:12px;font-weight:600;display:flex;align-items:center">Инфо</div>
+      </div>
+      <div style="display:flex;gap:20px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center"><div style="width:22px;height:22px;border-radius:4px;background:var(--ink);color:var(--inv);font-family:'JetBrains Mono',monospace;font-size:12px;display:flex;align-items:center;justify-content:center">D</div><div style="font-size:13px">правило в коде · всегда один результат</div></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center"><div style="width:22px;height:22px;border-radius:50%;border:1.5px dashed var(--ink);font-family:'JetBrains Mono',monospace;font-size:12px;display:flex;align-items:center;justify-content:center">N</div><div style="font-size:13px">модель по картинке · может отличаться</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <div style="font-size:12px;padding:2px 8px;border-radius:5px;background:var(--sunken);color:var(--ink-2)">Открыта</div>
+        <div style="font-size:12px;padding:2px 8px;border-radius:5px;background:var(--sunken);color:var(--ink)">Выбрана</div>
+        <div style="font-size:12px;padding:2px 8px;border-radius:5px;background:var(--ok-bg);color:var(--ok)">Исправлена</div>
+        <div style="font-size:12px;padding:2px 8px;border-radius:5px;background:var(--error-bg);color:var(--error)">Не удалось</div>
+        <div style="font-size:12px;padding:2px 8px;border-radius:5px;background:var(--sunken);color:var(--ink-3)">Отклонена</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div style="font-size:12px;font-weight:500;padding:2px 8px;border-radius:10px;background:var(--warn-bg);color:var(--warn)">⇄ конфликт правил</div>
+        <div style="font-size:11px;padding:2px 7px;border-radius:5px;border:1px solid var(--line-2);color:var(--ink-2);font-family:'JetBrains Mono',monospace">↳ §2 Боль</div>
+        <div style="font-size:11px;padding:1px 7px;border-radius:10px;background:var(--ok-bg);color:var(--ok);font-weight:500">Редактируемый</div>
+        <div style="font-size:11px;padding:1px 7px;border-radius:10px;background:var(--sunken);color:var(--ink-3)">Скоро</div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--ink-3)">Карточка проблемы · развёрнутая</div>
+      <div style="border:1px solid var(--ink);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:7px">
+          <div style="width:18px;height:18px;border-radius:4px;background:var(--ink);color:var(--inv);font-size:11px;display:flex;align-items:center;justify-content:center">✓</div>
+          <div style="height:20px;padding:0 6px;border-radius:5px;background:var(--error-bg);color:var(--error);font-size:11px;font-weight:600;display:flex;align-items:center">Ошибка</div>
+          <div style="width:20px;height:20px;border-radius:4px;background:var(--ink);color:var(--inv);font-family:'JetBrains Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center">D</div>
+          <div style="flex:1;font-size:13px;font-weight:600">Текст не помещается в рамку</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)">сл. 04</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;border-radius:8px;overflow:hidden;background:var(--line)">
+          <div style="background:var(--surface-2);padding:8px 10px"><div style="font-size:11px;color:var(--ink-3)">Измерено</div><div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--error)">118% высоты</div></div>
+          <div style="background:var(--surface-2);padding:8px 10px"><div style="font-size:11px;color:var(--ink-3)">Порог</div><div style="font-family:'JetBrains Mono',monospace;font-size:13px">≤ 100%</div></div>
+        </div>
+        <div style="padding:10px;border-radius:8px;border:1px dashed var(--line-2);font-size:13px"><div style="font-size:11px;color:var(--ink-3)">Что будет сделано</div>Уменьшить кегль 18 → 14 pt, ближайший из шкалы шаблона</div>
+        <div style="display:flex;gap:8px"><div style="height:32px;padding:0 12px;border-radius:7px;background:var(--ink);color:var(--inv);font-size:13px;display:flex;align-items:center">Исправить</div><div style="height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line-2);font-size:13px;display:flex;align-items:center">Отклонить…</div></div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--ink-3)">Рамка-подсветка на слайде · миниатюра с бейджем</div>
+      <div style="position:relative">
+        <dc-import name="Slide" kind="bullets" title="Дизайнер тратит часы на перекладку текста в шаблон" items="{{ demoItems }}" n="4" hint-size="100%,230px"></dc-import>
+        <div style="position:absolute;left:5%;top:28%;width:64%;height:64%;border:3px solid var(--error);background:color-mix(in oklch, var(--error) 12%, transparent);border-radius:2px"><div style="position:absolute;left:-3px;bottom:100%;margin-bottom:3px;padding:2px 6px;border-radius:4px;background:var(--error);color:#FFFFFF;font-size:11px;font-weight:500;white-space:nowrap">D · Текст не помещается в рамку</div></div>
+      </div>
+      <div style="display:flex;gap:14px">
+        <div style="position:relative;width:120px;box-shadow:0 0 0 2px var(--ink);border-radius:3px;overflow:hidden"><dc-import name="Slide" kind="stats" title="Каждую неделю — десятки презентаций" items="{{ demoStats }}" n="3" hint-size="120px,68px"></dc-import></div>
+        <div style="position:relative;width:120px"><div style="border-radius:3px;overflow:hidden;box-shadow:0 0 0 1px var(--line)"><dc-import name="Slide" kind="stats" title="Каждую неделю — десятки презентаций" items="{{ demoStats }}" n="3" hint-size="120px,68px"></dc-import></div><div style="position:absolute;right:-5px;top:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--error);color:#FFFFFF;font-family:'JetBrains Mono',monospace;font-size:10px;display:flex;align-items:center;justify-content:center">3</div></div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--ink-3)">Образец цвета · образец шрифта · чертёж макета</div>
+      <div style="display:flex;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:6px;width:72px"><div style="height:44px;border-radius:8px;background:#0077FF"></div><div style="font-size:11px;line-height:1.3"><div style="color:var(--ink-3)">accent1</div><div style="font-family:'JetBrains Mono',monospace">#0077FF</div></div></div>
+        <div style="display:flex;flex-direction:column;gap:6px;width:72px"><div style="height:44px;border-radius:8px;background:#8F8F8F;box-shadow:0 0 0 2px var(--surface),0 0 0 3.5px var(--warn)"></div><div style="font-size:11px;line-height:1.3"><div style="color:var(--warn)">вне темы</div><div style="font-family:'JetBrains Mono',monospace">#8F8F8F</div></div></div>
+        <div style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--warn);display:flex;flex-direction:column;gap:4px"><div style="font-size:11px;color:var(--ink-3)">Фактически</div><div style="font-family:'Play',sans-serif;font-size:26px;line-height:1">Аа Бб</div><div style="font-size:12px">Play · 50%</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="position:relative;width:180px;aspect-ratio:16/9;border:1px solid var(--line-2);border-radius:4px;background:var(--surface-2)">
+          <div style="position:absolute;left:6%;top:50%;width:62%;height:20%;border:1px solid var(--ink-2);background:var(--surface);font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--ink-3);padding:1px 3px">title</div>
+          <div style="position:absolute;left:6%;top:74%;width:45%;height:8%;border:1px solid var(--ink-2);background:var(--surface);font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--ink-3);padding:0 3px">body</div>
+        </div>
+        <div style="font-size:12px;color:var(--ink-2)">Макет рисуется по координатам плейсхолдеров: честнее превью, которых сервис не отдаёт.</div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--ink-3)">Таймер против бюджета · степпер этапов</div>
+      <div style="display:flex;align-items:baseline;gap:8px"><div style="font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:500;line-height:1">1:12</div><div style="font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--ink-3)">/ 5:00</div></div>
+      <div style="height:8px;border-radius:4px;background:var(--sunken)"><div style="width:24%;height:100%;border-radius:4px;background:var(--ink)"></div></div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 8px;font-size:13px"><div style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--ok);color:var(--ok);display:flex;align-items:center;justify-content:center;font-size:11px">✓</div>Шаблон</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 8px;font-size:13px;border-radius:8px;background:var(--sunken)"><div style="width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--inv);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px">2</div>Бриф и контент</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 8px;font-size:13px;color:var(--ink-3)"><div style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line-2);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px">3</div>План</div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--ink-3)">Уверенность · шкала соответствия · метрика паспорта · журнал · файл</div>
+      <div style="display:grid;grid-template-columns:100px 1fr 38px;gap:10px;align-items:center;font-size:13px"><div style="color:var(--ink-2)">Сетка</div><div style="position:relative;height:6px;border-radius:3px;background:var(--sunken)"><div style="position:absolute;left:0;top:0;bottom:0;width:74%;border-radius:3px;background:var(--warn)"></div><div style="position:absolute;left:75%;top:-3px;bottom:-3px;width:1px;background:var(--ink-3)"></div></div><div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--warn)">0.74</div></div>
+      <div style="display:flex;gap:16px;align-items:center"><div style="font-family:'JetBrains Mono',monospace;font-size:28px">0.93</div><div style="flex:1;display:flex;gap:2px;height:10px"><div style="flex:97;background:var(--ink);border-radius:2px"></div><div style="flex:3;background:var(--sunken);border-radius:2px"></div></div></div>
+      <div style="display:grid;grid-template-columns:18px 1fr auto;gap:10px;font-size:13px;padding:8px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><div style="color:var(--ok);font-weight:700">✓</div><div><div style="font-weight:500">Шрифт не из шаблона · сл. 03</div><div style="color:var(--ink-2)">Заменить шрифт на Play</div></div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;padding:1px 6px;border-radius:5px;background:var(--sunken);height:18px">r2</div></div>
+      <div style="display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--ink);border-radius:10px"><div style="width:40px;height:40px;border-radius:8px;background:var(--sunken);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px">PPTX</div><div><div style="font-size:13px;font-weight:600">deckdna_balanced_r2.pptx</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)">3.8 МБ · sha256 9f2c…41ae</div></div><div style="height:32px;padding:0 12px;border-radius:8px;background:var(--ink);color:var(--inv);font-size:13px;display:flex;align-items:center">Скачать</div></div>
+    </div>
+    <div style="grid-column:span 3;background:var(--surface);border-radius:14px;padding:24px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px 32px">
+      <div style="grid-column:span 3;font-weight:600">UX-тексты для ключевых мест</div>
+      <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:12px;color:var(--ink-3)">Пустые проекты</div><div style="font-size:14px">«Проектов пока нет. Начните с корпоративного шаблона .pptx или прошлой презентации — система разберёт его на правила и покажет, что поняла».</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:12px;color:var(--ink-3)">Ожидание</div><div style="font-size:14px">«Шкала показывает время, а не готовность: сервис сообщает статус каждого варианта, но не процент».</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:12px;color:var(--ink-3)">Ошибка</div><div style="font-size:14px">«Вёрстка не завершилась. Модель не вернула план в срок» + код, этап, «Повторить вариант» / «Вернуться к брифу».</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:12px;color:var(--ink-3)">Несколько файлов</div><div style="font-size:14px">«Не будет разобран: сейчас обрабатывается один файл. Перенесите таблицы в основной документ».</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:12px;color:var(--ink-3)">Не удалось исправить</div><div style="font-size:14px">«Блоки сгруппированы с линией таймлайна: сдвиг ломает группу. Поправьте в PowerPoint».</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:12px;color:var(--ink-3)">Финал цепочки</div><div style="font-size:14px">«Повторный аудит: 0 критических проблем».</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:12px;color:var(--ink-3)">Близко к шаблону</div><div style="font-size:14px">«Когда колода должна выглядеть как „родная“ в библиотеке компании».</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:12px;color:var(--ink-3)">Сбалансированный</div><div style="font-size:14px">«Для большинства выступлений: история читается, слайды не однообразны».</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:12px;color:var(--ink-3)">Визуальный</div><div style="font-size:14px">«Когда решение принимают по цифрам и важно, чтобы данные бросались в глаза».</div></div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div style="font-size:28px;font-weight:600">Карта экранов</div>
+    <div style="display:flex;gap:10px;align-items:stretch;flex-wrap:wrap">
+      <sc-for list="{{ map }}" as="m" hint-placeholder-count="8">
+        <a href="{{ m.href }}" style="display:flex;flex-direction:column;gap:6px;width:190px;padding:14px;border-radius:12px;background:#FFFFFF;border:1px solid #E2E2DE">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#6B6D74">{{ m.n }}</div>
+          <div style="font-size:16px;font-weight:600">{{ m.l }}</div>
+          <div style="font-size:13px;color:#4E5057">{{ m.d }}</div>
+          <div style="margin-top:auto;font-family:'JetBrains Mono',monospace;font-size:12px;color:#6B6D74">{{ m.ids }}</div>
+        </a>
+      </sc-for>
+    </div>
+    <div style="font-size:14px;color:#4E5057;max-width:900px">Навигация: левая колонка шагов проекта с «цепочкой доказательств» под ней. На аудите и сравнении вариантов колонка сворачивается до номеров — слайдам нужно место. Настройки провайдера и «О системе» открываются боковой панелью поверх любого шага, без модальных окон.</div>
+  </div>
+  <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:baseline;gap:14px"><div style="font-size:28px;font-weight:600">{{ g.l }}</div><div style="font-size:15px;color:#4E5057">{{ g.d }}</div></div>
+      <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+        <sc-for list="{{ g.boards }}" as="a">
+          <div id="{{ a.id }}" style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:10px;align-items:center">
+              <a href="{{ a.href }}" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:500;padding:3px 9px;border-radius:6px;background:#17181B;color:#FFFFFF">{{ a.id }}</a>
+              <div style="font-size:16px;font-weight:500">{{ a.l }}</div>
+            </div>
+            <div style="width:1440px;height:{{ a.h }};border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1),0 12px 40px rgba(0,0,0,.08);transform:translateZ(0);background:#F3F3F1">
+              <dc-import name="DeckDNA" screen="{{ a.screen }}" theme="{{ a.theme }}" style="width:1440px;height:{{ a.h }};display:block" hint-size="1440px,900px"></dc-import>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    let n = 0;
+    const B = (l, screen, h, theme) => { const id = '1' + 'abcdefghijklmnopqrstuvwxyz'[n++]; return { id, href: '#' + id, l, screen, h: h + 'px', theme: theme || 'light' }; };
+    const groups = [
+      { l: 'Проекты', d: 'Статусы прогонов, демо-страховка, пустое состояние', boards: [B('Проекты', 'projects', 900), B('Пустое состояние', 'projects-empty', 900)] },
+      { l: '① ДНК шаблона', d: 'Главный wow-экран: шаблон как разобранная дизайн-система', boards: [B('Загрузка и анализ', 'template-upload', 900), B('ДНК шаблона · отчёт «что поняли»', 'template', 2080), B('ДНК шаблона · тёмная тема', 'template', 2080, 'dark')] },
+      { l: '② Бриф и ③ План', d: 'Обязательны два поля; план подтверждается до вёрстки или правится после (v1)', boards: [B('Бриф и контент', 'brief', 1320), B('План · до вёрстки', 'plan', 1420), B('План · после генерации (v1)', 'plan-after', 1480)] },
+      { l: '④ Генерация', d: 'Таймер против бюджета 5:00, варианты проявляются по готовности, без фальшивого процента', boards: [B('Идёт генерация', 'gen', 900), B('Ошибка варианта', 'gen-error', 900)] },
+      { l: '⑤ Три варианта', d: 'Три осознанные стратегии и сравнение слайда N во всех трёх', boards: [B('Карточки стратегий', 'variants', 1240), B('Слайд N во всех трёх', 'variants-compare', 2300)] },
+      { l: '⑥–⑦ Аудит и исправление', d: 'Рамки на слайде, D/N, очередь исправлений, журнал, до/после, повторный аудит', boards: [B('Аудит · открытая проблема', 'audit', 900), B('До / после', 'audit-ba', 900), B('После исправлений: 0 критических', 'audit-fixed', 900), B('Аудит · тёмная тема', 'audit', 900, 'dark')] },
+      { l: '⑧ Экспорт и паспорт', d: 'Редактируемость как доказательство; паспорт как история о качестве', boards: [B('Экспорт и паспорт качества', 'export', 1400)] },
+      { l: 'Настройки и «О системе»', d: 'Боковая панель, доступна с любого шага', boards: [B('Провайдер моделей', 'settings', 900), B('О системе · возможности', 'about', 900)] }
+    ];
+    const f = k => groups[k].boards.map(b => b.id).join(' · ');
+    const map = [
+      ['00', 'Проекты', 'список и демо', f(0), 0], ['01', 'Шаблон', 'ДНК и отчёт', f(1), 1], ['02–03', 'Бриф → План', 'подтвердить до вёрстки', f(2), 2], ['04', 'Генерация', '5:00 бюджет', f(3), 3],
+      ['05', 'Три варианта', 'стратегии', f(4), 4], ['06–07', 'Аудит и правки', 'D/N, журнал', f(5), 5], ['08', 'Экспорт', 'PPTX и паспорт', f(6), 6], ['—', 'Панели', 'провайдер, о системе', f(7), 7]
+    ].map(m => ({ n: m[0], l: m[1], d: m[2], ids: m[3], href: '#' + groups[m[4]].boards[0].id }));
+    return { groups, map,
+      demoItems: ['Автор пишет текст, дизайнер раскладывает его вручную', 'Макет подбирается заново для каждой колоды', 'Иконки ищутся по разным библиотекам', 'Диаграммы перекрашиваются в цвета бренда', 'Блоки двигаются до совпадения с сеткой', 'Правки автора запускают круг заново', 'Нейросети пишут текст, но не держат стиль'],
+      demoStats: [{ v: '30+', l: 'колод в неделю' }, { v: '3–4 ч', l: 'вёрстка колоды' }, { v: '2', l: 'круга правок' }] };
+  }
+}
+</script>
+</body>
+</html>

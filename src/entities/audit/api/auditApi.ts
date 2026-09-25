@@ -1,0 +1,109 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { api, unwrap } from '@/shared/api'
+import type { AuditIssue, AuditRun } from '../model/types'
+
+const ISSUE_PAGE_LIMIT = 200
+
+export const auditKeys = {
+  all: ['audit'] as const,
+  forVariant: (variantId: string) => ['audit', 'variant', variantId] as const,
+  issues: (auditId: string) => ['audit', auditId, 'issues'] as const,
+}
+
+async function fetchVariantAudit(variantId: string, providerSessionId?: string): Promise<AuditRun> {
+  const accepted = await unwrap(
+    api.POST('/api/v1/variants/{variant_id}/audits', {
+      params: { path: { variant_id: variantId } },
+      body: providerSessionId ? { provider_session_id: providerSessionId } : {},
+    }),
+  )
+  return unwrap(api.GET('/api/v1/audits/{audit_id}', { params: { path: { audit_id: accepted.audit_id } } }))
+}
+
+export function useVariantAudit(variantId: string | undefined) {
+  return useQuery({
+    queryKey: auditKeys.forVariant(variantId ?? ''),
+    queryFn: () => fetchVariantAudit(variantId as string),
+    enabled: Boolean(variantId),
+  })
+}
+
+export function useAuditIssues(auditId: string | undefined) {
+  return useQuery({
+    queryKey: auditKeys.issues(auditId ?? ''),
+    queryFn: async (): Promise<AuditIssue[]> => {
+      const page = await unwrap(
+        api.GET('/api/v1/audits/{audit_id}/issues', {
+          params: { path: { audit_id: auditId as string }, query: { limit: ISSUE_PAGE_LIMIT } },
+        }),
+      )
+      return page.items
+    },
+    enabled: Boolean(auditId),
+  })
+}
+
+export interface RepairOutcome {
+  auditId: string
+  deckRevision: number
+  counts: Record<'applied' | 'skipped' | 'failed' | 'not_implemented' | 'unresolved', number>
+}
+
+export function useRepairIssues(variantId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ auditId, issueIds, providerSessionId }: { auditId: string; issueIds: string[]; providerSessionId?: string }): Promise<RepairOutcome> => {
+      const accepted = await unwrap(
+        api.POST('/api/v1/audits/{audit_id}/repairs', {
+          params: { path: { audit_id: auditId } },
+          body: { selected_issue_ids: issueIds, max_iterations: 2, provider_session_id: providerSessionId ?? null },
+        }),
+      )
+      const job = await unwrap(api.GET('/api/v1/jobs/{job_id}', { params: { path: { job_id: accepted.job_id } } }))
+      const read = (key: string) => Number(job.result_ids?.[key] ?? 0)
+      return {
+        auditId: accepted.audit_id,
+        deckRevision: accepted.deck_revision,
+        counts: {
+          applied: read('applied'),
+          skipped: read('skipped'),
+          failed: read('failed'),
+          not_implemented: read('not_implemented'),
+          unresolved: read('unresolved'),
+        },
+      }
+    },
+    onSuccess: async (outcome) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: auditKeys.forVariant(variantId) }),
+        queryClient.invalidateQueries({ queryKey: auditKeys.issues(outcome.auditId) }),
+        queryClient.invalidateQueries({ queryKey: ['variant', variantId] }),
+      ])
+    },
+  })
+}
+
+export function useDismissIssue(auditId: string | undefined) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ issueId, reason }: { issueId: string; reason: string }) =>
+      unwrap(api.POST('/api/v1/issues/{issue_id}/dismiss', { params: { path: { issue_id: issueId } }, body: { reason } })),
+    onSuccess: (updated) => {
+      if (!auditId) return
+      queryClient.setQueryData<AuditIssue[]>(auditKeys.issues(auditId), (current) =>
+        current?.map((issue) => (issue.id === updated.id ? updated : issue)),
+      )
+    },
+  })
+}
+
+export function useContextualAudit(variantId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (providerSessionId: string) => fetchVariantAudit(variantId, providerSessionId),
+    onSuccess: async (audit) => {
+      queryClient.setQueryData(auditKeys.forVariant(variantId), audit)
+      await queryClient.invalidateQueries({ queryKey: auditKeys.issues(audit.id) })
+    },
+  })
+}

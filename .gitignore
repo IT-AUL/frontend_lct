@@ -1,0 +1,27 @@
+# Local workspace
+CLAUDE.local.md
+.claude/settings.local.json
+.mcp.json
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies and builds
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.npm-cache/
+
+# Tests
+playwright-report/
+test-results/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log

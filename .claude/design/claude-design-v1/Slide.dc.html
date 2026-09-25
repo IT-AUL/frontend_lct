@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Play:wght@400;700&amp;display=swap"></helmet>
+<div style="position:relative;width:100%;aspect-ratio:16/9;container-type:inline-size;overflow:hidden;font-family:'Play',Arial,sans-serif;color:#202020;background:#FFFFFF;line-height:1.2">
+  <sc-if value="{{ isTitle }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:#0077FF;color:#FFFFFF;padding:6cqw;display:flex;flex-direction:column;justify-content:flex-end;gap:1.6cqw">
+      <div style="width:6cqw;height:0.6cqw;background:#FF3885"></div>
+      <div style="font-size:4.4cqw;font-weight:700;max-width:72cqw;text-wrap:balance">{{ title }}</div>
+      <div style="font-size:1.8cqw;opacity:0.9">{{ sub }}</div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isFinal }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:#0077FF;color:#FFFFFF;padding:6cqw;display:flex;flex-direction:column;justify-content:center;gap:2cqw">
+      <div style="font-size:7cqw;font-weight:700">{{ title }}</div>
+      <div style="font-size:2cqw;opacity:0.9">{{ sub }}</div>
+      <div style="width:6cqw;height:0.6cqw;background:#FF3885"></div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isSection }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:#F7FAFE;padding:6cqw;display:flex;flex-direction:column;justify-content:center;gap:1cqw">
+      <div style="font-size:11cqw;font-weight:700;color:#0077FF;line-height:1">{{ sub }}</div>
+      <div style="font-size:4.2cqw;font-weight:700">{{ title }}</div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isContent }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;left:6cqw;top:5.5cqw;right:16cqw;font-size:3cqw;font-weight:700;text-wrap:balance">{{ title }}</div>
+  </sc-if>
+  <sc-if value="{{ isAgenda }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:6cqw;right:6cqw;top:17cqw;display:grid;grid-template-columns:1fr 1fr;gap:2.4cqw 4cqw">
+      <sc-for list="{{ list }}" as="it">
+        <div style="display:flex;gap:1.6cqw;align-items:baseline;border-top:0.2cqw solid #D6ECFF;padding-top:1.2cqw">
+          <div style="font-size:2.6cqw;font-weight:700;color:#0077FF">{{ it.n }}</div>
+          <div style="font-size:1.9cqw">{{ it.t }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isBullets }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:6cqw;right:30cqw;top:16cqw;display:flex;flex-direction:column;gap:1.5cqw">
+      <sc-for list="{{ list }}" as="it">
+        <div style="display:flex;gap:1.4cqw;align-items:baseline;font-size:{{ bulletSize }}">
+          <div style="flex:none;width:0.9cqw;height:0.9cqw;background:#0077FF;transform:translateY(-0.2cqw)"></div>
+          <div>{{ it.t }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="position:absolute;right:6cqw;top:16cqw;width:19cqw;height:26cqw;background:#F7FAFE;border-top:0.5cqw solid #0077FF"></div>
+  </sc-if>
+  <sc-if value="{{ isStats }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:6cqw;right:6cqw;top:22cqw;display:grid;grid-template-columns:repeat(3,1fr);gap:3cqw">
+      <sc-for list="{{ list }}" as="it">
+        <div style="border-top:0.4cqw solid #D6ECFF;padding-top:1.6cqw;display:flex;flex-direction:column;gap:1cqw">
+          <div style="font-size:6.4cqw;font-weight:700;color:#0077FF;line-height:1">{{ it.v }}</div>
+          <div style="font-size:1.7cqw;color:#798492">{{ it.l }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isChart }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:6cqw;right:6cqw;top:16cqw;bottom:8cqw;display:flex;gap:4cqw;align-items:flex-end;border-bottom:0.2cqw solid #C4C4C4">
+      <sc-for list="{{ list }}" as="it">
+        <div style="flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;gap:0.8cqw;align-items:stretch">
+          <div style="font-size:1.8cqw;font-weight:700;color:#202020;text-align:center">{{ it.v }}</div>
+          <div style="height:{{ it.h }};background:{{ it.color }}"></div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="position:absolute;left:6cqw;right:6cqw;bottom:4.5cqw;display:flex;gap:4cqw">
+      <sc-for list="{{ list }}" as="it">
+        <div style="flex:1;font-size:1.3cqw;color:#798492;text-align:center">{{ it.l }}</div>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isCompare }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:6cqw;right:6cqw;top:17cqw;bottom:9cqw;display:grid;grid-template-columns:repeat(2,1fr);gap:3cqw">
+      <sc-for list="{{ list }}" as="it">
+        <div style="background:#F7FAFE;padding:2.6cqw;display:flex;flex-direction:column;gap:1.4cqw">
+          <div style="font-size:2.4cqw;font-weight:700;color:#0077FF">{{ it.h }}</div>
+          <div style="font-size:1.7cqw">{{ it.l }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isTimeline }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:6cqw;right:6cqw;top:27cqw;height:0.3cqw;background:#D6ECFF"></div>
+    <div style="position:absolute;left:6cqw;right:6cqw;top:25.8cqw;display:grid;grid-template-columns:repeat(4,1fr);gap:2cqw">
+      <sc-for list="{{ list }}" as="it">
+        <div style="display:flex;flex-direction:column;gap:1.4cqw">
+          <div style="width:2.6cqw;height:2.6cqw;border-radius:50%;background:#0077FF"></div>
+          <div style="font-size:1.5cqw;color:#798492">{{ it.d }}</div>
+          <div style="font-size:1.9cqw;font-weight:700">{{ it.l }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isProcess }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:6cqw;right:6cqw;top:22cqw;display:grid;grid-template-columns:repeat(5,1fr);gap:1.4cqw">
+      <sc-for list="{{ list }}" as="it">
+        <div style="background:#F7FAFE;border-top:0.5cqw solid #0077FF;padding:1.8cqw 1.4cqw;display:flex;flex-direction:column;gap:1.4cqw;min-height:14cqw">
+          <div style="font-size:2.6cqw;font-weight:700;color:#0077FF">{{ it.n }}</div>
+          <div style="font-size:1.6cqw">{{ it.t }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isQuote }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:6cqw;right:12cqw;top:10cqw;display:flex;flex-direction:column;gap:2cqw">
+      <div style="font-size:10cqw;line-height:0.6;color:#FF3885;font-weight:700">“</div>
+      <div style="font-size:3.2cqw;font-weight:700;text-wrap:balance">{{ title }}</div>
+      <div style="font-size:1.7cqw;color:#798492">{{ sub }}</div>
+    </div>
+  </sc-if>
+  <div style="position:absolute;right:4cqw;top:4cqw;width:8cqw;height:3cqw;border:0.15cqw solid {{ chromeLine }};display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:1cqw;color:{{ chromeInk }};letter-spacing:0.1em">LOGO</div>
+  <div style="position:absolute;left:6cqw;bottom:2.6cqw;font-size:1.1cqw;color:{{ chromeInk }}">DeckDNA · защита продукта</div>
+  <div style="position:absolute;right:4cqw;bottom:2.6cqw;font-size:1.1cqw;color:{{ chromeInk }}">{{ n }}</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:640,&quot;height&quot;:360},&quot;kind&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;title&quot;,&quot;agenda&quot;,&quot;bullets&quot;,&quot;stats&quot;,&quot;chart&quot;,&quot;compare&quot;,&quot;timeline&quot;,&quot;process&quot;,&quot;quote&quot;,&quot;section&quot;,&quot;final&quot;],&quot;default&quot;:&quot;stats&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;title&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Каждую неделю — десятки презентаций вручную&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;sub&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;n&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;3&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;items&quot;:{&quot;editor&quot;:null,&quot;default&quot;:[{&quot;v&quot;:&quot;30+&quot;,&quot;l&quot;:&quot;колод в неделю&quot;},{&quot;v&quot;:&quot;3–4 ч&quot;,&quot;l&quot;:&quot;вёрстка одной колоды&quot;},{&quot;v&quot;:&quot;2&quot;,&quot;l&quot;:&quot;круга правок&quot;}],&quot;tsType&quot;:&quot;any[]&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const k = p.kind || 'bullets';
+    const raw = p.items || [];
+    const list = raw.map((x, i) => typeof x === 'string'
+      ? { t: x, n: String(i + 1).padStart(2, '0') }
+      : { ...x, n: String(i + 1).padStart(2, '0'), h: (x.v || 0) + '%', v: x.label || x.v, color: x.hi ? '#0077FF' : '#D6ECFF' });
+    const blue = k === 'title' || k === 'final';
+    return {
+      title: p.title || '', sub: p.sub || '', n: p.n || '', list,
+      isTitle: k === 'title', isFinal: k === 'final', isSection: k === 'section',
+      isContent: !['title', 'final', 'section', 'quote'].includes(k),
+      isAgenda: k === 'agenda', isBullets: k === 'bullets', isStats: k === 'stats', isChart: k === 'chart',
+      isCompare: k === 'compare', isTimeline: k === 'timeline', isProcess: k === 'process', isQuote: k === 'quote',
+      bulletSize: raw.length > 5 ? '2.1cqw' : '1.9cqw',
+      chromeInk: blue ? 'rgba(255,255,255,0.85)' : '#8F8F8F',
+      chromeLine: blue ? 'rgba(255,255,255,0.6)' : '#C4C4C4'
+    };
+  }
+}
+</script>
+</body>
+</html>
