@@ -103,7 +103,7 @@ trap - ERR
   echo "CURRENT_RELEASE=${RELEASE_SHA:-manual}"
   echo "CURRENT_DEPLOYED_AT=$(date -u +%FT%TZ)"
 } >"$STATE_DIR/current.env"
-ln -sfn "$REL" "$BASE/current"
+ln -sfn "$REL" "$STATE_DIR/current"
 printf '{"ts":"%s","result":"ok","web":"%s","api":"%s","sha":"%s","actor":"%s"}\n' "$(date -u +%FT%TZ)" "$WEB_TAG" "$API_TAG" "${RELEASE_SHA:-manual}" "$ACTOR" >>"$STATE_DIR/history.jsonl"
 
 prune_images() {

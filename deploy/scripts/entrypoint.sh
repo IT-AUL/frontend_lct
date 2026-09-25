@@ -36,14 +36,14 @@ case "$action" in
     exec "$release/scripts/deploy.sh"
     ;;
   rollback)
-    [ -x "$BASE/current/scripts/rollback.sh" ] || fail "nothing to roll back"
-    export REL="$(readlink -f "$BASE/current")"
-    exec "$BASE/current/scripts/rollback.sh"
+    [ -x "$BASE/state/current/scripts/rollback.sh" ] || fail "nothing to roll back"
+    export REL="$(readlink -f "$BASE/state/current")"
+    exec "$BASE/state/current/scripts/rollback.sh"
     ;;
   status)
-    [ -x "$BASE/current/scripts/status.sh" ] || { echo "STATE=empty"; exit 0; }
-    export REL="$(readlink -f "$BASE/current")"
-    exec "$BASE/current/scripts/status.sh"
+    [ -x "$BASE/state/current/scripts/status.sh" ] || { echo "STATE=empty"; exit 0; }
+    export REL="$(readlink -f "$BASE/state/current")"
+    exec "$BASE/state/current/scripts/status.sh"
     ;;
   *)
     fail "command not allowed"

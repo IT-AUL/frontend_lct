@@ -114,7 +114,7 @@ $BASE/state/deploy.log {
 }
 ROT
 cat >/etc/cron.d/deckdna-backup <<CRON
-17 3 * * * $USER_NAME [ -x $BASE/current/scripts/backup.sh ] && $BASE/current/scripts/backup.sh >>$BASE/state/backup.log 2>&1
+17 3 * * * $USER_NAME [ -x $BASE/state/current/scripts/backup.sh ] && $BASE/state/current/scripts/backup.sh >>$BASE/state/backup.log 2>&1
 CRON
 chmod 644 /etc/cron.d/deckdna-backup
 
