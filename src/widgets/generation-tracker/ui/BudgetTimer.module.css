@@ -1,0 +1,86 @@
+.root {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 40px;
+  align-items: center;
+  padding: 24px 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-3xl);
+  background: var(--surface);
+}
+
+.clock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.caption {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.value {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.elapsed {
+  font-family: var(--font-mono);
+  font-size: 64px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.budget {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 20px;
+}
+
+.exact {
+  margin-top: 6px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.scale {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ticks {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.verdict {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.note {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.normal {
+  color: var(--ink);
+}
+
+.warn {
+  color: var(--warn);
+}
+
+.exceeded {
+  color: var(--error);
+}

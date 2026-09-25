@@ -1,8 +1,68 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  max-width: 1120px;
+  gap: 20px;
+  max-width: var(--page-width);
   margin: 0 auto;
-  padding: 40px 32px 64px;
+  padding: 28px 32px 64px;
+}
+
+.resetButton {
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.banner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--info-bg);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.bannerTag {
+  flex: none;
+  color: var(--info);
+  font-weight: 600;
+}
+
+.bannerText {
+  min-width: 0;
+}
+
+.skeletons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeletonRow {
+  height: 72px;
+  border-radius: var(--radius-lg);
+}
+
+.secondaryLink {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.secondaryLink:hover {
+  border-color: var(--ink-3);
+  color: var(--ink);
 }

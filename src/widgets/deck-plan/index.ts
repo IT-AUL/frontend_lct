@@ -1,0 +1,4 @@
+export { buildPlanView, deckPurposeLabel, formatSlideRange, parseEvidenceRef, plannedVisual, slideIdea, slideSources } from './lib/plan'
+export type { PlanRow, PlanSectionSummary, PlanStats, PlanView, SlideSource } from './lib/plan'
+export { DeckPlanView } from './ui/DeckPlanView'
+export { PLAN_EDIT_SOON, SoonButton } from './ui/SoonButton'

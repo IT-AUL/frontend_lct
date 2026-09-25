@@ -1,11 +1,131 @@
-import { EmptyState, PageHeader } from '@/shared/ui'
+import { useEffect, useMemo } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
+import { useRerunGeneration } from '@/features/rerun-generation'
+import { DeckPlanView, SoonButton } from '@/widgets/deck-plan'
+import { useContentPack } from '@/entities/content-pack'
+import { isTrackingId, isTerminalState, useGenerationTracker, type GenerationDetail } from '@/entities/generation'
+import { strategyInfo } from '@/entities/variant'
+import { routes } from '@/shared/config'
+import { Button, EmptyState, PageHeader, Skeleton } from '@/shared/ui'
 import styles from './PlanPage.module.css'
 
+const EMPTY_HEADINGS: ReadonlyMap<string, string> = new Map()
+
+function planOwner(generation: GenerationDetail): string | null {
+  const planId = generation.deck_plan?.id ?? generation.deck_plan_id
+  const owner = generation.variants.find((variant) => variant.deck_plan_id && variant.deck_plan_id === planId)
+  return owner ? strategyInfo(owner.strategy).name : null
+}
+
+function hasSeparatePlans(generation: GenerationDetail): boolean {
+  const ids = new Set(generation.variants.map((variant) => variant.deck_plan_id).filter(Boolean))
+  return ids.size > 1
+}
+
 export function PlanPage() {
+  const { projectId = '', runId = '' } = useParams()
+  const navigate = useNavigate()
+  const tracker = useGenerationTracker(runId)
+  const { generation, generationId, phase } = tracker
+  const { rerun, isPending } = useRerunGeneration(projectId)
+  const { data: contentPack } = useContentPack(generation?.content_pack_id)
+
+  const headings = useMemo<ReadonlyMap<string, string>>(
+    () => (contentPack ? new Map(contentPack.sections.map((section) => [section.id, section.heading])) : EMPTY_HEADINGS),
+    [contentPack],
+  )
+
+  useEffect(() => {
+    if (isTrackingId(runId) && generationId) navigate(routes.plan(projectId, generationId), { replace: true })
+  }, [runId, generationId, projectId, navigate])
+
+  const plan = generation?.deck_plan ?? null
+  const settled = generation ? isTerminalState(generation.state) : false
+  const canRebuild = Boolean(generationId) && settled && !isPending
+
+  const header = (
+    <PageHeader
+      eyebrow="Шаг 3 · План"
+      title="Сначала план, потом вёрстка"
+      description="Проверьте историю: порядок, заголовки-выводы и источники. Поправить план дешевле, чем перегенерировать колоду."
+      actions={
+        plan ? (
+          <>
+            <SoonButton label="Сбросить правки" className={styles.resetButton}>
+              Сбросить правки
+            </SoonButton>
+            <Button variant="primary" size="lg" disabled={!canRebuild} onClick={() => generationId && rerun(generationId)}>
+              {isPending ? 'Запускаем…' : 'Пересобрать с теми же данными →'}
+            </Button>
+          </>
+        ) : undefined
+      }
+    />
+  )
+
+  if (!generation) {
+    const waiting = phase === 'submitting' || phase === 'running'
+    return (
+      <div className={styles.page}>
+        {header}
+        {waiting ? (
+          <EmptyState
+            title="План появится после генерации"
+            description="В этой версии сервис строит план внутри генерации и отдаёт его вместе с вариантами."
+            actions={
+              <Link className={styles.secondaryLink} to={routes.run(projectId, runId)}>
+                К генерации
+              </Link>
+            }
+          />
+        ) : phase === 'failed' ? (
+          <EmptyState
+            title="План недоступен"
+            description={tracker.error?.message ?? 'Сервис не вернул данные прогона.'}
+            actions={
+              <Link className={styles.secondaryLink} to={routes.brief(projectId)}>
+                Назад к брифу
+              </Link>
+            }
+          />
+        ) : (
+          <div className={styles.skeletons} aria-busy="true" aria-label="Загружаем план">
+            {Array.from({ length: 6 }, (_, index) => (
+              <Skeleton key={index} className={styles.skeletonRow} delay={index * 0.1} />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const owner = planOwner(generation)
+
   return (
     <div className={styles.page}>
-      <PageHeader title="План колоды" />
-      <EmptyState title="Экран в разработке" />
+      {header}
+      <div className={styles.banner} role="note">
+        <div className={styles.bannerTag}>Версия 1</div>
+        <div className={styles.bannerText}>
+          План построен во время генерации — вы видите его после сборки.
+          {owner && <> Показан план варианта «{owner}»{hasSeparatePlans(generation) ? '; у остальных вариантов свои планы на том же контенте' : ''}.</>} Правка
+          плана до вёрстки появится, когда сервис начнёт принимать отредактированный план; пока «Пересобрать» запускает генерацию заново с тем же шаблоном,
+          контентом и брифом.
+        </div>
+      </div>
+      {plan && plan.slides.length > 0 ? (
+        <DeckPlanView plan={plan} headings={headings} />
+      ) : (
+        <EmptyState
+          title="Сервис не вернул план"
+          description={settled ? 'У этого прогона нет плана колоды.' : 'План появится, когда генерация завершится.'}
+          actions={
+            <Link className={styles.secondaryLink} to={routes.run(projectId, generation.id)}>
+              К генерации
+            </Link>
+          }
+        />
+      )}
     </div>
   )
 }
