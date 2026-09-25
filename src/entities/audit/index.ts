@@ -1,4 +1,4 @@
-export { auditKeys, useAuditIssues, useContextualAudit, useDismissIssue, useRepairIssues, useVariantAudit } from './api/auditApi'
+export { auditIssuesQuery, auditKeys, useAuditIssues, useContextualAudit, useDismissIssue, useRepairIssues, useVariantAudit } from './api/auditApi'
 export type { RepairOutcome } from './api/auditApi'
 export {
   canAutoFix,

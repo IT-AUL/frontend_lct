@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { auditKeys, diffRepair, useRepairIssues, type AuditIssue, type JournalEntry, type RepairBatch } from '@/entities/audit'
+import { auditIssuesQuery, diffRepair, useRepairIssues, type AuditIssue, type JournalEntry, type RepairBatch } from '@/entities/audit'
 import { markEvidence } from '@/entities/project'
 import { useActiveProviderSession } from '@/entities/provider-session'
+import { variantKeys } from '@/entities/variant'
 
 export interface RepairResult {
   batch: RepairBatch
@@ -14,10 +15,9 @@ interface RepairParams {
   variantId: string
   auditId: string | undefined
   fromRevision: number
-  reloadIssues: () => Promise<AuditIssue[] | undefined>
 }
 
-export function useRepairSelected({ projectId, variantId, auditId, fromRevision, reloadIssues }: RepairParams) {
+export function useRepairSelected({ projectId, variantId, auditId, fromRevision }: RepairParams) {
   const queryClient = useQueryClient()
   const session = useActiveProviderSession()
   const mutation = useRepairIssues(variantId)
@@ -26,11 +26,12 @@ export function useRepairSelected({ projectId, variantId, auditId, fromRevision,
     if (!auditId) throw new Error('Аудит ещё не загружен')
     const snapshot = [...selected]
     const outcome = await mutation.mutateAsync({ auditId, issueIds: snapshot.map((issue) => issue.id), providerSessionId: session?.id })
-    const reaudit = queryClient.getQueryData<AuditIssue[]>(auditKeys.issues(outcome.auditId)) ?? (await reloadIssues()) ?? []
+    markEvidence(projectId, 'repaired')
+    void queryClient.invalidateQueries({ queryKey: variantKeys.all })
+    const reaudit = await queryClient.fetchQuery({ ...auditIssuesQuery(outcome.auditId), staleTime: 0 })
     const at = new Date().toISOString()
     const entries = diffRepair(snapshot, reaudit, outcome.deckRevision, at)
     const fixed = entries.filter((entry) => entry.outcome === 'fixed').length
-    markEvidence(projectId, 'repaired')
     return {
       entries,
       reaudit,

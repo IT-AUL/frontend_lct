@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, unwrap } from '@/shared/api'
 import type { AuditIssue, AuditRun } from '../model/types'
 
@@ -17,7 +17,25 @@ async function fetchVariantAudit(variantId: string, providerSessionId?: string):
       body: providerSessionId ? { provider_session_id: providerSessionId } : {},
     }),
   )
-  return unwrap(api.GET('/api/v1/audits/{audit_id}', { params: { path: { audit_id: accepted.audit_id } } }))
+  return fetchAudit(accepted.audit_id)
+}
+
+function fetchAudit(auditId: string): Promise<AuditRun> {
+  return unwrap(api.GET('/api/v1/audits/{audit_id}', { params: { path: { audit_id: auditId } } }))
+}
+
+export function auditIssuesQuery(auditId: string) {
+  return queryOptions({
+    queryKey: auditKeys.issues(auditId),
+    queryFn: async (): Promise<AuditIssue[]> => {
+      const page = await unwrap(
+        api.GET('/api/v1/audits/{audit_id}/issues', {
+          params: { path: { audit_id: auditId }, query: { limit: ISSUE_PAGE_LIMIT } },
+        }),
+      )
+      return page.items
+    },
+  })
 }
 
 export function useVariantAudit(variantId: string | undefined) {
@@ -29,18 +47,7 @@ export function useVariantAudit(variantId: string | undefined) {
 }
 
 export function useAuditIssues(auditId: string | undefined) {
-  return useQuery({
-    queryKey: auditKeys.issues(auditId ?? ''),
-    queryFn: async (): Promise<AuditIssue[]> => {
-      const page = await unwrap(
-        api.GET('/api/v1/audits/{audit_id}/issues', {
-          params: { path: { audit_id: auditId as string }, query: { limit: ISSUE_PAGE_LIMIT } },
-        }),
-      )
-      return page.items
-    },
-    enabled: Boolean(auditId),
-  })
+  return useQuery({ ...auditIssuesQuery(auditId ?? ''), enabled: Boolean(auditId) })
 }
 
 export interface RepairOutcome {
@@ -74,11 +81,9 @@ export function useRepairIssues(variantId: string) {
       }
     },
     onSuccess: async (outcome) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: auditKeys.forVariant(variantId) }),
-        queryClient.invalidateQueries({ queryKey: auditKeys.issues(outcome.auditId) }),
-        queryClient.invalidateQueries({ queryKey: ['variant', variantId] }),
-      ])
+      const audit = await fetchAudit(outcome.auditId).catch(() => null)
+      if (audit) queryClient.setQueryData(auditKeys.forVariant(variantId), audit)
+      else await queryClient.invalidateQueries({ queryKey: auditKeys.forVariant(variantId) })
     },
   })
 }

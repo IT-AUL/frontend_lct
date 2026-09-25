@@ -36,6 +36,9 @@ interface FakeInit {
 let issues: AuditIssue[]
 let audit: AuditRun
 let postSpy: MockInstance
+let repairCreatesAudit: boolean
+let auditRequestFails: boolean
+let archived: Map<string, { run: AuditRun; items: AuditIssue[] }>
 
 function ok(data: unknown) {
   return Promise.resolve({ data, error: undefined, response: new Response(null, { status: 200 }) })
@@ -62,9 +65,9 @@ function fakeGet(path: string, init?: FakeInit) {
     case '/api/v1/exports/{export_id}':
       return ok(deck.export)
     case '/api/v1/audits/{audit_id}':
-      return ok(audit)
+      return ok(archived.get(params.audit_id ?? '')?.run ?? audit)
     case '/api/v1/audits/{audit_id}/issues':
-      return ok({ items: issues })
+      return ok({ items: archived.get(params.audit_id ?? '')?.items ?? issues })
     case '/api/v1/jobs/{job_id}':
       return ok({ id: 'job_repair', state: 'completed', result_ids: { applied: '1', skipped: '0', failed: '0', not_implemented: '0', unresolved: '1' } })
     default:
@@ -75,14 +78,16 @@ function fakeGet(path: string, init?: FakeInit) {
 function fakePost(path: string, init?: FakeInit) {
   switch (path) {
     case '/api/v1/variants/{variant_id}/audits':
-      return ok({ audit_id: audit.id, job_id: 'job_audit' })
+      if (auditRequestFails) return fail(path)
+      return ok({ audit_id: repairCreatesAudit ? deck.audit.id : audit.id, job_id: 'job_audit' })
     case '/api/v1/audits/{audit_id}/repairs': {
       const [fixedId, ...rest] = init?.body?.selected_issue_ids ?? []
       const revision = audit.deck_revision + 1
+      if (repairCreatesAudit) archived.set(audit.id, { run: audit, items: issues })
       issues = issues
         .filter((issue) => issue.id !== fixedId)
         .map((issue) => ({ ...issue, id: `${issue.id}:r${revision}`, deck_revision: revision, status: rest.includes(issue.id) ? 'open' : issue.status }))
-      audit = { ...audit, deck_revision: revision }
+      audit = { ...audit, id: repairCreatesAudit ? `${deck.audit.id}:r${revision}` : audit.id, deck_revision: revision }
       return ok({ job_id: 'job_repair', audit_id: audit.id, deck_revision: revision })
     }
     case '/api/v1/issues/{issue_id}/dismiss': {
@@ -119,6 +124,9 @@ beforeEach(() => {
   window.localStorage.clear()
   issues = structuredClone(deck.issues)
   audit = structuredClone(deck.audit)
+  repairCreatesAudit = false
+  auditRequestFails = false
+  archived = new Map()
   vi.spyOn(api, 'GET').mockImplementation(fakeGet as unknown as typeof api.GET)
   postSpy = vi.spyOn(api, 'POST').mockImplementation(fakePost as unknown as typeof api.POST) as unknown as MockInstance
 })
@@ -179,6 +187,33 @@ describe('AuditPage', { timeout: 20_000 }, () => {
     await user.click(screen.getByRole('radio', { name: 'Решённые' }))
     expect(screen.getAllByRole('article')).toHaveLength(1)
     expect(screen.getByText('Исправлена')).toBeInTheDocument()
+  })
+
+  it('follows the new audit returned by repair even if the variant still points at the old one', async () => {
+    repairCreatesAudit = true
+    const user = userEvent.setup()
+    renderAudit(routes.audit(PROJECT_ID, RUN_ID, fixtures.faithful.variant.id))
+
+    const [first, second] = await screen.findAllByRole('checkbox', { name: /Выбрать для исправления/ })
+    await user.click(first as HTMLElement)
+    await user.click(second as HTMLElement)
+    await user.click(screen.getByRole('button', { name: 'Исправить выбранное (2)' }))
+
+    expect(await screen.findByText('Ревизия r2: исправлено 1, не удалось 1')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Журнал · 2' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: `Проблемы · ${deck.issues.length - 1}` })).toBeInTheDocument()
+  })
+
+  it('reports a failed re-audit instead of showing stale results', async () => {
+    const user = userEvent.setup()
+    renderAudit(routes.audit(PROJECT_ID, RUN_ID, VARIANT_ID))
+
+    await screen.findAllByRole('article')
+    auditRequestFails = true
+    await user.click(screen.getByRole('button', { name: 'Повторный аудит' }))
+
+    expect(await screen.findByText(/Повторный аудит не удался/)).toBeInTheDocument()
+    expect(screen.queryByText(/Повторный аудит: осталось/)).not.toBeInTheDocument()
   })
 
   it('requires a reason to dismiss an issue', async () => {

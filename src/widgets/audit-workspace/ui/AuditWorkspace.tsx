@@ -1,6 +1,8 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useEffectEvent, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import {
+  auditIssuesQuery,
   buildIssueViews,
   checkKind,
   countByCategory,
@@ -86,6 +88,7 @@ function worstSeverity(views: readonly IssueView[]): Severity | null {
 
 export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChange, renderStage }: AuditWorkspaceProps) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const toast = useToast()
   const session = useActiveProviderSession()
   const files = useVariantFiles(variantId)
@@ -120,7 +123,6 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
     variantId,
     auditId: audit?.id,
     fromRevision: revision,
-    reloadIssues: async () => (await issuesQuery.refetch()).data,
   })
 
   const slideInfos = slidesQuery.data ?? []
@@ -241,9 +243,9 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
   const runReaudit = async () => {
     setReauditPending(true)
     try {
-      await auditQuery.refetch()
-      const fresh = await issuesQuery.refetch()
-      settleReaudit(fresh.data ?? [], journal)
+      const { data: fresh } = await auditQuery.refetch({ throwOnError: true })
+      const freshIssues = fresh ? await queryClient.fetchQuery({ ...auditIssuesQuery(fresh.id), staleTime: 0 }) : []
+      settleReaudit(freshIssues, journal)
     } catch (error) {
       toast.show(`Повторный аудит не удался: ${errorText(error)}`)
     } finally {
