@@ -1,9 +1,7 @@
-import dna from '@/shared/api/mocks/fixtures/design-dna.json'
-import detail from '@/shared/api/mocks/fixtures/template-detail.json'
-import type { DesignDna, TemplateDetail } from '../model/types'
+import { designDnaFixture, templateDetailFixture } from '@/shared/api/mocks'
 import { buildDesignSystem } from './designSystem'
 
-const system = buildDesignSystem(detail as TemplateDetail, dna as DesignDna)
+const system = buildDesignSystem(templateDetailFixture, designDnaFixture)
 
 describe('buildDesignSystem', () => {
   it('reads the package inventory of a real template', () => {

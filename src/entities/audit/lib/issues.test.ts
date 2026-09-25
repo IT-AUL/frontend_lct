@@ -1,8 +1,8 @@
-import fixtures from '@/shared/api/mocks/fixtures/variants.json'
+import { variantFixtures } from '@/shared/api/mocks'
 import type { AuditIssue } from '../model/types'
 import { canAutoFix, countBySeverity, filterIssues, groupByCategory, groupBySlide, issueSignature, DEFAULT_ISSUE_FILTER } from './issues'
 
-const issues = fixtures.balanced.issues as AuditIssue[]
+const issues: AuditIssue[] = variantFixtures.balanced.issues
 
 describe('audit issue helpers', () => {
   it('counts real backend issues by severity', () => {
