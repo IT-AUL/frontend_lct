@@ -4,7 +4,7 @@ import { TemplateDropzone, UploadProgress, useTemplateUpload } from '@/features/
 import { useProject } from '@/entities/project'
 import { analysisState, useDesignDna, useTemplate, type TemplateDetail } from '@/entities/template'
 import { isApiError } from '@/shared/api'
-import { routes } from '@/shared/config'
+import { API_BASE, routes } from '@/shared/config'
 import { Button, EmptyState, PageHeader } from '@/shared/ui'
 import { DesignDna, DesignDnaSkeleton } from '@/widgets/design-dna'
 import styles from './TemplatePage.module.css'
@@ -182,8 +182,15 @@ export function TemplatePage() {
             : 'Загрузите корпоративный шаблон или прошлую презентацию — система разберёт его на правила: цвета, шрифты, кегли, сетку, якоря и макеты.'
         }
         actions={
-          showDna ? (
+          showDna && templateId ? (
             <>
+              <a
+                className={styles.jsonLink}
+                href={`${API_BASE}/templates/${encodeURIComponent(templateId)}/design-dna`}
+                download={`design-dna-${templateId}.json`}
+              >
+                ДНК в JSON
+              </a>
               <Button size="lg" onClick={startReplace}>
                 Заменить шаблон
               </Button>
