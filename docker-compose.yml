@@ -1,0 +1,51 @@
+# docker compose up --build web                      -> frontend only, API at WEB_BACKEND_URL
+# docker compose --profile backend up --build        -> frontend + backend built from BACKEND_DIR
+name: deckdna
+
+services:
+  web:
+    build:
+      context: .
+      args:
+        VITE_API_MODE: ${VITE_API_MODE:-live}
+    image: deckdna-web:local
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    environment:
+      BACKEND_URL: ${WEB_BACKEND_URL:-http://api:8000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    depends_on:
+      api:
+        condition: service_healthy
+        required: false
+    restart: unless-stopped
+
+  api:
+    profiles: [backend]
+    build:
+      context: ${BACKEND_DIR:-../LCT-prezi-2026}
+      dockerfile: ${BACKEND_DOCKERFILE:-Dockerfile}
+    image: deckdna-api:local
+    env_file:
+      - path: ${BACKEND_DIR:-../LCT-prezi-2026}/.env
+        required: false
+    ports:
+      - "${API_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/live', timeout=3)"
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    restart: unless-stopped
