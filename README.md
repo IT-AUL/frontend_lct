@@ -75,12 +75,20 @@ npm run lint        # ESLint
 npm run lint:fsd    # Steiger, границы слоёв Feature-Sliced Design
 npm run typecheck
 npm test -- --run   # Vitest
-npm run e2e         # Playwright
+npm run e2e         # Playwright: сквозные сценарии в Chromium, Firefox, WebKit
 npm run build
 ```
 
+E2E (`e2e/`) сами собирают приложение в mock-режиме (`dist-e2e/`) и поднимают `vite preview` на
+порту 4317 (`E2E_PORT`), бэкенд не нужен. Сценарии: демо-путь от ДНК шаблона до скачивания PPTX,
+новый проект с загрузкой шаблона, тема и панели. Браузеры ставятся один раз:
+`npx playwright install --with-deps chromium firefox webkit`; один браузер —
+`npm run e2e -- --project=chromium`; свой бинарник Chromium — `PW_CHROMIUM_PATH=/path/to/chrome`.
+Отчёт — `npx playwright show-report`.
+
 CI (GitHub Actions, `.github/workflows/ci.yml`) на push и PR в `main`: lint, typecheck, тесты,
-сборка; отдельно собирается Docker-образ (без публикации). `lint:fsd` блокирует сборку.
+сборка; e2e в Chromium, Firefox и WebKit (при падении HTML-отчёт в артефактах); отдельно
+собирается Docker-образ (без публикации). `lint:fsd` блокирует сборку.
 
 ## Ограничения
 

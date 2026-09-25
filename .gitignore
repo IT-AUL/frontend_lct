@@ -11,6 +11,7 @@ CLAUDE.local.md
 # Dependencies and builds
 node_modules/
 dist/
+dist-e2e/
 coverage/
 *.tsbuildinfo
 .npm-cache/

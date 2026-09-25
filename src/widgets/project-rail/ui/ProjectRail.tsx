@@ -39,6 +39,7 @@ export function ProjectRail({ progress, current, compact }: ProjectRailProps) {
                 className={styles.step}
                 data-state={step.state}
                 aria-current={step.state === 'current' ? 'step' : undefined}
+                aria-label={compact ? step.label : undefined}
                 title={step.label}
               >
                 <StepContent step={step} index={index} compact={compact} />
