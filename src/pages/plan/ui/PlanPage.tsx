@@ -3,10 +3,13 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { useRerunGeneration } from '@/features/rerun-generation'
 import { DeckPlanView, SoonButton } from '@/widgets/deck-plan'
 import { useContentPack } from '@/entities/content-pack'
-import { isTrackingId, isTerminalState, useGenerationTracker, type GenerationDetail } from '@/entities/generation'
-import { strategyInfo } from '@/entities/variant'
+import { isTrackingId, isTerminalState, useGenerationTracker, type DeckPlan, type GenerationCreate, type GenerationDetail } from '@/entities/generation'
+import { useActiveProviderSession } from '@/entities/provider-session'
+import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
+import { STRATEGY_ORDER, strategyInfo, type CatalogStrategy } from '@/entities/variant'
 import { routes } from '@/shared/config'
 import { Button, EmptyState, PageHeader, Skeleton } from '@/shared/ui'
+import { EditablePlan } from './EditablePlan'
 import styles from './PlanPage.module.css'
 
 const EMPTY_HEADINGS: ReadonlyMap<string, string> = new Map()
@@ -22,6 +25,24 @@ function hasSeparatePlans(generation: GenerationDetail): boolean {
   return ids.size > 1
 }
 
+function usesModel(generation: GenerationDetail): boolean {
+  return generation.variants.some((variant) => Boolean(variant.planner) && !variant.planner?.includes('deterministic'))
+}
+
+function rebuildBody(generation: GenerationDetail, plan: DeckPlan, providerSessionId: string | null): Omit<GenerationCreate, 'deck_plan' | 'deck_plan_id'> {
+  const used = STRATEGY_ORDER.filter((strategy) => generation.variants.some((variant) => variant.strategy === strategy))
+  const strategies: readonly CatalogStrategy[] = used.length > 0 ? used : STRATEGY_ORDER
+  const useLlm = usesModel(generation)
+  return {
+    template_id: generation.template_id,
+    content_pack_id: generation.content_pack_id,
+    brief: plan.brief,
+    variants: strategies.map((strategy) => ({ strategy })),
+    use_llm: useLlm,
+    ...(useLlm && providerSessionId ? { provider_session_id: providerSessionId } : {}),
+  }
+}
+
 export function PlanPage() {
   const { projectId = '', runId = '' } = useParams()
   const navigate = useNavigate()
@@ -29,6 +50,8 @@ export function PlanPage() {
   const { generation, generationId, phase } = tracker
   const { rerun, isPending } = useRerunGeneration(projectId)
   const { data: contentPack } = useContentPack(generation?.content_pack_id)
+  const planOnly = useCapabilityFlag(FEATURE_PATHS.planOnly)
+  const session = useActiveProviderSession()
 
   const headings = useMemo<ReadonlyMap<string, string>>(
     () => (contentPack ? new Map(contentPack.sections.map((section) => [section.id, section.heading])) : EMPTY_HEADINGS),
@@ -100,6 +123,27 @@ export function PlanPage() {
   }
 
   const owner = planOwner(generation)
+
+  if (planOnly && settled && plan && plan.slides.length > 0) {
+    return (
+      <EditablePlan
+        key={plan.id}
+        projectId={projectId}
+        draftKey={`run:${generation.id}`}
+        basePlan={plan}
+        headings={headings}
+        eyebrow="Шаг 3 · План"
+        buildLabel="Пересобрать по этому плану →"
+        buildBody={rebuildBody(generation, plan, session?.id ?? null)}
+        notice={
+          <>
+            Это план прогона{owner ? ` (вариант «${owner}»)` : ''}. Поправьте порядок, заголовки и мысли — сервис соберёт три варианта по вашему плану без
+            повторного планирования.
+          </>
+        }
+      />
+    )
+  }
 
   return (
     <div className={styles.page}>

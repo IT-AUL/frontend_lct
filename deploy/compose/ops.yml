@@ -1,0 +1,244 @@
+name: deckdna-ops
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+x-ops-labels: &ops-labels
+  com.deckdna.stack: deckdna
+  com.deckdna.tier: ops
+
+x-config-labels: &config-labels
+  com.deckdna.stack: deckdna
+  com.deckdna.tier: ops
+  com.deckdna.config-hash: ${CONFIG_HASH:-none}
+
+services:
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:v0.5.0
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      EVENTS: 1
+      INFO: 1
+      PING: 1
+      VERSION: 1
+      POST: 0
+      IMAGES: 0
+      NETWORKS: 0
+      VOLUMES: 0
+      SERVICES: 0
+      TASKS: 0
+      SECRETS: 0
+      EXEC: 0
+      AUTH: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    read_only: true
+    tmpfs:
+      - /run
+      - /tmp
+    mem_limit: 32m
+    security_opt:
+      - no-new-privileges:true
+    labels: *ops-labels
+    logging: *logging
+    networks:
+      - deckdna
+
+  victoria-metrics:
+    image: victoriametrics/victoria-metrics:v1.152.0
+    restart: unless-stopped
+    command:
+      - -storageDataPath=/storage
+      - -retentionPeriod=${METRICS_RETENTION:-30d}
+      - -promscrape.config=/etc/vm/scrape.yml
+      - -promscrape.configCheckInterval=30s
+      - -memory.allowedPercent=60
+      - -selfScrapeInterval=30s
+      - -httpListenAddr=:8428
+    volumes:
+      - vm-data:/storage
+      - ${RENDERED_DIR:?}:/etc/vm:ro
+    mem_limit: 384m
+    cpus: 1
+    security_opt:
+      - no-new-privileges:true
+    labels: *config-labels
+    logging: *logging
+    networks:
+      - deckdna
+
+  victoria-logs:
+    image: victoriametrics/victoria-logs:v1.52.0
+    restart: unless-stopped
+    command:
+      - -storageDataPath=/vlogs
+      - -retentionPeriod=${LOGS_RETENTION:-14d}
+      - -httpListenAddr=:9428
+    volumes:
+      - vl-data:/vlogs
+    mem_limit: 384m
+    cpus: 1
+    security_opt:
+      - no-new-privileges:true
+    labels: *ops-labels
+    logging: *logging
+    networks:
+      - deckdna
+
+  vector:
+    image: timberio/vector:0.58.0-alpine
+    restart: unless-stopped
+    command: ["--config", "/etc/vector/vector.yaml"]
+    depends_on:
+      - victoria-logs
+      - docker-socket-proxy
+    volumes:
+      - ${CONFIG_DIR:?}/vector:/etc/vector:ro
+      - vector-data:/var/lib/vector
+      - /var/log/caddy:/var/log/caddy:ro
+    mem_limit: 192m
+    cpus: 1
+    security_opt:
+      - no-new-privileges:true
+    labels: *config-labels
+    logging: *logging
+    networks:
+      - deckdna
+
+  grafana:
+    image: grafana/grafana-oss:12.4.3
+    restart: unless-stopped
+    depends_on:
+      - victoria-metrics
+      - victoria-logs
+    environment:
+      GF_SERVER_ROOT_URL: https://${OPS_DOMAIN:?}/
+      GF_SERVER_DOMAIN: ${OPS_DOMAIN}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?}
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_SECURITY_COOKIE_SAMESITE: lax
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_LOG_MODE: console
+      GF_METRICS_ENABLED: "true"
+      GF_INSTALL_PLUGINS: victoriametrics-logs-datasource
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/deckdna-overview.json
+      GF_UNIFIED_ALERTING_ENABLED: "true"
+      GF_ALERTING_ENABLED: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ${CONFIG_DIR:?}/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ${CONFIG_DIR:?}/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - 127.0.0.1:${GRAFANA_PORT:-18101}:3000
+    mem_limit: 320m
+    cpus: 1
+    security_opt:
+      - no-new-privileges:true
+    labels: *config-labels
+    logging: *logging
+    networks:
+      - deckdna
+
+  node-exporter:
+    image: prom/node-exporter:v1.12.1
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|run|var/lib/docker/.+|var/lib/containerd/.+)($$|/)
+      - --no-collector.ipvs
+      - --no-collector.nfs
+      - --no-collector.nfsd
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    mem_limit: 64m
+    security_opt:
+      - no-new-privileges:true
+    labels: *ops-labels
+    logging: *logging
+    networks:
+      - deckdna
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
+    restart: unless-stopped
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=30s
+      - --store_container_labels=false
+      - --whitelisted_container_labels=com.deckdna.stack,com.deckdna.role,com.deckdna.tier,com.docker.compose.service
+      - --disable_metrics=percpu,sched,tcp,udp,advtcp,hugetlb,referenced_memory,cpu_topology,resctrl,process,disk
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    mem_limit: 128m
+    cpus: 1
+    security_opt:
+      - no-new-privileges:true
+    labels: *ops-labels
+    logging: *logging
+    networks:
+      - deckdna
+
+  blackbox:
+    image: prom/blackbox-exporter:v0.28.0
+    restart: unless-stopped
+    command: ["--config.file=/etc/blackbox/blackbox.yml"]
+    volumes:
+      - ${CONFIG_DIR:?}/blackbox:/etc/blackbox:ro
+    mem_limit: 48m
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    labels: *config-labels
+    logging: *logging
+    networks:
+      - deckdna
+
+  dozzle:
+    image: amir20/dozzle:v11.1.1
+    restart: unless-stopped
+    depends_on:
+      - docker-socket-proxy
+    environment:
+      DOCKER_HOST: tcp://docker-socket-proxy:2375
+      DOZZLE_BASE: /logs
+      DOZZLE_HOSTNAME: deckdna
+      DOZZLE_NO_ANALYTICS: "true"
+      DOZZLE_FILTER: label=com.deckdna.stack=deckdna
+    ports:
+      - 127.0.0.1:${DOZZLE_PORT:-18102}:8080
+    mem_limit: 64m
+    security_opt:
+      - no-new-privileges:true
+    labels: *ops-labels
+    logging: *logging
+    networks:
+      - deckdna
+
+volumes:
+  vm-data:
+    name: deckdna_vm_data
+  vl-data:
+    name: deckdna_vl_data
+  vector-data:
+    name: deckdna_vector_data
+  grafana-data:
+    name: deckdna_grafana_data
+
+networks:
+  deckdna:
+    external: true
+    name: deckdna

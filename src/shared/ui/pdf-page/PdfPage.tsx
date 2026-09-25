@@ -5,6 +5,7 @@ import styles from './PdfPage.module.css'
 
 interface PdfPageProps {
   url: string | null | undefined
+  imageUrl?: string | null
   pageNumber: number
   aspectRatio?: number
   lazy?: boolean
@@ -15,14 +16,22 @@ interface PdfPageProps {
 
 type RenderState = 'idle' | 'ready' | 'error'
 
-export function PdfPage({ url, pageNumber, aspectRatio = 16 / 9, lazy = true, className, label, children }: PdfPageProps) {
+export function PdfPage({ url, imageUrl, pageNumber, aspectRatio = 16 / 9, lazy = true, className, label, children }: PdfPageProps) {
   const frameRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [visible, setVisible] = useState(!lazy)
   const [width, setWidth] = useState(0)
   const [ratio, setRatio] = useState(aspectRatio)
   const [state, setState] = useState<RenderState>('idle')
-  const { data: pdf, isError } = usePdfDocument(visible ? url : null)
+  const [failedImage, setFailedImage] = useState<string | null>(null)
+  const image = imageUrl && imageUrl !== failedImage ? imageUrl : null
+  const { data: pdf, isError } = usePdfDocument(visible && !image ? url : null)
+
+  const [shownImage, setShownImage] = useState(image)
+  if (shownImage !== image) {
+    setShownImage(image)
+    setState('idle')
+  }
 
   useEffect(() => {
     const frame = frameRef.current
@@ -45,7 +54,7 @@ export function PdfPage({ url, pageNumber, aspectRatio = 16 / 9, lazy = true, cl
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!pdf || !canvas || width === 0 || pageNumber < 1 || pageNumber > pdf.numPages) return
+    if (image || !pdf || !canvas || width === 0 || pageNumber < 1 || pageNumber > pdf.numPages) return
     let cancelled = false
     let cancelRender: (() => void) | undefined
     pdf
@@ -71,10 +80,10 @@ export function PdfPage({ url, pageNumber, aspectRatio = 16 / 9, lazy = true, cl
       cancelled = true
       cancelRender?.()
     }
-  }, [pdf, pageNumber, width])
+  }, [image, pdf, pageNumber, width])
 
-  const outOfRange = Boolean(pdf) && (pageNumber < 1 || pageNumber > (pdf?.numPages ?? 0))
-  const failed = isError || outOfRange || state === 'error'
+  const outOfRange = !image && Boolean(pdf) && (pageNumber < 1 || pageNumber > (pdf?.numPages ?? 0))
+  const failed = image ? false : isError || outOfRange || state === 'error' || (!url && Boolean(failedImage))
 
   return (
     <div
@@ -85,7 +94,24 @@ export function PdfPage({ url, pageNumber, aspectRatio = 16 / 9, lazy = true, cl
       aria-label={label ?? `Слайд ${pageNumber}`}
       data-state={failed ? 'error' : state}
     >
-      <canvas ref={canvasRef} className={styles.canvas} />
+      {image ? (
+        visible && (
+          <img
+            className={styles.canvas}
+            src={image}
+            alt=""
+            decoding="async"
+            onLoad={(event) => {
+              const { naturalWidth, naturalHeight } = event.currentTarget
+              if (naturalWidth > 0 && naturalHeight > 0) setRatio(naturalWidth / naturalHeight)
+              setState('ready')
+            }}
+            onError={() => setFailedImage(image)}
+          />
+        )
+      ) : (
+        <canvas ref={canvasRef} className={styles.canvas} />
+      )}
       {failed && <span className={styles.fallback}>Нет превью</span>}
       {children && <div className={styles.overlay}>{children}</div>}
     </div>

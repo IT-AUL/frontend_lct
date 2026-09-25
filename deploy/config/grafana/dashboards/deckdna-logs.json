@@ -1,0 +1,150 @@
+{
+  "uid": "deckdna-logs",
+  "title": "DeckDNA · Логи",
+  "description": "Логи всех сервисов стека",
+  "tags": [
+    "deckdna",
+    "sre",
+    "logs"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 41,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Сервис",
+        "type": "custom",
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".+",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "options": [],
+        "query": "api,web,caddy,grafana,victoria-metrics,victoria-logs,vector,cadvisor,node-exporter,blackbox,dozzle,docker-socket-proxy"
+      },
+      {
+        "name": "search",
+        "label": "Поиск",
+        "type": "textbox",
+        "query": "*",
+        "current": {
+          "text": "*",
+          "value": "*"
+        }
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [],
+  "panels": [
+    {
+      "id": 44,
+      "type": "timeseries",
+      "title": "Объём логов по сервисам",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 6
+      },
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "vl"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "vl"
+          },
+          "expr": "{service=~\"$service\"} $search | stats by (service) count() lines",
+          "queryType": "statsRange",
+          "refId": "A",
+          "legendFormat": "{{service}}",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 12,
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 45,
+      "type": "logs",
+      "title": "Логи",
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 24,
+        "h": 22
+      },
+      "datasource": {
+        "type": "victoriametrics-logs-datasource",
+        "uid": "vl"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "victoriametrics-logs-datasource",
+            "uid": "vl"
+          },
+          "expr": "{service=~\"$service\"} $search",
+          "queryType": "instant",
+          "refId": "A",
+          "legendFormat": "",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      }
+    }
+  ]
+}

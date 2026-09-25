@@ -7,6 +7,8 @@ export interface ProjectProgress {
   hasTemplate: boolean
   hasContent: boolean
   targetSlides: number
+  planFirst?: boolean
+  hasPlanDraft?: boolean
   generated: boolean
   repaired: boolean
   exported: boolean
@@ -34,6 +36,7 @@ function stepHref(step: ProjectStep, progress: ProjectProgress): string | undefi
   const { projectId, runId } = progress
   if (step === 'template') return routes.template(projectId)
   if (step === 'brief') return progress.hasTemplate ? routes.brief(projectId) : undefined
+  if (step === 'plan' && progress.hasPlanDraft && (!runId || !progress.generated)) return routes.planDraft(projectId)
   if (!runId) return undefined
   if (step === 'plan') return routes.plan(projectId, runId)
   if (step === 'run') return routes.run(projectId, runId)
@@ -50,7 +53,7 @@ function stepMeta(step: ProjectStep, progress: ProjectProgress): string {
     case 'brief':
       return progress.hasContent ? `контент · ${progress.targetSlides} слайдов` : `${progress.targetSlides} слайдов`
     case 'plan':
-      return 'после генерации (v1)'
+      return progress.planFirst ? 'до вёрстки, можно править' : 'после генерации (v1)'
     case 'run':
       return 'бюджет 5:00'
     case 'variants':
@@ -113,7 +116,7 @@ export function buildProofChain(progress: ProjectProgress): ProofLink[] {
 export function stepFromPath(pathname: string): ProjectStep | undefined {
   const segments = pathname.split('/').filter(Boolean)
   const [, , section, , sub] = segments
-  if (section === 'template' || section === 'brief') return section
+  if (section === 'template' || section === 'brief' || section === 'plan') return section
   if (section !== 'runs') return undefined
   if (sub === 'plan' || sub === 'variants' || sub === 'audit' || sub === 'export') return sub
   return 'run'

@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import type { SlideInfo } from '@/entities/variant'
+import { slidePreviewUrl, type SlideInfo } from '@/entities/variant'
 import { RequestPdfExport } from '@/features/request-pdf-export'
 import { pluralize } from '@/shared/lib/format'
 import { PdfPage, Skeleton } from '@/shared/ui'
@@ -41,7 +41,7 @@ export function VariantThumbnails({ variantId, variantName, slides, slidesError,
     return <p className={styles.message}>В варианте нет слайдов.</p>
   }
 
-  if (!pdfUrl) {
+  if (!pdfUrl && !slides.every((slide) => slidePreviewUrl(slide))) {
     return (
       <div className={styles.placeholder}>
         <p className={styles.placeholderText}>
@@ -58,7 +58,7 @@ export function VariantThumbnails({ variantId, variantName, slides, slidesError,
       {slides.map((slide) => (
         <li key={slide.id}>
           <Link className={styles.thumb} to={slideHref(slide.index + 1)} aria-label={`${slideLabel(slide)}. Открыть в аудите`}>
-            <PdfPage url={pdfUrl} pageNumber={slide.index + 1} label={slideLabel(slide)}>
+            <PdfPage url={pdfUrl} imageUrl={slidePreviewUrl(slide)} pageNumber={slide.index + 1} label={slideLabel(slide)}>
               <span className={styles.number} aria-hidden>
                 {slide.index + 1}
               </span>

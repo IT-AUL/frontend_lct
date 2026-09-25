@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { markEvidence, useProjectEvidence } from './evidence'
-import { latestRunId, readRunIds, rememberRun } from './runHistory'
+import { latestRunId, projectRunId, readRunIds, rememberRun } from './runHistory'
 
 describe('run history', () => {
   beforeEach(() => window.localStorage.clear())
@@ -27,5 +27,14 @@ describe('run history', () => {
 
     act(() => rememberRun('prj_evidence', 'run_2'))
     expect(result.current).toEqual({})
+  })
+})
+
+describe('projectRunId', () => {
+  it('prefers the latest run reported by the service', () => {
+    rememberRun('p-srv', 'run_local')
+    expect(projectRunId({ id: 'p-srv', latest_run_id: 'run_server' }, 'p-srv')).toBe('run_server')
+    expect(projectRunId({ id: 'p-srv', latest_run_id: null }, 'p-srv')).toBe('run_local')
+    expect(projectRunId(undefined, 'p-srv')).toBe('run_local')
   })
 })

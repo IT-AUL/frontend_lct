@@ -11,10 +11,23 @@ export const CATEGORY_LABEL: Record<RuleCategory, string> = {
 
 export const CATEGORY_ORDER: readonly RuleCategory[] = ['brand', 'layout', 'text', 'density', 'integrity', 'meaning']
 
-interface RuleMeta {
+export interface RuleMeta {
   name: string
   category: RuleCategory
   autoFix?: string
+  deterministic?: boolean
+  repairable?: boolean
+}
+
+export interface RuleCatalogEntry {
+  code: string
+  title_ru?: string | null
+  category?: string | null
+  deterministic?: boolean | null
+  default_severity?: string | null
+  repairable?: boolean | null
+  fix_title_ru?: string | null
+  threshold?: unknown
 }
 
 export const RULES: Record<string, RuleMeta> = {
@@ -54,10 +67,68 @@ export const RULES: Record<string, RuleMeta> = {
   'deck.logical_flow': { name: 'Соседние слайды не связаны', category: 'meaning' },
 }
 
+const CATEGORY_SET = new Set<string>(CATEGORY_ORDER)
+
+let catalog: ReadonlyMap<string, RuleMeta> | null = null
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function guessCategory(ruleCode: string): RuleCategory {
+  return ruleCode.startsWith('content.') || ruleCode.startsWith('deck.') ? 'meaning' : 'integrity'
+}
+
+function catalogItems(payload: unknown): unknown[] {
+  if (Array.isArray(payload)) return payload
+  if (!isRecord(payload)) return []
+  const list = payload.items ?? payload.rules
+  return Array.isArray(list) ? list : []
+}
+
+function text(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() !== '' ? value.trim() : null
+}
+
+export function parseRuleCatalog(payload: unknown): RuleCatalogEntry[] {
+  return catalogItems(payload).flatMap((item): RuleCatalogEntry[] => {
+    if (!isRecord(item)) return []
+    const code = text(item.code)
+    return code ? [{ ...item, code } as RuleCatalogEntry] : []
+  })
+}
+
+function toMeta(entry: RuleCatalogEntry): RuleMeta {
+  const local = RULES[entry.code]
+  const category = entry.category && CATEGORY_SET.has(entry.category) ? (entry.category as RuleCategory) : (local?.category ?? guessCategory(entry.code))
+  const repairable = typeof entry.repairable === 'boolean' ? entry.repairable : Boolean(text(entry.fix_title_ru))
+  const autoFix = text(entry.fix_title_ru) ?? (repairable ? local?.autoFix : undefined)
+  return {
+    name: text(entry.title_ru) ?? local?.name ?? entry.code,
+    category,
+    ...(autoFix ? { autoFix } : {}),
+    ...(typeof entry.deterministic === 'boolean' ? { deterministic: entry.deterministic } : {}),
+    repairable,
+  }
+}
+
+export function applyRuleCatalog(entries: readonly RuleCatalogEntry[] | null): void {
+  catalog = entries && entries.length > 0 ? new Map(entries.map((entry) => [entry.code, toMeta(entry)])) : null
+}
+
+export function hasRuleCatalog(): boolean {
+  return catalog !== null
+}
+
 export function ruleMeta(ruleCode: string): RuleMeta {
-  return RULES[ruleCode] ?? { name: ruleCode, category: ruleCode.startsWith('content.') || ruleCode.startsWith('deck.') ? 'meaning' : 'integrity' }
+  return catalog?.get(ruleCode) ?? RULES[ruleCode] ?? { name: ruleCode, category: guessCategory(ruleCode) }
 }
 
 export function isAutoFixable(ruleCode: string): boolean {
+  if (catalog) return catalog.get(ruleCode)?.repairable === true
   return Boolean(RULES[ruleCode]?.autoFix)
+}
+
+export function listRules(): [string, RuleMeta][] {
+  return catalog ? [...catalog.entries()] : Object.entries(RULES)
 }

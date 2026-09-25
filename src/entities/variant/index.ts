@@ -1,5 +1,5 @@
 export { useVariant, useVariants, useVariantSlides, variantKeys } from './api/variantApi'
-export { resolveDeckFiles } from './lib/artifacts'
+export { resolveDeckFiles, slidePreviewUrl } from './lib/artifacts'
 export type { DeckFile, DeckFileFormat, DeckFiles } from './lib/artifacts'
 export { AUDIT_STATUS_LABEL, PEI_MAX, variantMetrics } from './lib/metrics'
 export type { VariantMetricsView } from './lib/metrics'
@@ -12,15 +12,17 @@ export {
   STRATEGY_ORDER,
   STRATEGY_PROFILE_LABEL,
   strategyInfo,
+  variantAxes,
   variantRationale,
 } from './model/strategies'
-export type { ProfileLevel, StrategyInfo, StrategyProfile } from './model/strategies'
+export type { AxisView, ProfileLevel, StrategyInfo, StrategyProfile } from './model/strategies'
 export type {
   CatalogStrategy,
   ExportArtifact,
   ExportRecord,
   SlideInfo,
   VariantAuditStatus,
+  VariantAxes,
   VariantMetrics,
   VariantStatus,
   VariantStrategy,

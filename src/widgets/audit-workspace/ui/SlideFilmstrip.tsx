@@ -6,6 +6,7 @@ import styles from './SlideFilmstrip.module.css'
 export interface FilmstripSlide {
   number: number
   title: string | undefined
+  imageUrl?: string | null
   openCount: number
   worst: Severity | null
 }
@@ -34,7 +35,11 @@ export function SlideFilmstrip({ slides, current, pdfUrl, onPick }: SlideFilmstr
           >
             <Mono className={styles.number}>{slide.number}</Mono>
             <span className={clsx(styles.thumb, slide.number === current && styles.current)}>
-              {pdfUrl ? <PdfPage url={pdfUrl} pageNumber={slide.number} label={`Миниатюра слайда ${slide.number}`} /> : <span className={styles.placeholder} />}
+              {pdfUrl || slide.imageUrl ? (
+                <PdfPage url={pdfUrl} imageUrl={slide.imageUrl} pageNumber={slide.number} label={`Миниатюра слайда ${slide.number}`} />
+              ) : (
+                <span className={styles.placeholder} />
+              )}
             </span>
             <span className={styles.badge} data-severity={clean ? 'clean' : (slide.worst ?? 'info')} aria-hidden>
               {clean ? '✓' : slide.openCount}

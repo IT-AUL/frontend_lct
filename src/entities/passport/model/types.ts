@@ -31,11 +31,14 @@ export interface PassportEditability {
 export interface PassportContentSupport {
   supportedClaims: number | null
   unsupportedClaims: number | null
+  numbersVerified: number | null
+  numbersFailed: number | null
 }
 
 export interface PassportReadability {
   contrastFailures: number | null
   overflowCount: number | null
+  avgOccupancy: number | null
 }
 
 export interface PassportStageTiming {
@@ -101,6 +104,7 @@ export interface QualityPassport {
   usage: PassportScore[] | null
   issues: PassportIssues
   fallbacks: PassportFallback[]
+  autoFixes: PassportFallback[]
   provenance: PassportProvenance
   exports: PassportExport[]
 }

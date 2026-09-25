@@ -72,8 +72,9 @@ function fallbacks(value: unknown): PassportFallback[] {
   return value.flatMap((item): PassportFallback[] => {
     if (typeof item === 'string') return item ? [{ label: item, detail: null }] : []
     if (!isRecord(item)) return []
-    const label = text(item, 'stage') ?? text(item, 'component') ?? text(item, 'kind') ?? text(item, 'code')
-    const detail = text(item, 'reason') ?? text(item, 'message') ?? text(item, 'detail') ?? text(item, 'description')
+    const label = text(item, 'stage') ?? text(item, 'component') ?? text(item, 'kind') ?? text(item, 'code') ?? text(item, 'rule_code')
+    const detail =
+      text(item, 'reason') ?? text(item, 'message') ?? text(item, 'detail') ?? text(item, 'description') ?? text(item, 'summary') ?? text(item, 'action')
     if (label) return [{ label, detail }]
     return detail ? [{ label: detail, detail: null }] : []
   })
@@ -144,10 +145,13 @@ export function parsePassport(raw: unknown): QualityPassport {
     contentSupport: {
       supportedClaims: number(contentSupport, 'supported_claims'),
       unsupportedClaims: number(contentSupport, 'unsupported_claims'),
+      numbersVerified: number(contentSupport, 'numbers_verified'),
+      numbersFailed: number(contentSupport, 'numbers_failed'),
     },
     readability: {
       contrastFailures: number(readability, 'contrast_failures'),
       overflowCount: number(readability, 'overflow_count'),
+      avgOccupancy: number(readability, 'avg_occupancy'),
     },
     timings: {
       totalSeconds: number(timings, 'total_seconds'),
@@ -156,6 +160,7 @@ export function parsePassport(raw: unknown): QualityPassport {
     usage: scores(metrics.usage),
     issues: issues(section(raw, 'issues_summary')),
     fallbacks: fallbacks(raw.fallbacks),
+    autoFixes: fallbacks(raw.auto_fixes ?? metrics.auto_fixes),
     provenance: {
       pipelineVersion: text(provenance, 'pipeline_version'),
       skillVersion: text(provenance, 'skill_version'),

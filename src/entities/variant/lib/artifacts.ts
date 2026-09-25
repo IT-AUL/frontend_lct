@@ -1,4 +1,5 @@
-import type { ExportArtifact, ExportRecord, VariantSummary } from '../model/types'
+import { artifactUrl } from '@/shared/api'
+import type { ExportArtifact, ExportRecord, SlideInfo, VariantSummary } from '../model/types'
 
 export type DeckFileFormat = 'pptx' | 'pdf' | 'html' | 'quality_passport'
 
@@ -59,4 +60,9 @@ export function resolveDeckFiles(variant: Pick<VariantSummary, 'id' | 'deck_arti
     html: pick(candidates, 'html'),
     quality_passport: pick(candidates, 'quality_passport'),
   }
+}
+
+export function slidePreviewUrl(slide: Pick<SlideInfo, 'preview_artifact_id'> | null | undefined): string | null {
+  const id = slide?.preview_artifact_id
+  return id ? artifactUrl(id) : null
 }

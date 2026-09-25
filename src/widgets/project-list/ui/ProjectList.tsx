@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { useGeneration } from '@/entities/generation'
-import { latestRunId, type Project } from '@/entities/project'
+import { projectRunId, type Project } from '@/entities/project'
 import { useTemplate } from '@/entities/template'
 import { Badge, Skeleton } from '@/shared/ui'
 import { formatRelativeDate } from '../lib/relativeDate'
@@ -24,7 +24,7 @@ function TemplateName({ templateId }: { templateId: string | null | undefined })
 }
 
 function ProjectRow({ project }: { project: Project }) {
-  const runId = latestRunId(project.id)
+  const runId = projectRunId(project, project.id)
   const run = useRunLookup(runId)
   const status = projectStatus(project, run)
 

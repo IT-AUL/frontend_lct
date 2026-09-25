@@ -1,0 +1,25 @@
+${OPS_DOMAIN} {
+    encode zstd gzip
+
+    log {
+        output file /var/log/caddy/deckdna-ops.log {
+            roll_size 20MiB
+            roll_keep 5
+            roll_keep_for 336h
+        }
+        format json
+    }
+
+    handle /logs* {
+        basic_auth {
+            ${OPS_BASIC_AUTH_USER} ${OPS_BASIC_AUTH_HASH}
+        }
+        reverse_proxy 127.0.0.1:${DOZZLE_PORT} {
+            flush_interval -1
+        }
+    }
+
+    handle {
+        reverse_proxy 127.0.0.1:${GRAFANA_PORT}
+    }
+}

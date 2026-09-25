@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { useGenerationTracker, useRetryGeneration, type GenerationTracker } from '@/entities/generation'
-import { latestRunId, markEvidence, rememberRun } from '@/entities/project'
+import { markEvidence, projectRunId, rememberRun } from '@/entities/project'
 import { ApiError } from '@/shared/api'
 import { generationFixture } from '@/shared/api/mocks'
 import { routes } from '@/shared/config'
@@ -20,9 +20,10 @@ vi.mock('@/entities/generation', async (importOriginal) => ({
 
 vi.mock('@/entities/project', async (importOriginal) => ({
   ...(await importOriginal<typeof ProjectModule>()),
-  latestRunId: vi.fn(),
   markEvidence: vi.fn(),
+  projectRunId: vi.fn(),
   rememberRun: vi.fn(),
+  useProject: vi.fn(() => ({ data: undefined })),
 }))
 
 vi.mock('@/features/variant-files', () => ({
@@ -92,7 +93,7 @@ describe('GenerationPage', () => {
   beforeEach(() => {
     retryMutate.mockReset()
     vi.mocked(useRetryGeneration).mockReturnValue({ mutate: retryMutate, isPending: false } as unknown as ReturnType<typeof useRetryGeneration>)
-    vi.mocked(latestRunId).mockReturnValue(undefined)
+    vi.mocked(projectRunId).mockReturnValue(undefined)
     vi.mocked(markEvidence).mockClear()
     vi.mocked(rememberRun).mockClear()
   })
@@ -186,7 +187,7 @@ describe('GenerationPage', () => {
   })
 
   it('gives a recovery path when the page was reloaded during the synchronous request', () => {
-    vi.mocked(latestRunId).mockReturnValue('run_previous')
+    vi.mocked(projectRunId).mockReturnValue('run_previous')
     const error = new ApiError({ code: 'tracking_lost', message: 'Страница была перезагружена до ответа сервиса, результат этого запуска недоступен', status: 0 })
     useTracker(makeTracker({ phase: 'failed', error, startedAt: null }))
     renderPage(TRACKING)

@@ -1,0 +1,25 @@
+${APP_DOMAIN} {
+    encode zstd gzip
+
+    log {
+        output file /var/log/caddy/deckdna-app.log {
+            roll_size 50MiB
+            roll_keep 5
+            roll_keep_for 336h
+        }
+        format json
+    }
+
+    request_body {
+        max_size 250MB
+    }
+
+    reverse_proxy 127.0.0.1:${WEB_PORT} {
+        header_up X-Real-IP {remote_host}
+        flush_interval -1
+        transport http {
+            response_header_timeout 30m
+            dial_timeout 5s
+        }
+    }
+}

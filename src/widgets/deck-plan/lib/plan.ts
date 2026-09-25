@@ -20,6 +20,8 @@ export interface PlanRow {
   number: string
   purpose: string
   title: string
+  titleIntent: string
+  keyMessage: string
   idea: string | null
   visual: string
   sources: SlideSource[]
@@ -146,6 +148,8 @@ export function buildPlanView(plan: DeckPlan, headings: ReadonlyMap<string, stri
       number: formatIndex(position + 1),
       purpose: slidePurposeLabel(slide.purpose) ?? 'Контент',
       title: slide.title_intent.trim() || 'Без заголовка',
+      titleIntent: slide.title_intent,
+      keyMessage: slide.key_message,
       idea: slideIdea(slide, plan.objective),
       visual: plannedVisual(slide) ?? 'Визуализация не задана',
       sources: slideSources(slide.evidence_ids, headings),

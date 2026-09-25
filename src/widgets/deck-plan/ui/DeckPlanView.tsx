@@ -6,38 +6,32 @@ import { buildPlanView, deckPurposeLabel, type PlanRow } from '../lib/plan'
 import styles from './DeckPlanView.module.css'
 import { SoonButton } from './SoonButton'
 
+export interface PlanEditor {
+  onMove: (slideId: string, delta: -1 | 1) => void
+  onRemove: (slideId: string) => void
+  onUpdate: (slideId: string, patch: { title_intent?: string; key_message?: string }) => void
+  onAdd: () => void
+}
+
 interface DeckPlanViewProps {
   plan: DeckPlan
   headings: ReadonlyMap<string, string>
+  editor?: PlanEditor
 }
 
 const BAR_TONES = 5
 
-function PlanRowItem({ row, first, last }: { row: PlanRow; first: boolean; last: boolean }) {
-  return (
-    <li className={styles.row}>
-      <div className={styles.number}>{row.number}</div>
-      <div className={styles.purposeCell}>
-        <span className={styles.purpose}>{row.purpose}</span>
-      </div>
-      <div className={styles.main}>
-        <div className={styles.title}>{row.title}</div>
-        <div className={styles.idea}>
-          {row.idea && <>{row.idea} · </>}
-          <span className={styles.visual}>{row.visual}</span>
-        </div>
-      </div>
-      <div className={styles.sources}>
-        {row.sources.length > 0 ? (
-          row.sources.map((source) => (
-            <span key={source.key} className={styles.source} title={`${source.label}\n${source.refs.join('\n')}`}>
-              ↳ {source.label}
-            </span>
-          ))
-        ) : (
-          <span className={styles.noSource}>служебный слайд</span>
-        )}
-      </div>
+interface PlanRowItemProps {
+  row: PlanRow
+  first: boolean
+  last: boolean
+  single: boolean
+  editor?: PlanEditor
+}
+
+function RowActions({ row, first, last, single, editor }: PlanRowItemProps) {
+  if (!editor) {
+    return (
       <div className={styles.rowActions}>
         <SoonButton label={first ? 'Выше: уже первый' : 'Выше'} className={styles.iconButton}>
           ↑
@@ -49,11 +43,88 @@ function PlanRowItem({ row, first, last }: { row: PlanRow; first: boolean; last:
           ×
         </SoonButton>
       </div>
+    )
+  }
+  return (
+    <div className={styles.rowActions}>
+      <button type="button" className={clsx(styles.iconButton, styles.live)} aria-label={`Поднять слайд ${row.number} выше`} disabled={first} onClick={() => editor.onMove(row.id, -1)}>
+        ↑
+      </button>
+      <button type="button" className={clsx(styles.iconButton, styles.live)} aria-label={`Опустить слайд ${row.number} ниже`} disabled={last} onClick={() => editor.onMove(row.id, 1)}>
+        ↓
+      </button>
+      <button
+        type="button"
+        className={clsx(styles.iconButton, styles.live, styles.remove)}
+        aria-label={`Убрать слайд ${row.number}`}
+        disabled={single}
+        onClick={() => editor.onRemove(row.id)}
+      >
+        ×
+      </button>
+    </div>
+  )
+}
+
+function RowMain({ row, editor }: Pick<PlanRowItemProps, 'row' | 'editor'>) {
+  if (!editor) {
+    return (
+      <div className={styles.main}>
+        <div className={styles.title}>{row.title}</div>
+        <div className={styles.idea}>
+          {row.idea && <>{row.idea} · </>}
+          <span className={styles.visual}>{row.visual}</span>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className={styles.main}>
+      <input
+        className={styles.titleInput}
+        value={row.titleIntent}
+        placeholder="Заголовок-вывод"
+        aria-label={`Заголовок слайда ${row.number}`}
+        onChange={(event) => editor.onUpdate(row.id, { title_intent: event.target.value })}
+      />
+      <textarea
+        className={styles.ideaInput}
+        value={row.keyMessage}
+        rows={2}
+        placeholder="Главная мысль слайда"
+        aria-label={`Мысль слайда ${row.number}`}
+        onChange={(event) => editor.onUpdate(row.id, { key_message: event.target.value })}
+      />
+      <span className={styles.visual}>{row.visual}</span>
+    </div>
+  )
+}
+
+function PlanRowItem({ row, first, last, single, editor }: PlanRowItemProps) {
+  return (
+    <li className={styles.row}>
+      <div className={styles.number}>{row.number}</div>
+      <div className={styles.purposeCell}>
+        <span className={styles.purpose}>{row.purpose}</span>
+      </div>
+      <RowMain row={row} editor={editor} />
+      <div className={styles.sources}>
+        {row.sources.length > 0 ? (
+          row.sources.map((source) => (
+            <span key={source.key} className={styles.source} title={`${source.label}\n${source.refs.join('\n')}`}>
+              ↳ {source.label}
+            </span>
+          ))
+        ) : (
+          <span className={styles.noSource}>служебный слайд</span>
+        )}
+      </div>
+      <RowActions row={row} first={first} last={last} single={single} editor={editor} />
     </li>
   )
 }
 
-export function DeckPlanView({ plan, headings }: DeckPlanViewProps) {
+export function DeckPlanView({ plan, headings, editor }: DeckPlanViewProps) {
   const view = useMemo(() => buildPlanView(plan, headings), [plan, headings])
   const { rows, sections, stats } = view
   const { provenance, brief } = plan
@@ -80,14 +151,20 @@ export function DeckPlanView({ plan, headings }: DeckPlanViewProps) {
                     Раздел · {row.sectionTitle}
                   </li>
                 )}
-                <PlanRowItem row={row} first={position === 0} last={position === rows.length - 1} />
+                <PlanRowItem row={row} first={position === 0} last={position === rows.length - 1} single={rows.length === 1} editor={editor} />
               </Fragment>
             )
           })}
         </ol>
-        <SoonButton label="Добавить слайд" block className={styles.addButton}>
-          + Добавить слайд
-        </SoonButton>
+        {editor ? (
+          <button type="button" className={clsx(styles.addButton, styles.live)} onClick={editor.onAdd}>
+            + Добавить слайд
+          </button>
+        ) : (
+          <SoonButton label="Добавить слайд" block className={styles.addButton}>
+            + Добавить слайд
+          </SoonButton>
+        )}
       </div>
 
       <aside className={styles.aside} aria-label="Почему такая структура">

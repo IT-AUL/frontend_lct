@@ -1,4 +1,5 @@
 export { generationKeys, useCancelGeneration, useGeneration, useJob, useRetryGeneration } from './api/generationApi'
+export { parsePlanDraft, requestPlans } from './api/plans'
 export { budgetStatus, elapsedSeconds } from './lib/budget'
 export type { BudgetStatus, GenerationTiming } from './lib/budget'
 export { SLIDE_PURPOSE_LABEL, slidePurposeLabel } from './lib/purpose'
@@ -23,6 +24,9 @@ export type {
   JobError,
   JobKind,
   JobState,
+  PlanDraftResult,
+  PlanProposal,
+  PlanRequest,
   SlidePlan,
   SlidePurpose,
   VariantRequest,

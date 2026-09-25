@@ -1,5 +1,5 @@
 import { ruleMeta } from '../model/rules'
-import type { AuditIssue } from '../model/types'
+import type { AuditIssue, FixPreview, RepairIssueOutcome } from '../model/types'
 import { isOpenIssue, issueSignature } from './issues'
 import { actionLabel } from './measurement'
 
@@ -12,6 +12,7 @@ export interface JournalEntry {
   revision: number
   issue: AuditIssue
   reason: string | null
+  detail?: string | null
   at: string
 }
 
@@ -30,11 +31,21 @@ function isStillPresent(issue: AuditIssue): boolean {
   return isOpenIssue(issue) || issue.status === 'unresolved'
 }
 
+const CLAIMED_BUT_PRESENT = 'Сервис сообщил об исправлении, но проблема осталась в новой ревизии'
+const SKIPPED_WITHOUT_REASON = 'Сервис пропустил эту проблему'
+const FAILED_WITHOUT_REASON = 'Исправление не сработало'
+
+function outcomeReason(outcome: RepairIssueOutcome): string {
+  if (outcome.reason) return outcome.reason
+  return outcome.status === 'skipped' ? SKIPPED_WITHOUT_REASON : FAILED_WITHOUT_REASON
+}
+
 export function diffRepair(
   snapshot: readonly AuditIssue[],
   reaudit: readonly AuditIssue[],
   revision: number,
   at: string = new Date().toISOString(),
+  outcomes: readonly RepairIssueOutcome[] | null = null,
 ): JournalEntry[] {
   const remaining = new Map<string, number>()
   for (const issue of reaudit) {
@@ -42,19 +53,18 @@ export function diffRepair(
     const signature = issueSignature(issue)
     remaining.set(signature, (remaining.get(signature) ?? 0) + 1)
   }
+  const byIssue = new Map((outcomes ?? []).map((outcome) => [outcome.issueId, outcome]))
   return snapshot.map((issue, index) => {
     const signature = issueSignature(issue)
     const left = remaining.get(signature) ?? 0
     if (left > 0) remaining.set(signature, left - 1)
-    return {
-      id: `r${revision}:${index}:${signature}`,
-      outcome: left > 0 ? 'unresolved' : 'fixed',
-      signature,
-      revision,
-      issue,
-      reason: null,
-      at,
-    }
+    const present = left > 0
+    const reported = byIssue.get(issue.id)
+    const base = { id: `r${revision}:${index}:${signature}`, signature, revision, issue, at }
+    if (!reported) return { ...base, outcome: present ? 'unresolved' : 'fixed', reason: null, detail: null }
+    if (reported.status !== 'fixed') return { ...base, outcome: 'unresolved', reason: outcomeReason(reported), detail: reported.action }
+    if (present) return { ...base, outcome: 'unresolved', reason: CLAIMED_BUT_PRESENT, detail: reported.summary }
+    return { ...base, outcome: 'fixed', reason: null, detail: reported.summary }
   })
 }
 
@@ -74,7 +84,15 @@ export function summarizeJournal(entries: readonly JournalEntry[]): Record<Journ
   return counts
 }
 
-export function plannedFix(issue: Pick<AuditIssue, 'rule_code' | 'proposed_actions'>): string | null {
+function previewText(preview: string | FixPreview | null | undefined): string | null {
+  if (!preview) return null
+  const value = typeof preview === 'string' ? preview : (preview.description_ru ?? null)
+  return value && value.trim() !== '' ? value.trim() : null
+}
+
+export function plannedFix(issue: Pick<AuditIssue, 'rule_code' | 'proposed_actions' | 'fix_preview'>): string | null {
+  const preview = previewText(issue.fix_preview)
+  if (preview) return preview
   const autoFix = ruleMeta(issue.rule_code).autoFix
   if (autoFix) return autoFix
   const actions = issue.proposed_actions ?? []
@@ -83,8 +101,8 @@ export function plannedFix(issue: Pick<AuditIssue, 'rule_code' | 'proposed_actio
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-export function journalActionText(entry: Pick<JournalEntry, 'outcome' | 'issue' | 'reason'>): string {
+export function journalActionText(entry: Pick<JournalEntry, 'outcome' | 'issue' | 'reason' | 'detail'>): string {
   if (entry.outcome === 'dismissed') return `Отклонено: ${entry.reason ?? 'причина сохранена в сервисе'}`
-  if (entry.outcome === 'unresolved') return 'Не удалось исправить: проблема осталась в новой ревизии'
-  return plannedFix(entry.issue) ?? 'Исправлено'
+  if (entry.outcome === 'unresolved') return `Не удалось исправить: ${entry.reason ?? 'проблема осталась в новой ревизии'}`
+  return entry.detail ?? plannedFix(entry.issue) ?? 'Исправлено'
 }

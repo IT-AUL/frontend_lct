@@ -4,24 +4,13 @@ import { Link } from 'react-router'
 import { SEVERITY } from '@/entities/audit'
 import { JOB_STATE_LABEL } from '@/entities/generation'
 import { usePassport } from '@/entities/passport'
-import {
-  DEFAULT_STRATEGY,
-  STRATEGY_PROFILE_LABEL,
-  strategyInfo,
-  useVariantSlides,
-  variantMetrics,
-  variantRationale,
-  type StrategyProfile,
-  type VariantSummary,
-} from '@/entities/variant'
+import { DEFAULT_STRATEGY, strategyInfo, useVariantSlides, variantAxes, variantMetrics, variantRationale, type VariantSummary } from '@/entities/variant'
 import { useVariantFiles } from '@/features/variant-files'
+import { formatPercent } from '@/shared/lib/format'
 import { Badge, Meter, Mono } from '@/shared/ui'
-import { formatPei, issuesHeadline, peiNote, severityBreakdown, validityView } from '../lib/metrics'
+import { formatPei, issuesHeadline, peiNote, severityBreakdown, styleFidelityScore, validityView } from '../lib/metrics'
 import styles from './VariantCard.module.css'
 import { VariantThumbnails } from './VariantThumbnails'
-
-const PROFILE_KEYS: readonly (keyof StrategyProfile)[] = ['text', 'exemplarLayouts', 'visuals']
-const PROFILE_MAX = 3
 
 interface VariantCardProps {
   variant: VariantSummary
@@ -43,6 +32,8 @@ export function VariantCard({ variant: listed, showThumbnails, auditHref }: Vari
   const validity = validityView(metrics.opensCleanly)
   const note = peiNote(metrics.editabilityLevel, passport.data?.editability.rasterOnlySlides ?? null)
   const breakdown = severityBreakdown(metrics.issuesTotal, passport.data?.issues)
+  const axes = variantAxes(variant)
+  const fidelity = styleFidelityScore(metrics.styleFidelity, passport.data?.styleFidelity)
 
   return (
     <section className={clsx(styles.card, isDefault && styles.recommended)} aria-labelledby={headingId}>
@@ -57,19 +48,16 @@ export function VariantCard({ variant: listed, showThumbnails, auditHref }: Vari
 
       <p className={styles.rationale}>{variantRationale(variant)}</p>
 
-      {info.profile && (
+      {axes.length > 0 && (
         <dl className={styles.axes} aria-label="Профиль стратегии">
-          {PROFILE_KEYS.map((key) => {
-            const level = info.profile?.[key] ?? 0
-            return (
-              <div key={key} className={styles.axis}>
-                <dt>{STRATEGY_PROFILE_LABEL[key]}</dt>
-                <dd>
-                  <Meter value={level / PROFILE_MAX} label={`${STRATEGY_PROFILE_LABEL[key]}: ${level} из ${PROFILE_MAX}`} />
-                </dd>
-              </div>
-            )
-          })}
+          {axes.map((axis) => (
+            <div key={axis.key} className={styles.axis}>
+              <dt>{axis.label}</dt>
+              <dd>
+                <Meter value={axis.value} label={axis.caption} />
+              </dd>
+            </div>
+          ))}
         </dl>
       )}
 
@@ -94,9 +82,15 @@ export function VariantCard({ variant: listed, showThumbnails, auditHref }: Vari
         </div>
         <div className={styles.metric}>
           <dt>Соответствие</dt>
-          <dd className={styles.soon} title="Бэкенд пока не считает соответствие шаблону">
-            скоро
-          </dd>
+          {fidelity === null ? (
+            <dd className={styles.soon} title="Сервис пока не считает соответствие шаблону">
+              скоро
+            </dd>
+          ) : (
+            <dd className={styles.mono} title="Соответствие правилам шаблона: палитра, шрифты, макеты, якоря">
+              {formatPercent(fidelity)}
+            </dd>
+          )}
         </div>
       </dl>
 

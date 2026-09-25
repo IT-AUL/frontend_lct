@@ -1,8 +1,11 @@
 import { clsx } from 'clsx'
 import { useVariantFiles } from '@/features/variant-files'
 import { variantMetrics, type VariantSummary } from '@/entities/variant'
+import { artifactUrl } from '@/shared/api'
+import { formatClock } from '@/shared/lib/format'
+import { useNow } from '@/shared/lib/time'
 import { PdfPage } from '@/shared/ui'
-import { VARIANT_STATE_LABEL, type VariantCard as VariantCardModel } from '../lib/variants'
+import { VARIANT_STATE_LABEL, variantElapsedSeconds, variantStageLabel, type VariantCard as VariantCardModel } from '../lib/variants'
 import styles from './VariantCard.module.css'
 
 const THUMB_PAGES = [1, 2, 3]
@@ -15,9 +18,12 @@ interface VariantCardProps {
 function DoneBody({ variant, name }: { variant: VariantSummary; name: string }) {
   const { pdfUrl } = useVariantFiles(variant.id)
   const { opensCleanly } = variantMetrics(variant)
+  const montageUrl = variant.montage_artifact_id ? artifactUrl(variant.montage_artifact_id) : null
   return (
     <>
-      {pdfUrl ? (
+      {montageUrl && !pdfUrl ? (
+        <img className={clsx(styles.montage, styles.appear)} src={montageUrl} alt={`${name}: слайды колоды`} decoding="async" />
+      ) : pdfUrl ? (
         <div className={clsx(styles.thumbs, styles.appear)}>
           {THUMB_PAGES.map((page) => (
             <PdfPage key={page} url={pdfUrl} pageNumber={page} className={styles.thumb} label={`${name}: слайд ${page}`} />
@@ -54,6 +60,12 @@ function DashedSlots() {
 
 export function VariantCard({ card, failureMessage }: VariantCardProps) {
   const { state, strategy, variant } = card
+  const now = useNow(1000, state === 'running')
+  const elapsed = variantElapsedSeconds(variant, now)
+  const stage = state === 'running' ? variantStageLabel(variant) : null
+  const statusText = [VARIANT_STATE_LABEL[state], stage, elapsed !== null && (state === 'running' || state === 'done') ? formatClock(elapsed) : null]
+    .filter(Boolean)
+    .join(' · ')
   return (
     <article className={clsx(styles.card, styles[`card_${state}`])} aria-label={`${strategy.name}: ${VARIANT_STATE_LABEL[state]}`}>
       <header className={styles.head}>
@@ -62,7 +74,7 @@ export function VariantCard({ card, failureMessage }: VariantCardProps) {
         <span className={styles.spacer} />
         <span className={clsx(styles.status, styles[`status_${state}`])}>
           <span className={styles.dot} aria-hidden />
-          {VARIANT_STATE_LABEL[state]}
+          {statusText}
         </span>
       </header>
       <p className={styles.axis}>{strategy.axis}</p>

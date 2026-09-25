@@ -1,4 +1,4 @@
-import type { CatalogStrategy, VariantSummary } from './types'
+import type { CatalogStrategy, VariantAxes, VariantSummary } from './types'
 
 export type ProfileLevel = 1 | 2 | 3
 
@@ -88,4 +88,48 @@ export function orderVariants<T extends Pick<VariantSummary, 'strategy'>>(varian
     return position === -1 ? STRATEGY_ORDER.length : position
   }
   return [...variants].sort((a, b) => rank(a.strategy) - rank(b.strategy))
+}
+
+export interface AxisView {
+  key: string
+  label: string
+  value: number
+  caption: string
+}
+
+const AXIS_LABEL: Record<keyof VariantAxes, string> = {
+  text_density: 'Текст',
+  layout_diversity: 'Разнообразие макетов',
+  visualization: 'Визуализация',
+}
+
+const AXIS_ORDER: readonly (keyof VariantAxes)[] = ['text_density', 'layout_diversity', 'visualization']
+
+const PROFILE_ORDER: readonly (keyof StrategyProfile)[] = ['text', 'exemplarLayouts', 'visuals']
+
+const PROFILE_MAX = 3
+
+function unit(value: number): number {
+  return Math.min(1, Math.max(0, value))
+}
+
+export function variantAxes(variant: Pick<VariantSummary, 'strategy' | 'axes'>): AxisView[] {
+  const axes = variant.axes
+  if (axes) {
+    const measured = AXIS_ORDER.flatMap((key): AxisView[] => {
+      const value = axes[key]
+      if (typeof value !== 'number' || !Number.isFinite(value)) return []
+      const share = unit(value)
+      return [{ key, label: AXIS_LABEL[key], value: share, caption: `${AXIS_LABEL[key]}: ${Math.round(share * 100)}%` }]
+    })
+    if (measured.length > 0) return measured
+  }
+  const profile = strategyInfo(variant.strategy).profile
+  if (!profile) return []
+  return PROFILE_ORDER.map((key) => ({
+    key,
+    label: STRATEGY_PROFILE_LABEL[key],
+    value: profile[key] / PROFILE_MAX,
+    caption: `${STRATEGY_PROFILE_LABEL[key]}: ${profile[key]} из ${PROFILE_MAX}`,
+  }))
 }

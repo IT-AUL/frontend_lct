@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { CheckKindBadge } from '@/entities/audit'
+import { CheckKindBadge, useRuleCatalog } from '@/entities/audit'
 import { useCapabilities, useSkillManifest, useVersion } from '@/entities/system'
 import { Badge, Drawer, Skeleton } from '@/shared/ui'
 import { capabilityRows, countRules, describeManifest, formatRows, ruleGroups, versionRows } from '../lib/about'
@@ -9,9 +9,6 @@ interface AboutPanelProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
-
-const RULE_GROUPS = ruleGroups()
-const RULE_COUNTS = countRules(RULE_GROUPS)
 
 function Block({ title, note, children }: { title: string; note?: ReactNode; children: ReactNode }) {
   return (
@@ -151,17 +148,21 @@ function ManifestBlock() {
 }
 
 function RulesBlock() {
+  const { data: catalog } = useRuleCatalog()
+  const groups = ruleGroups()
+  const counts = countRules(groups)
   return (
     <Block
       title="Правила аудита"
       note={
         <>
-          {RULE_COUNTS.D} детерминированных <CheckKindBadge kind="D" /> — правило в коде, результат всегда один; {RULE_COUNTS.N} контекстных{' '}
-          <CheckKindBadge kind="N" /> — отвечает модель по картинке слайда.
+          {counts.D} детерминированных <CheckKindBadge kind="D" /> — правило в коде, результат всегда один; {counts.N} контекстных{' '}
+          <CheckKindBadge kind="N" /> — отвечает модель по картинке слайда.{' '}
+          {catalog ? 'Список и автоисправления — из каталога правил сервиса.' : 'Сервис пока не отдаёт каталог правил — показан справочник интерфейса.'}
         </>
       }
     >
-      {RULE_GROUPS.map((group) => (
+      {groups.map((group) => (
         <div key={group.category} className={styles.group}>
           <div className={styles.groupTitle}>
             {group.label} <span className={styles.groupCount}>{group.rules.length}</span>

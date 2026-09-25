@@ -1,7 +1,7 @@
 import { clsx } from 'clsx'
 import type { ReactNode } from 'react'
 import { SEVERITY } from '@/entities/audit'
-import { formatDateTime, formatIndex, formatNumber, pluralize } from '@/shared/lib/format'
+import { formatDateTime, formatIndex, formatNumber, formatPercent, pluralize } from '@/shared/lib/format'
 import { Badge, Meter } from '@/shared/ui'
 import type { PassportView } from '../model/passportView'
 import styles from './QualityPassport.module.css'
@@ -22,6 +22,7 @@ interface Section {
 const STAGE_COLORS = ['var(--ink)', 'var(--ink-2)', 'var(--ink-3)', 'var(--line-2)']
 
 const CLAIM_FORMS = ['утверждение', 'утверждения', 'утверждений'] as const
+const NUMBER_FORMS = ['число', 'числа', 'чисел'] as const
 
 function number(value: number | null): string {
   return value === null ? '—' : formatNumber(value)
@@ -54,9 +55,21 @@ function StyleBody({ view }: { view: PassportView }) {
 function SourcesBody({ view }: { view: PassportView }) {
   const sources = view.sources
   if (!sources) return <p className={styles.muted}>Сервис не передал сведений о подкреплённости утверждений.</p>
-  const { supported, unsupported, total } = sources
+  const { supported, unsupported, total, numbersVerified, numbersFailed } = sources
   return (
     <p className={styles.text}>
+      {numbersVerified !== null && (
+        <>
+          <b>{formatNumber(numbersVerified)}</b> {pluralize(numbersVerified, NUMBER_FORMS)} сверено с контентом
+          {numbersFailed !== null && numbersFailed > 0 && (
+            <>
+              {' '}
+              · <b>{formatNumber(numbersFailed)}</b> не совпало
+            </>
+          )}
+          {(supported !== null || unsupported !== null) && ' · '}
+        </>
+      )}
       {supported !== null && (
         <>
           <b>{total !== null ? `${formatNumber(supported)} из ${formatNumber(total)}` : formatNumber(supported)}</b>{' '}
@@ -75,10 +88,17 @@ function SourcesBody({ view }: { view: PassportView }) {
 }
 
 function ReadabilityBody({ view }: { view: PassportView }) {
-  const { contrastFailures, overflowCount } = view.readability
+  const { contrastFailures, overflowCount, avgOccupancy } = view.readability
   return (
     <p className={styles.text}>
-      <b>{number(contrastFailures)}</b> провалов контраста · <b>{number(overflowCount)}</b> переполнений текста.
+      <b>{number(contrastFailures)}</b> провалов контраста · <b>{number(overflowCount)}</b> переполнений текста
+      {avgOccupancy !== null && (
+        <>
+          {' '}
+          · заполненность слайдов в среднем <b>{formatPercent(avgOccupancy)}</b>
+        </>
+      )}
+      .
     </p>
   )
 }
@@ -156,11 +176,10 @@ function TimingBody({ view }: { view: PassportView }) {
   )
 }
 
-function FallbacksBody({ view }: { view: PassportView }) {
-  if (view.fallbacks.length === 0) return <p className={styles.muted}>Упрощений не было: сервис не сообщил ни об одном фолбэке.</p>
+function NoteList({ items }: { items: PassportView['fallbacks'] }) {
   return (
     <ul className={styles.fallbacks}>
-      {view.fallbacks.map((fallback, index) => (
+      {items.map((fallback, index) => (
         <li key={`${fallback.label}-${index}`} className={styles.fallback}>
           <span className={styles.fallbackDot} aria-hidden>
             ●
@@ -173,6 +192,15 @@ function FallbacksBody({ view }: { view: PassportView }) {
       ))}
     </ul>
   )
+}
+
+function FallbacksBody({ view }: { view: PassportView }) {
+  if (view.fallbacks.length === 0) return <p className={styles.muted}>Упрощений не было: сервис не сообщил ни об одном фолбэке.</p>
+  return <NoteList items={view.fallbacks} />
+}
+
+function AutoFixesBody({ view }: { view: PassportView }) {
+  return <NoteList items={view.autoFixes} />
 }
 
 function ProvenanceBody({ view }: { view: PassportView }) {
@@ -198,6 +226,7 @@ export function QualityPassport({ view, revisionLabel, notice, actions }: Qualit
     { key: 'readability', title: 'Читаемо', body: <ReadabilityBody view={view} /> },
     { key: 'issues', title: 'Итоги аудита', body: <IssuesBody view={view} /> },
     { key: 'timing', title: <TimingTitle view={view} />, body: <TimingBody view={view} /> },
+    ...(view.autoFixes.length > 0 ? [{ key: 'autoFixes', title: 'Исправлено до показа', body: <AutoFixesBody view={view} /> }] : []),
     { key: 'fallbacks', title: 'Где система упростила', body: <FallbacksBody view={view} /> },
     { key: 'provenance', title: 'Происхождение', body: <ProvenanceBody view={view} /> },
   ]

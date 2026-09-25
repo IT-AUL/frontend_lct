@@ -30,7 +30,7 @@ export function useRepairSelected({ projectId, variantId, auditId, fromRevision 
     void queryClient.invalidateQueries({ queryKey: variantKeys.all })
     const reaudit = await queryClient.fetchQuery({ ...auditIssuesQuery(outcome.auditId), staleTime: 0 })
     const at = new Date().toISOString()
-    const entries = diffRepair(snapshot, reaudit, outcome.deckRevision, at)
+    const entries = diffRepair(snapshot, reaudit, outcome.deckRevision, at, outcome.outcomes)
     const fixed = entries.filter((entry) => entry.outcome === 'fixed').length
     return {
       entries,

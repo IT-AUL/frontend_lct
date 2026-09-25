@@ -56,8 +56,8 @@ describe('buildPassportView', () => {
   it('keeps supported claims without faking the unsupported count', () => {
     const view = buildPassportView(recorded(), context)
 
-    expect(view.sources).toEqual({ supported: 193, unsupported: null, total: null })
-    expect(view.readability).toEqual({ contrastFailures: 18, overflowCount: 23 })
+    expect(view.sources).toEqual({ supported: 193, unsupported: null, total: null, numbersVerified: null, numbersFailed: null })
+    expect(view.readability).toEqual({ contrastFailures: 18, overflowCount: 23, avgOccupancy: null })
     expect(view.issues).toEqual({
       counts: [
         { severity: 'blocker', count: 0 },

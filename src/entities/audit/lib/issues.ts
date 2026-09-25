@@ -18,7 +18,9 @@ export function canAutoFix(issue: AuditIssue): boolean {
   return issue.repairable && isAutoFixable(issue.rule_code)
 }
 
-export function issueSignature(issue: Pick<AuditIssue, 'rule_code' | 'slide_index' | 'shape_ids'>): string {
+export function issueSignature(issue: Pick<AuditIssue, 'rule_code' | 'slide_index' | 'shape_ids' | 'fingerprint'>): string {
+  const fingerprint = issue.fingerprint?.trim()
+  if (fingerprint) return fingerprint
   return [issue.rule_code, issue.slide_index ?? '-', [...(issue.shape_ids ?? [])].sort().join('+')].join('|')
 }
 

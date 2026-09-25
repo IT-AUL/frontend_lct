@@ -1,4 +1,4 @@
-import type { GenerationPhase } from '@/entities/generation'
+import { stageLabel, type GenerationPhase } from '@/entities/generation'
 import { isVariantSettled, orderVariants, STRATEGY_ORDER, strategyInfo, type StrategyInfo, type VariantSummary } from '@/entities/variant'
 
 export type VariantCardState = 'pending' | 'queued' | 'running' | 'done' | 'error' | 'canceled'
@@ -46,4 +46,21 @@ export function variantCards(phase: GenerationPhase, variants: readonly VariantS
   }
   if (phase !== 'submitting' && phase !== 'running') return []
   return STRATEGY_ORDER.map((strategy) => ({ key: strategy, strategy: strategyInfo(strategy), state: 'pending', variant: null }))
+}
+
+function parseTime(value: string | null | undefined): number | null {
+  if (!value) return null
+  const time = Date.parse(value)
+  return Number.isNaN(time) ? null : time
+}
+
+export function variantElapsedSeconds(variant: Pick<VariantSummary, 'started_at' | 'finished_at'> | null, nowMs: number): number | null {
+  const started = parseTime(variant?.started_at)
+  if (started === null) return null
+  const finished = parseTime(variant?.finished_at) ?? nowMs
+  return Math.max(0, (finished - started) / 1000)
+}
+
+export function variantStageLabel(variant: Pick<VariantSummary, 'stage'> | null): string | null {
+  return stageLabel(variant?.stage)
 }

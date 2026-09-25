@@ -1,5 +1,5 @@
 import { SEVERITY_ORDER, type Severity } from '@/entities/audit'
-import type { PassportIssues } from '@/entities/passport'
+import type { PassportIssues, PassportScore } from '@/entities/passport'
 import { PEI_MAX } from '@/entities/variant'
 import { formatNumber, pluralize } from '@/shared/lib/format'
 
@@ -46,4 +46,11 @@ export function severityBreakdown(total: number | null, issues: PassportIssues |
   const sum = counts.reduce((acc, { count }) => acc + count, 0)
   if (total !== null && sum !== total) return null
   return counts
+}
+
+export function styleFidelityScore(direct: number | null, passportScores: readonly PassportScore[] | null | undefined): number | null {
+  if (direct !== null) return direct
+  if (!passportScores || passportScores.length === 0) return null
+  const mean = passportScores.reduce((sum, { value }) => sum + value, 0) / passportScores.length
+  return Math.min(1, Math.max(0, mean))
 }

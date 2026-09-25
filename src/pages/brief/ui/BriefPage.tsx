@@ -3,13 +3,14 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { useProject } from '@/entities/project'
 import type { Project } from '@/entities/project'
 import { useActiveProviderSession } from '@/entities/provider-session'
+import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
 import { useTemplate } from '@/entities/template'
 import { routes } from '@/shared/config'
 import { Button, EmptyState, PageHeader, Skeleton } from '@/shared/ui'
 import { resolveContent, toContentBrief, validateBrief } from '../lib/brief'
 import type { ContentPlan } from '../lib/brief'
 import { useBriefDraft } from '../model/draft'
-import { useContentUpload, useSubmitBrief } from '../model/mutations'
+import { useContentUpload, usePlanFirst, useSubmitBrief } from '../model/mutations'
 import { BriefForm } from './BriefForm'
 import styles from './BriefPage.module.css'
 import { ContentPreview } from './ContentPreview'
@@ -34,12 +35,14 @@ function BriefScreen({ project }: { project: Project }) {
   const [showErrors, setShowErrors] = useState(false)
   const upload = useContentUpload(project.id)
   const submit = useSubmitBrief(project.id)
+  const planFirst = usePlanFirst(project.id)
+  const planOnly = useCapabilityFlag(FEATURE_PATHS.planOnly)
 
   const plan = resolveContent({ mode: form.contentMode, files, text: form.text, parsed: form.parsed })
   const errors = validateBrief(form, plan)
   const hasErrors = Object.keys(errors).length > 0
   const templateId = project.template_id ?? null
-  const busy = upload.isPending || submit.isPending
+  const busy = upload.isPending || submit.isPending || planFirst.isPending
 
   const parse = (target: UploadPlan) => {
     upload.mutate({ file: target.file, key: target.key, label: target.label, brief: toContentBrief(form) }, { onSuccess: (parsed) => update({ parsed }) })
@@ -60,7 +63,17 @@ function BriefScreen({ project }: { project: Project }) {
     )
   }
 
+  const startWithPlan = () => {
+    setShowErrors(true)
+    if (hasErrors || !templateId) return
+    planFirst.mutate(
+      { form, files, templateId, providerSessionId: session?.id ?? null, onParsed: (parsed) => update({ parsed }) },
+      { onSuccess: () => navigate(routes.planDraft(project.id)) },
+    )
+  }
+
   const parseError = errorMessage(upload.error)
+  const actionError = errorMessage(submit.error ?? planFirst.error)
   const previewPackId = plan.kind === 'ready' ? plan.packId : (form.parsed?.packId ?? null)
   const previewLabel = plan.kind === 'ready' ? plan.label : (form.parsed?.label ?? null)
 
@@ -97,9 +110,14 @@ function BriefScreen({ project }: { project: Project }) {
             <Button variant="primary" size="xl" block disabled={busy || !templateId} onClick={start}>
               {submit.isPending ? 'Отправляю…' : upload.isPending ? 'Разбираю контент…' : 'Собрать 3 варианта →'}
             </Button>
-            {submit.error && (
+            {planOnly && (
+              <Button variant="secondary" size="lg" block disabled={busy || !templateId} onClick={startWithPlan}>
+                {planFirst.isPending ? 'Строю план…' : 'Сначала план — поправить до вёрстки'}
+              </Button>
+            )}
+            {actionError && (
               <p className={styles.ctaError} role="alert">
-                {errorMessage(submit.error)}
+                {actionError}
               </p>
             )}
             {showErrors && hasErrors && (

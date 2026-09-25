@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router'
-import type { SlideInfo, VariantSummary } from '@/entities/variant'
+import { slidePreviewUrl, type SlideInfo, type VariantSummary } from '@/entities/variant'
 import { RequestPdfExport } from '@/features/request-pdf-export'
 import { formatIndex, pluralize } from '@/shared/lib/format'
 import { Mono, PdfPage, Skeleton } from '@/shared/ui'
@@ -123,8 +123,8 @@ function CompareCell({ column, slide, auditHref }: CompareCellProps) {
   return (
     <div role="cell">
       <Link className={styles.thumb} to={href} aria-label={`${label}. Открыть в аудите`} title={slideTitle(slide) ?? undefined}>
-        {column.pdfUrl ? (
-          <PdfPage url={column.pdfUrl} pageNumber={slide.index + 1} label={label} />
+        {column.pdfUrl || slidePreviewUrl(slide) ? (
+          <PdfPage url={column.pdfUrl} imageUrl={slidePreviewUrl(slide)} pageNumber={slide.index + 1} label={label} />
         ) : (
           <span className={styles.textThumb}>
             <span className={styles.textThumbTitle}>{slideTitle(slide) ?? `Слайд ${slide.index + 1}`}</span>

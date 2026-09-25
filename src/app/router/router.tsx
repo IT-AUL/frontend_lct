@@ -22,6 +22,7 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to={routePatterns.template} replace /> },
           { path: routePatterns.template, lazy: async () => ({ Component: (await import('@/pages/template')).TemplatePage }) },
           { path: routePatterns.brief, lazy: async () => ({ Component: (await import('@/pages/brief')).BriefPage }) },
+          { path: routePatterns.planDraft, lazy: async () => ({ Component: (await import('@/pages/plan')).PlanDraftPage }) },
           { path: routePatterns.run, lazy: async () => ({ Component: (await import('@/pages/generation')).GenerationPage }) },
           { path: routePatterns.plan, lazy: async () => ({ Component: (await import('@/pages/plan')).PlanPage }) },
           { path: routePatterns.variants, lazy: async () => ({ Component: (await import('@/pages/variants')).VariantsPage }) },

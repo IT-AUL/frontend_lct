@@ -55,6 +55,7 @@ describe('variant metrics', () => {
       editabilityFraction: 0.6,
       issuesTotal: 92,
       contextualIssues: null,
+      styleFidelity: null,
     })
   })
 

@@ -1,5 +1,7 @@
-export { auditIssuesQuery, auditKeys, useAuditIssues, useContextualAudit, useDismissIssue, useRepairIssues, useVariantAudit } from './api/auditApi'
+export { auditIssuesQuery, auditKeys, previewRepair, useAuditIssues, useContextualAudit, useDismissIssue, useRepairIssues, useVariantAudit } from './api/auditApi'
 export type { RepairOutcome } from './api/auditApi'
+export { loadRuleCatalog, resetRuleCatalog, useRuleCatalog } from './api/ruleCatalogApi'
+export { parseRepairOutcomes } from './lib/outcomes'
 export {
   canAutoFix,
   checkKind,
@@ -36,9 +38,9 @@ export {
   withSelection,
 } from './lib/views'
 export type { DisplayStatus, IssueGrouping, IssueView, IssueViewFilter, IssueViewGroup } from './lib/views'
-export { CATEGORY_LABEL, CATEGORY_ORDER, isAutoFixable, ruleMeta, RULES } from './model/rules'
-export type { RuleCategory } from './model/rules'
+export { applyRuleCatalog, CATEGORY_LABEL, CATEGORY_ORDER, hasRuleCatalog, isAutoFixable, listRules, parseRuleCatalog, ruleMeta, RULES } from './model/rules'
+export type { RuleCatalogEntry, RuleCategory, RuleMeta } from './model/rules'
 export { CRITICAL_SEVERITIES, SEVERITY, SEVERITY_ORDER } from './model/severity'
-export type { AuditIssue, AuditRun, CheckKind, IssueStatus, Severity } from './model/types'
+export type { AuditIssue, AuditRun, CheckKind, FixPreview, IssueStatus, RepairIssueOutcome, RepairIssueStatus, Severity } from './model/types'
 export { CheckKindBadge } from './ui/CheckKindBadge'
 export { SeverityBadge } from './ui/SeverityBadge'

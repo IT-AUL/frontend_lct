@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatPei, issuesHeadline, peiNote, severityBreakdown, validityView } from './metrics'
+import { formatPei, issuesHeadline, peiNote, severityBreakdown, styleFidelityScore, validityView } from './metrics'
 
 describe('validityView', () => {
   it('maps the validity flag to a label and tone', () => {
@@ -68,5 +68,13 @@ describe('severityBreakdown', () => {
   it('returns null without a passport', () => {
     expect(severityBreakdown(92, null)).toBeNull()
     expect(severityBreakdown(92, undefined)).toBeNull()
+  })
+})
+
+describe('styleFidelityScore', () => {
+  it('uses the variant score, then the passport mean, else nothing', () => {
+    expect(styleFidelityScore(0.91, null)).toBe(0.91)
+    expect(styleFidelityScore(null, [{ key: 'palette_compliance', value: 1 }, { key: 'font_compliance', value: 0.8 }])).toBeCloseTo(0.9)
+    expect(styleFidelityScore(null, [])).toBeNull()
   })
 })

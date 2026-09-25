@@ -9,6 +9,8 @@ export type InspectorMode = 'slide' | 'compare'
 export interface SlideInspectorProps {
   pdfUrl: string | null
   pdfRevision: number | null
+  imageUrl: string | null
+  imageRevision: number | null
   revision: number
   slideNumber: number
   slideCount: number
@@ -41,10 +43,17 @@ const MARK: Record<JournalEntry['outcome'], string> = { fixed: '✓', unresolved
 
 const pad = (value: number) => String(value).padStart(2, '0')
 
-function SlideFrame({ pdfUrl, slideNumber, children }: { pdfUrl: string | null; slideNumber: number; children: ReactNode }) {
-  if (pdfUrl) {
+interface SlideFrameProps {
+  pdfUrl: string | null
+  imageUrl?: string | null
+  slideNumber: number
+  children?: ReactNode
+}
+
+function SlideFrame({ pdfUrl, imageUrl, slideNumber, children }: SlideFrameProps) {
+  if (pdfUrl || imageUrl) {
     return (
-      <PdfPage url={pdfUrl} pageNumber={slideNumber} lazy={false} label={`Слайд ${slideNumber}`}>
+      <PdfPage url={pdfUrl} imageUrl={imageUrl} pageNumber={slideNumber} lazy={false} label={`Слайд ${slideNumber}`}>
         {children}
       </PdfPage>
     )
@@ -58,8 +67,9 @@ function SlideFrame({ pdfUrl, slideNumber, children }: { pdfUrl: string | null; 
 }
 
 export function SlideInspector(props: SlideInspectorProps) {
-  const { pdfUrl, pdfRevision, revision, slideNumber, slideCount, title, views, journal, activeKey, hoverKey, mode } = props
-  const staleRender = pdfRevision !== null && pdfRevision < revision
+  const { pdfUrl, pdfRevision, imageUrl, imageRevision, revision, slideNumber, slideCount, title, views, journal, activeKey, hoverKey, mode } = props
+  const renderRevision = imageUrl ? imageRevision : pdfRevision
+  const staleRender = renderRevision !== null && renderRevision < revision
 
   return (
     <div className={styles.root}>
@@ -94,7 +104,7 @@ export function SlideInspector(props: SlideInspectorProps) {
       {mode === 'slide' ? (
         <>
           <div className={styles.stage}>
-            <SlideFrame pdfUrl={pdfUrl} slideNumber={slideNumber}>
+            <SlideFrame pdfUrl={pdfUrl} imageUrl={imageUrl} slideNumber={slideNumber}>
               <IssueOverlay items={views} activeKey={activeKey} hoverKey={hoverKey} onPick={props.onPick} onHover={props.onHover} />
             </SlideFrame>
           </div>
@@ -109,12 +119,19 @@ export function SlideInspector(props: SlideInspectorProps) {
           </div>
           {staleRender && (
             <p className={styles.stale}>
-              Картинка — ревизия r{pdfRevision}: сервис пока не перерисовывает PDF после правок. Рамки и список — из аудита r{revision}.
+              Картинка — ревизия r{renderRevision}: сервис ещё не перерисовал слайд после правок. Рамки и список — из аудита r{revision}.
             </p>
           )}
         </>
       ) : (
-        <CompareView pdfUrl={pdfUrl} pdfRevision={pdfRevision} revision={revision} slideNumber={slideNumber} journal={journal} />
+        <CompareView
+          pdfUrl={pdfUrl}
+          pdfRevision={pdfRevision}
+          afterImageUrl={imageUrl && imageRevision !== null && imageRevision > (pdfRevision ?? 0) ? imageUrl : null}
+          revision={revision}
+          slideNumber={slideNumber}
+          journal={journal}
+        />
       )}
     </div>
   )
@@ -123,12 +140,13 @@ export function SlideInspector(props: SlideInspectorProps) {
 interface CompareViewProps {
   pdfUrl: string | null
   pdfRevision: number | null
+  afterImageUrl: string | null
   revision: number
   slideNumber: number
   journal: readonly JournalEntry[]
 }
 
-function CompareView({ pdfUrl, pdfRevision, revision, slideNumber, journal }: CompareViewProps) {
+function CompareView({ pdfUrl, pdfRevision, afterImageUrl, revision, slideNumber, journal }: CompareViewProps) {
   const before: OverlayItem[] = journal.map((entry) => ({ key: entry.id, issue: entry.issue, status: 'open' }))
   const firstRevision = journal.reduce((min, entry) => Math.min(min, entry.revision - 1), revision)
   const beforeRevision = pdfRevision ?? Math.max(1, firstRevision)
@@ -145,6 +163,11 @@ function CompareView({ pdfUrl, pdfRevision, revision, slideNumber, journal }: Co
       </div>
       <div className={styles.column}>
         <div className={styles.columnTitle}>После · r{revision} · что изменено</div>
+        {afterImageUrl && (
+          <div className={styles.compareStage}>
+            <SlideFrame pdfUrl={null} imageUrl={afterImageUrl} slideNumber={slideNumber} />
+          </div>
+        )}
         <div className={styles.changes}>
           {journal.length === 0 ? (
             <div className={styles.muted}>На этом слайде ещё ничего не менялось. Выберите проблемы и нажмите «Исправить выбранное».</div>
@@ -165,9 +188,11 @@ function CompareView({ pdfUrl, pdfRevision, revision, slideNumber, journal }: Co
               ))}
             </ul>
           )}
-          <div className={styles.footnote}>
-            Картинка «после» появится, когда сервис научится перерисовывать PDF после правок. Сейчас — точный список действий над PPTX.
-          </div>
+          {!afterImageUrl && (
+            <div className={styles.footnote}>
+              Картинка «после» появится, когда сервис начнёт перерисовывать слайды после правок. Сейчас — точный список действий над PPTX.
+            </div>
+          )}
         </div>
       </div>
     </div>

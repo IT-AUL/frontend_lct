@@ -1,5 +1,5 @@
-import { CATEGORY_LABEL, RULES } from '@/entities/audit'
-import type { CheckKind, RuleCategory } from '@/entities/audit'
+import { CATEGORY_LABEL, listRules } from '@/entities/audit'
+import type { CheckKind, RuleCategory, RuleMeta } from '@/entities/audit'
 import { isCapabilityAvailable } from '@/entities/system'
 import type { Capabilities, SkillManifest, VersionInfo } from '@/entities/system'
 
@@ -228,15 +228,20 @@ export function ruleKind(category: RuleCategory): CheckKind {
   return category === 'meaning' ? 'N' : 'D'
 }
 
-export function ruleGroups(): RuleGroupView[] {
+function metaKind(meta: RuleMeta): CheckKind {
+  if (typeof meta.deterministic === 'boolean') return meta.deterministic ? 'D' : 'N'
+  return ruleKind(meta.category)
+}
+
+export function ruleGroups(rules: readonly [string, RuleMeta][] = listRules()): RuleGroupView[] {
   const categories = Object.keys(CATEGORY_LABEL) as RuleCategory[]
   return categories
     .map((category) => ({
       category,
       label: CATEGORY_LABEL[category],
-      rules: Object.entries(RULES)
+      rules: rules
         .filter(([, meta]) => meta.category === category)
-        .map(([code, meta]) => ({ code, name: meta.name, kind: ruleKind(category), autoFix: meta.autoFix ?? null })),
+        .map(([code, meta]) => ({ code, name: meta.name, kind: metaKind(meta), autoFix: meta.autoFix ?? null })),
     }))
     .filter((group) => group.rules.length > 0)
 }

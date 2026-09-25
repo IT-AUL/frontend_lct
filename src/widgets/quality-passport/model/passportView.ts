@@ -26,11 +26,14 @@ export interface SourcesView {
   supported: number | null
   unsupported: number | null
   total: number | null
+  numbersVerified: number | null
+  numbersFailed: number | null
 }
 
 export interface ReadabilityView {
   contrastFailures: number | null
   overflowCount: number | null
+  avgOccupancy: number | null
 }
 
 export interface IssueCountView {
@@ -87,6 +90,7 @@ export interface PassportView {
   timing: TimingView
   usage: UsageView[] | null
   fallbacks: { label: string; detail: string | null }[]
+  autoFixes: { label: string; detail: string | null }[]
   provenance: ProvenanceRow[]
 }
 
@@ -192,10 +196,10 @@ function styleView(passport: QualityPassport): StyleFidelityView {
 }
 
 function sourcesView(passport: QualityPassport): SourcesView | null {
-  const { supportedClaims: supported, unsupportedClaims: unsupported } = passport.contentSupport
-  if (supported === null && unsupported === null) return null
+  const { supportedClaims: supported, unsupportedClaims: unsupported, numbersVerified, numbersFailed } = passport.contentSupport
+  if (supported === null && unsupported === null && numbersVerified === null && numbersFailed === null) return null
   const total = supported !== null && unsupported !== null ? supported + unsupported : null
-  return { supported, unsupported, total }
+  return { supported, unsupported, total, numbersVerified, numbersFailed }
 }
 
 function issuesView(passport: QualityPassport): IssuesView {
@@ -293,6 +297,7 @@ export function buildPassportView(passport: QualityPassport, context: PassportCo
     timing: timingView(passport, context.budgetSeconds),
     usage: usageView(passport),
     fallbacks: passport.fallbacks,
+    autoFixes: passport.autoFixes,
     provenance: provenanceRows(passport, context),
   }
 }

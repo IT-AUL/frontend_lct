@@ -30,8 +30,9 @@ import {
 } from '@/entities/audit'
 import { markEvidence } from '@/entities/project'
 import { useActiveProviderSession } from '@/entities/provider-session'
-import { orderVariants, useVariants, useVariantSlides } from '@/entities/variant'
-import { RepairBar, useRepairSelected } from '@/features/repair-issues'
+import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
+import { orderVariants, slidePreviewUrl, useVariants, useVariantSlides } from '@/entities/variant'
+import { RepairBar, selectionKey, useRepairPreview, useRepairSelected } from '@/features/repair-issues'
 import { useIssueSelection } from '@/features/select-issues'
 import { useVariantFiles } from '@/features/variant-files'
 import { routes } from '@/shared/config'
@@ -51,6 +52,8 @@ export type StageMode = 'slide' | 'compare'
 export interface AuditStageProps {
   pdfUrl: string | null
   pdfRevision: number | null
+  imageUrl: string | null
+  imageRevision: number | null
   revision: number
   slideNumber: number
   slideCount: number
@@ -116,7 +119,10 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
   const issues = issuesQuery.data ?? []
   const baseViews = buildIssueViews(issues, journal)
   const selection = useIssueSelection(selectableIds(baseViews))
+  const dryRunAvailable = useCapabilityFlag(FEATURE_PATHS.repairDryRun)
+  const repairPreview = useRepairPreview(audit?.id)
   const views = withSelection(baseViews, selection.selectedIds)
+  const selectedIssues = views.filter((view) => view.status === 'selected').map((view) => view.issue)
 
   const repair = useRepairSelected({
     projectId,
@@ -128,7 +134,8 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
   const slideInfos = slidesQuery.data ?? []
   const lastIssueSlide = issues.reduce((max, issue) => Math.max(max, slideNumber(issue) ?? 0), 0)
   const slideCount = Math.max(slideInfos.length, lastIssueSlide, 1)
-  const titleOf = (number: number) => slideInfos.find((info) => info.index === number - 1)?.title ?? undefined
+  const slideAt = (number: number) => slideInfos.find((info) => info.index === number - 1)
+  const titleOf = (number: number) => slideAt(number)?.title ?? undefined
 
   const pending = views.filter((view) => isPendingStatus(view.status))
   const firstTroubled = pending.map((view) => slideNumber(view.issue)).find((number): number is number => number !== null)
@@ -156,7 +163,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
   const filmstrip: FilmstripSlide[] = Array.from({ length: slideCount }, (_, index) => {
     const number = index + 1
     const open = pending.filter((view) => onSlide(view, number))
-    return { number, title: titleOf(number), openCount: open.length, worst: worstSeverity(open) }
+    return { number, title: titleOf(number), imageUrl: slidePreviewUrl(slideAt(number)), openCount: open.length, worst: worstSeverity(open) }
   })
 
   const stageViews = filterIssueViews(views, { ...filter, status: 'all' }).filter((view) => onSlide(view, currentSlide))
@@ -324,6 +331,8 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
           {renderStage({
             pdfUrl: files.pdfUrl,
             pdfRevision: files.files?.pdf?.deckRevision ?? null,
+            imageUrl: slidePreviewUrl(slideAt(currentSlide)),
+            imageRevision: slideAt(currentSlide)?.revision ?? null,
             revision,
             slideNumber: currentSlide,
             slideCount,
@@ -375,7 +384,11 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
                 pending={repair.isPending}
                 onSelectAll={selection.selectAll}
                 onClear={selection.clear}
-                onRepair={() => void runRepair(views.filter((view) => view.status === 'selected').map((view) => view.issue))}
+                onRepair={() => void runRepair(selectedIssues)}
+                onPreview={dryRunAvailable ? () => repairPreview.mutate(selectedIssues, { onError: (error) => toast.show(error.message) }) : undefined}
+                previewPending={repairPreview.isPending}
+                preview={repairPreview.data && repairPreview.data.key === selectionKey(selectedIssues) ? repairPreview.data : null}
+                onClosePreview={repairPreview.reset}
               />
             </>
           }

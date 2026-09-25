@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { api, unwrap } from '@/shared/api'
+import { isCapabilityAvailable } from '../lib/capabilities'
 import type { Capabilities, HealthStatus, SkillManifest, VersionInfo } from '../model/types'
 
 const STATIC_STALE_TIME_MS = 5 * 60_000
@@ -44,4 +45,9 @@ export function useHealth() {
     refetchInterval: HEALTH_INTERVAL_MS,
     retry: false,
   })
+}
+
+export function useCapabilityFlag(paths: readonly string[]): boolean {
+  const { data } = useCapabilities()
+  return paths.some((path) => isCapabilityAvailable(data, path))
 }

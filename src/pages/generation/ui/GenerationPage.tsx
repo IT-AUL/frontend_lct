@@ -4,7 +4,7 @@ import { CancelGenerationButton } from '@/features/cancel-generation'
 import { useRerunGeneration } from '@/features/rerun-generation'
 import { describeFailure, failureMeta, GenerationProgress, isTrackingLost, RunNotice } from '@/widgets/generation-tracker'
 import { isTrackingId, useGenerationTracker, type GenerationPhase, type GenerationTracker } from '@/entities/generation'
-import { latestRunId, markEvidence, rememberRun } from '@/entities/project'
+import { markEvidence, projectRunId, rememberRun, useProject } from '@/entities/project'
 import { routes } from '@/shared/config'
 import { Button, PageHeader } from '@/shared/ui'
 import styles from './GenerationPage.module.css'
@@ -47,9 +47,10 @@ function lead(phase: GenerationPhase): string {
 function RecoveryNotice({ projectId, runId, tracker }: { projectId: string; runId: string; tracker: GenerationTracker }) {
   const { rerun, isPending } = useRerunGeneration(projectId)
   const { phase, generationId, error } = tracker
+  const { data: project } = useProject(projectId)
 
   if (isTrackingLost(error)) {
-    const latest = latestRunId(projectId)
+    const latest = projectRunId(project, projectId)
     const canOpenLatest = latest !== undefined && latest !== runId
     return (
       <RunNotice

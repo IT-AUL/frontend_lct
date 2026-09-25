@@ -9,10 +9,16 @@ export interface VariantMetricsView {
   editabilityFraction: number | null
   issuesTotal: number | null
   contextualIssues: number | null
+  styleFidelity: number | null
 }
 
 function finite(value: number | null | undefined): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+function fraction(value: number | null | undefined): number | null {
+  const number = finite(value)
+  return number === null ? null : Math.min(1, Math.max(0, number))
 }
 
 export function variantMetrics(variant: Pick<VariantSummary, 'metrics' | 'contextual_issues'>): VariantMetricsView {
@@ -25,6 +31,7 @@ export function variantMetrics(variant: Pick<VariantSummary, 'metrics' | 'contex
     editabilityFraction: editabilityLevel === null ? null : Math.min(1, Math.max(0, editabilityLevel / PEI_MAX)),
     issuesTotal: finite(variant.metrics?.issues_total),
     contextualIssues: finite(variant.contextual_issues),
+    styleFidelity: fraction(variant.metrics?.style_fidelity),
   }
 }
 

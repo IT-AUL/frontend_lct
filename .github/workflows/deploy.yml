@@ -1,0 +1,316 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  push:
+    tags: ["v*.*.*"]
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Operation to perform
+        type: choice
+        options: [deploy, rollback]
+        default: deploy
+      web_ref:
+        description: Frontend git ref to release (empty keeps the running version)
+        type: string
+        default: ""
+      backend_ref:
+        description: Backend git ref to release (empty keeps the running version)
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_OWNER: it-aul
+  BACKEND_REPO: Ranel435/LCT-prezi-2026
+  BACKEND_DEFAULT_REF: main
+
+jobs:
+  plan:
+    name: Plan release
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      action: ${{ steps.decide.outputs.action }}
+      web_sha: ${{ steps.decide.outputs.web_sha }}
+      api_sha: ${{ steps.decide.outputs.api_sha }}
+      deploy: ${{ steps.decide.outputs.deploy }}
+      build_web: ${{ steps.images.outputs.build_web }}
+      build_api: ${{ steps.images.outputs.build_api }}
+    steps:
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Read running versions
+        id: running
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+        run: |
+          out="$(ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 "deckdna@$DEPLOY_HOST" status)"
+          echo "$out"
+          echo "web=$(sed -n 's/^WEB_TAG=//p' <<<"$out")" >> "$GITHUB_OUTPUT"
+          echo "api=$(sed -n 's/^API_TAG=//p' <<<"$out")" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve target versions
+        id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_ACTION: ${{ inputs.action }}
+          INPUT_WEB_REF: ${{ inputs.web_ref }}
+          INPUT_BACKEND_REF: ${{ inputs.backend_ref }}
+          RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          EVENT_SHA: ${{ github.sha }}
+          RUNNING_WEB: ${{ steps.running.outputs.web }}
+          RUNNING_API: ${{ steps.running.outputs.api }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          short() { printf '%s' "${1:0:12}"; }
+          resolve_web() {
+            gh api "repos/${GITHUB_REPOSITORY}/commits/$1" --jq .sha
+          }
+          resolve_api() {
+            git ls-remote "https://github.com/${BACKEND_REPO}.git" "$1" | awk 'NR==1{print $1}'
+          }
+
+          action=deploy
+          case "$EVENT" in
+            workflow_run) web_full="$RUN_HEAD_SHA" ;;
+            push)         web_full="$EVENT_SHA" ;;
+            workflow_dispatch)
+              action="$INPUT_ACTION"
+              if [ -n "$INPUT_WEB_REF" ]; then web_full="$(resolve_web "$INPUT_WEB_REF")"; else web_full=""; fi ;;
+            *)            web_full="" ;;
+          esac
+
+          if [ -n "$web_full" ]; then web_sha="$(short "$web_full")"; else web_sha="$RUNNING_WEB"; fi
+
+          case "$EVENT" in
+            schedule) api_ref="$BACKEND_DEFAULT_REF" ;;
+            workflow_dispatch) api_ref="${INPUT_BACKEND_REF:-}" ;;
+            *) api_ref="" ;;
+          esac
+          if [ -n "$api_ref" ]; then
+            api_full="$(resolve_api "$api_ref")"
+            [ -n "$api_full" ] || { echo "backend ref '$api_ref' not found" >&2; exit 1; }
+            api_sha="$(short "$api_full")"
+          elif [ -n "$RUNNING_API" ]; then
+            api_sha="$RUNNING_API"
+          else
+            api_full="$(resolve_api "$BACKEND_DEFAULT_REF")"
+            api_sha="$(short "$api_full")"
+          fi
+          [ -n "$web_sha" ] || web_sha="$(short "$EVENT_SHA")"
+
+          deploy=false
+          if [ "$action" = rollback ]; then deploy=true
+          elif [ "$web_sha" != "$RUNNING_WEB" ] || [ "$api_sha" != "$RUNNING_API" ]; then deploy=true
+          fi
+
+          {
+            echo "action=$action"
+            echo "web_sha=$web_sha"
+            echo "api_sha=$api_sha"
+            echo "deploy=$deploy"
+          } >> "$GITHUB_OUTPUT"
+          echo "running web=$RUNNING_WEB api=$RUNNING_API -> target web=$web_sha api=$api_sha deploy=$deploy action=$action"
+
+      - name: Check which images already exist
+        id: images
+        if: steps.decide.outputs.deploy == 'true' && steps.decide.outputs.action == 'deploy'
+        env:
+          WEB_SHA: ${{ steps.decide.outputs.web_sha }}
+          API_SHA: ${{ steps.decide.outputs.api_sha }}
+          GHCR_TOKEN: ${{ github.token }}
+        run: |
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin >/dev/null
+          exists() { docker buildx imagetools inspect "$1" >/dev/null 2>&1 && echo false || echo true; }
+          echo "build_web=$(exists "$REGISTRY/$IMAGE_OWNER/deckdna-web:$WEB_SHA")" >> "$GITHUB_OUTPUT"
+          echo "build_api=$(exists "$REGISTRY/$IMAGE_OWNER/deckdna-api:$API_SHA")" >> "$GITHUB_OUTPUT"
+
+  build-web:
+    name: Build frontend image
+    needs: plan
+    if: needs.plan.outputs.build_web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.plan.outputs.web_sha }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/it-aul/deckdna-web:${{ needs.plan.outputs.web_sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ needs.plan.outputs.web_sha }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  build-api:
+    name: Build backend image
+    needs: plan
+    if: needs.plan.outputs.build_api == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: ${{ env.BACKEND_REPO }}
+          ref: ${{ needs.plan.outputs.api_sha }}
+          path: backend
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/backend/Dockerfile
+          push: true
+          tags: ghcr.io/it-aul/deckdna-api:${{ needs.plan.outputs.api_sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ needs.plan.outputs.api_sha }}
+            io.deckdna.backend.repository=${{ env.BACKEND_REPO }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+  release:
+    name: Release to production
+    needs: [plan, build-web, build-api]
+    if: >-
+      always() &&
+      needs.plan.result == 'success' &&
+      needs.plan.outputs.deploy == 'true' &&
+      needs.build-web.result != 'failure' && needs.build-web.result != 'cancelled' &&
+      needs.build-api.result != 'failure' && needs.build-api.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+    permissions:
+      contents: read
+      packages: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Roll back
+        if: needs.plan.outputs.action == 'rollback'
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+        run: ssh -i ~/.ssh/deploy_key -o BatchMode=yes "deckdna@$DEPLOY_HOST" rollback
+
+      - name: Deploy
+        if: needs.plan.outputs.action == 'deploy'
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          WEB_TAG: ${{ needs.plan.outputs.web_sha }}
+          API_TAG: ${{ needs.plan.outputs.api_sha }}
+          GHCR_TOKEN: ${{ github.token }}
+          RAW_ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          ACTOR="$(printf '%s' "$RAW_ACTOR" | tr -c 'A-Za-z0-9._-' '_')"
+          printf '%s' "$GHCR_TOKEN" > deploy/.ghcr-token
+          chmod 600 deploy/.ghcr-token
+          tar --create --gzip --directory deploy --exclude='tools' --exclude='README.md' . \
+            | ssh -i ~/.ssh/deploy_key -o BatchMode=yes "deckdna@$DEPLOY_HOST" \
+                "deploy WEB_TAG=$WEB_TAG API_TAG=$API_TAG RELEASE_SHA=${GITHUB_SHA:0:12} GHCR_USER=${GITHUB_REPOSITORY_OWNER} DEPLOY_ACTOR=${ACTOR}"
+          rm -f deploy/.ghcr-token
+
+      - name: Verify public endpoint
+        if: needs.plan.outputs.action == 'deploy' && vars.APP_URL != ''
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 30); do
+            if curl -fsS --max-time 10 "$APP_URL/api/v1/health/ready" >/dev/null; then
+              curl -fsS "$APP_URL/api/v1/version"; echo
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "public endpoint did not become healthy" >&2
+          exit 1
+
+      - name: Summary
+        if: always()
+        env:
+          ACTION: ${{ needs.plan.outputs.action }}
+          WEB: ${{ needs.plan.outputs.web_sha }}
+          API: ${{ needs.plan.outputs.api_sha }}
+        run: |
+          {
+            echo "### Production release"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Action | $ACTION |"
+            echo "| Frontend | \`$WEB\` |"
+            echo "| Backend | \`$API\` |"
+            echo "| Job status | ${{ job.status }} |"
+          } >> "$GITHUB_STEP_SUMMARY"

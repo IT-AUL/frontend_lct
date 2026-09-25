@@ -1,0 +1,84 @@
+data_dir: /var/lib/vector
+
+api:
+  enabled: false
+
+sources:
+  docker:
+    type: docker_logs
+    docker_host: tcp://docker-socket-proxy:2375
+    include_labels:
+      - com.deckdna.stack=deckdna
+    auto_partial_merge: true
+
+  caddy_access:
+    type: file
+    include:
+      - /var/log/caddy/deckdna-*.log
+    read_from: beginning
+    fingerprint:
+      strategy: device_and_inode
+
+transforms:
+  docker_normalize:
+    type: remap
+    inputs: [docker]
+    source: |
+      .service = string(.label."com.docker.compose.service") ?? string(.container_name) ?? "unknown"
+      .tier = string(.label."com.deckdna.tier") ?? "app"
+      .log_type = "app"
+      .container = .container_name
+      del(.label)
+      del(.source_type)
+
+  caddy_access_parse:
+    type: remap
+    inputs: [caddy_access]
+    drop_on_error: true
+    drop_on_abort: true
+    source: |
+      raw = parse_json!(.message)
+      ts_ms = to_int!(round(to_float!(raw.ts) * 1000.0))
+      req = object(raw.request) ?? {}
+      uri = string(req.uri) ?? "/"
+      path = split(uri, "?", limit: 2)[0]
+      ua = "-"
+      if is_object(req.headers) && is_array(req.headers."User-Agent") {
+        ua = string(array!(req.headers."User-Agent")[0]) ?? "-"
+      }
+      status = to_int(raw.status) ?? 0
+      method = string(req.method) ?? "-"
+      . = {
+        "timestamp": from_unix_timestamp!(ts_ms, unit: "milliseconds"),
+        "message": join!([method, " ", uri, " ", to_string(status)]),
+        "service": "caddy",
+        "log_type": "access",
+        "site": string(req.host) ?? "-",
+        "http_method": method,
+        "http_path": path,
+        "http_status": status,
+        "duration_ms": round((to_float(raw.duration) ?? 0.0) * 1000.0, precision: 2),
+        "bytes": to_int(raw.size) ?? 0,
+        "client_ip": string(req.client_ip) ?? string(req.remote_ip) ?? "-",
+        "user_agent": ua,
+        "protocol": string(req.proto) ?? "-"
+      }
+
+sinks:
+  victorialogs:
+    type: elasticsearch
+    inputs: [docker_normalize, caddy_access_parse]
+    endpoints:
+      - http://victoria-logs:9428/insert/elasticsearch/
+    mode: bulk
+    api_version: v8
+    compression: gzip
+    healthcheck:
+      enabled: false
+    request:
+      headers:
+        AccountID: "0"
+        ProjectID: "0"
+        VL-Time-Field: timestamp
+        VL-Msg-Field: message,msg,_msg
+        VL-Stream-Fields: service,log_type,container

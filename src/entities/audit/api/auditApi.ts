@@ -1,6 +1,8 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, unwrap } from '@/shared/api'
-import type { AuditIssue, AuditRun } from '../model/types'
+import { api, requestJson, unwrap } from '@/shared/api'
+import { parseRepairOutcomes, readCount } from '../lib/outcomes'
+import type { AuditIssue, AuditRun, RepairIssueOutcome } from '../model/types'
+import { loadRuleCatalog } from './ruleCatalogApi'
 
 const ISSUE_PAGE_LIMIT = 200
 
@@ -28,11 +30,14 @@ export function auditIssuesQuery(auditId: string) {
   return queryOptions({
     queryKey: auditKeys.issues(auditId),
     queryFn: async (): Promise<AuditIssue[]> => {
-      const page = await unwrap(
-        api.GET('/api/v1/audits/{audit_id}/issues', {
-          params: { path: { audit_id: auditId }, query: { limit: ISSUE_PAGE_LIMIT } },
-        }),
-      )
+      const [page] = await Promise.all([
+        unwrap(
+          api.GET('/api/v1/audits/{audit_id}/issues', {
+            params: { path: { audit_id: auditId }, query: { limit: ISSUE_PAGE_LIMIT } },
+          }),
+        ),
+        loadRuleCatalog(),
+      ])
       return page.items
     },
   })
@@ -54,6 +59,7 @@ export interface RepairOutcome {
   auditId: string
   deckRevision: number
   counts: Record<'applied' | 'skipped' | 'failed' | 'not_implemented' | 'unresolved', number>
+  outcomes: RepairIssueOutcome[] | null
 }
 
 export function useRepairIssues(variantId: string) {
@@ -67,7 +73,7 @@ export function useRepairIssues(variantId: string) {
         }),
       )
       const job = await unwrap(api.GET('/api/v1/jobs/{job_id}', { params: { path: { job_id: accepted.job_id } } }))
-      const read = (key: string) => Number(job.result_ids?.[key] ?? 0)
+      const read = (key: string) => readCount(job, key)
       return {
         auditId: accepted.audit_id,
         deckRevision: accepted.deck_revision,
@@ -78,6 +84,7 @@ export function useRepairIssues(variantId: string) {
           not_implemented: read('not_implemented'),
           unresolved: read('unresolved'),
         },
+        outcomes: parseRepairOutcomes(job, accepted),
       }
     },
     onSuccess: async (outcome) => {
@@ -111,4 +118,17 @@ export function useContextualAudit(variantId: string) {
       await queryClient.invalidateQueries({ queryKey: auditKeys.issues(audit.id) })
     },
   })
+}
+
+export async function previewRepair(auditId: string, issueIds: readonly string[], providerSessionId?: string): Promise<RepairIssueOutcome[]> {
+  const payload = await requestJson<Record<string, unknown>>(`/audits/${encodeURIComponent(auditId)}/repairs`, {
+    query: { dry_run: true },
+    body: { selected_issue_ids: issueIds, max_iterations: 2, provider_session_id: providerSessionId ?? null, dry_run: true },
+  })
+  const direct = parseRepairOutcomes(payload)
+  if (direct) return direct
+  const jobId = typeof payload.job_id === 'string' ? payload.job_id : null
+  if (!jobId) return []
+  const job = await unwrap(api.GET('/api/v1/jobs/{job_id}', { params: { path: { job_id: jobId } } }))
+  return parseRepairOutcomes(job) ?? []
 }
