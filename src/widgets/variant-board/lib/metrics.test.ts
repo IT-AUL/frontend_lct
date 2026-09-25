@@ -3,8 +3,8 @@ import { formatPei, issuesHeadline, peiNote, severityBreakdown, styleFidelitySco
 
 describe('validityView', () => {
   it('maps the validity flag to a label and tone', () => {
-    expect(validityView(true)).toEqual({ label: '✓ без ошибок', tone: 'ok' })
-    expect(validityView(false)).toEqual({ label: '✕ с ошибками', tone: 'error' })
+    expect(validityView(true)).toEqual({ label: 'без ошибок', tone: 'ok' })
+    expect(validityView(false)).toEqual({ label: 'с ошибками', tone: 'error' })
     expect(validityView(null)).toEqual({ label: 'нет данных', tone: 'muted' })
   })
 })

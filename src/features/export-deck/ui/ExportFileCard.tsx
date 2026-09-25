@@ -3,7 +3,7 @@ import type { ExportFormat } from '@/entities/passport'
 import type { DeckFile } from '@/entities/variant'
 import { artifactUrl } from '@/shared/api'
 import { formatBytes, formatShortHash } from '@/shared/lib/format'
-import { Button } from '@/shared/ui'
+import { Button, Download, Icon } from '@/shared/ui'
 import { FORMAT_LABEL } from '../model/exportState'
 import { useDeckExport } from '../model/useDeckExport'
 import styles from './ExportFileCard.module.css'
@@ -49,6 +49,7 @@ export function ExportFileCard({ projectId, variantId, format, file, currentRevi
         onClick={markDownloaded}
         aria-describedby={titleId}
       >
+        <Icon as={Download} size={14} />
         {text}
       </a>
     )

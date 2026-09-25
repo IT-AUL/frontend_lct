@@ -82,7 +82,7 @@ describe('PlanPage', () => {
     const list = screen.getByRole('list', { name: 'Слайды плана' })
     expect(within(list).getAllByText(/^\d{2}$/)).toHaveLength(12)
     expect(within(list).getByText('Раздел · Проблема')).toBeInTheDocument()
-    expect(within(list).getAllByText('↳ Проблема').length).toBeGreaterThan(0)
+    expect(within(list).getAllByText('Проблема', { selector: 'span' }).length).toBeGreaterThan(0)
     expect(within(list).getByText('Спасибо за внимание')).toBeInTheDocument()
 
     const aside = screen.getByRole('complementary', { name: 'Почему такая структура' })

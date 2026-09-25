@@ -5,7 +5,7 @@ import { useProject } from '@/entities/project'
 import { analysisState, useDesignDna, useTemplate, type TemplateDetail } from '@/entities/template'
 import { isApiError } from '@/shared/api'
 import { API_BASE, routes } from '@/shared/config'
-import { Button, EmptyState, PageHeader } from '@/shared/ui'
+import { ArrowLeft, ArrowRight, Button, Download, EmptyState, Icon, PageHeader, Upload } from '@/shared/ui'
 import { DesignDna, DesignDnaSkeleton } from '@/widgets/design-dna'
 import styles from './TemplatePage.module.css'
 
@@ -99,7 +99,8 @@ export function TemplatePage() {
           {replacing && templateId && (
             <div>
               <Button variant="ghost" onClick={cancelReplace}>
-                ← Вернуться к текущему шаблону
+                <Icon as={ArrowLeft} />
+                Вернуться к текущему шаблону
               </Button>
             </div>
           )}
@@ -182,13 +183,16 @@ export function TemplatePage() {
                 href={`${API_BASE}/templates/${encodeURIComponent(templateId)}/design-dna`}
                 download={`design-dna-${templateId}.json`}
               >
+                <Icon as={Download} />
                 ДНК в JSON
               </a>
               <Button size="lg" onClick={startReplace}>
+                <Icon as={Upload} />
                 Заменить шаблон
               </Button>
               <Button variant="primary" size="lg" onClick={() => navigate(routes.brief(projectId))}>
-                Дальше: бриф →
+                Дальше: бриф
+                <Icon as={ArrowRight} />
               </Button>
             </>
           ) : undefined

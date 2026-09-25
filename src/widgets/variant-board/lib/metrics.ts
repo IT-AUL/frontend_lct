@@ -17,7 +17,7 @@ export interface SeverityCount {
 
 export function validityView(opensCleanly: boolean | null): ValidityView {
   if (opensCleanly === null) return { label: 'нет данных', tone: 'muted' }
-  return opensCleanly ? { label: '✓ без ошибок', tone: 'ok' } : { label: '✕ с ошибками', tone: 'error' }
+  return opensCleanly ? { label: 'без ошибок', tone: 'ok' } : { label: 'с ошибками', tone: 'error' }
 }
 
 export function formatPei(level: number | null): string {

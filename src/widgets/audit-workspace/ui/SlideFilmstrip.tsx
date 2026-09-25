@@ -1,6 +1,6 @@
 import { clsx } from 'clsx'
 import type { Severity } from '@/entities/audit'
-import { Mono, PdfPage } from '@/shared/ui'
+import { Check, Icon, Mono, PdfPage } from '@/shared/ui'
 import styles from './SlideFilmstrip.module.css'
 
 export interface FilmstripSlide {
@@ -42,7 +42,7 @@ export function SlideFilmstrip({ slides, current, pdfUrl, onPick }: SlideFilmstr
               )}
             </span>
             <span className={styles.badge} data-severity={clean ? 'clean' : (slide.worst ?? 'info')} aria-hidden>
-              {clean ? '✓' : slide.openCount}
+              {clean ? <Icon as={Check} size={10} strokeWidth={3} /> : slide.openCount}
             </span>
           </button>
         )

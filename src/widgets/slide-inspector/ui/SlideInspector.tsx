@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { journalActionText, type IssueView, type JournalEntry } from '@/entities/audit'
-import { Mono, PdfPage, Segmented } from '@/shared/ui'
+import { Check, ChevronLeft, ChevronRight, Icon, type IconComponent, Minus, Mono, PdfPage, Segmented, X } from '@/shared/ui'
 import { IssueOverlay, type OverlayItem } from './IssueOverlay'
 import styles from './SlideInspector.module.css'
 
@@ -39,7 +39,7 @@ const LEGEND = [
   { key: 'fixed', label: 'исправлено' },
 ] as const
 
-const MARK: Record<JournalEntry['outcome'], string> = { fixed: '✓', unresolved: '×', dismissed: '—' }
+const MARK: Record<JournalEntry['outcome'], IconComponent> = { fixed: Check, unresolved: X, dismissed: Minus }
 
 const pad = (value: number) => String(value).padStart(2, '0')
 
@@ -81,7 +81,7 @@ export function SlideInspector(props: SlideInspectorProps) {
           disabled={slideNumber <= 1}
           onClick={() => props.onSlideChange(slideNumber - 1)}
         >
-          ←
+          <Icon as={ChevronLeft} />
         </button>
         <Mono className={styles.counter} aria-live="polite">
           {pad(slideNumber)} / {pad(slideCount)}
@@ -93,7 +93,7 @@ export function SlideInspector(props: SlideInspectorProps) {
           disabled={slideNumber >= slideCount}
           onClick={() => props.onSlideChange(slideNumber + 1)}
         >
-          →
+          <Icon as={ChevronRight} />
         </button>
         <div className={styles.title} title={title}>
           {title}
@@ -176,7 +176,7 @@ function CompareView({ pdfUrl, pdfRevision, afterImageUrl, revision, slideNumber
               {journal.map((entry) => (
                 <li key={entry.id} className={styles.change}>
                   <span className={styles.mark} data-outcome={entry.outcome} aria-hidden>
-                    {MARK[entry.outcome]}
+                    <Icon as={MARK[entry.outcome]} size={12} strokeWidth={3} />
                   </span>
                   <div className={styles.changeText}>
                     <div>{journalActionText(entry)}</div>

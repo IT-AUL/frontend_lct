@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import type { ProjectStep } from '@/shared/config'
 import { buildProofChain, buildRailSteps, type ProjectProgress, type RailStep } from '../model/progress'
 import styles from './ProjectRail.module.css'
+import { Check, Icon } from '@/shared/ui'
 
 interface ProjectRailProps {
   progress: ProjectProgress
@@ -13,7 +14,7 @@ function StepContent({ step, index, compact }: { step: RailStep; index: number; 
   return (
     <>
       <span className={styles.dot} data-state={step.state}>
-        {step.state === 'done' ? '✓' : index + 1}
+        {step.state === 'done' ? <Icon as={Check} size={12} strokeWidth={3} /> : index + 1}
       </span>
       {!compact && (
         <span className={styles.text}>

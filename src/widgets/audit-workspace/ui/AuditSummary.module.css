@@ -239,3 +239,7 @@
 .policy[aria-pressed='true'] .policyValue {
   color: inherit;
 }
+
+.spin {
+  animation: global(dd-spin) 1s linear infinite;
+}

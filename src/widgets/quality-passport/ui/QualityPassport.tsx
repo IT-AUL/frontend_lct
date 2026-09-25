@@ -2,7 +2,7 @@ import { clsx } from 'clsx'
 import type { ReactNode } from 'react'
 import { SEVERITY } from '@/entities/audit'
 import { formatDateTime, formatIndex, formatNumber, formatPercent, pluralize } from '@/shared/lib/format'
-import { Meter } from '@/shared/ui'
+import { AlertTriangle, Icon, Meter } from '@/shared/ui'
 import type { PassportView } from '../model/passportView'
 import styles from './QualityPassport.module.css'
 
@@ -173,7 +173,7 @@ function NoteList({ items }: { items: PassportView['fallbacks'] }) {
       {items.map((fallback, index) => (
         <li key={`${fallback.label}-${index}`} className={styles.fallback}>
           <span className={styles.fallbackDot} aria-hidden>
-            ●
+            <Icon as={AlertTriangle} size={13} />
           </span>
           <span>
             <b>{fallback.label}</b>

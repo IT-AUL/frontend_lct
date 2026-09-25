@@ -1,8 +1,9 @@
 import { plannedFix, ruleMeta, slideNumber } from '@/entities/audit'
 import type { RepairPreview } from '../model/useRepairPreview'
 import styles from './RepairBar.module.css'
+import { Check, Icon, Minus, X } from '@/shared/ui'
 
-const STATUS_MARK = { fixed: '✓', failed: '×', skipped: '—' } as const
+const STATUS_MARK = { fixed: Check, failed: X, skipped: Minus } as const
 
 export function RepairPreviewList({ preview, onClose }: { preview: RepairPreview; onClose: () => void }) {
   const ready = preview.items.filter((item) => item.outcome?.status === 'fixed').length
@@ -13,7 +14,7 @@ export function RepairPreviewList({ preview, onClose }: { preview: RepairPreview
           Что будет сделано · исправится {ready} из {preview.items.length}
         </span>
         <button type="button" className={styles.previewClose} onClick={onClose} aria-label="Скрыть план исправлений">
-          ✕
+          <Icon as={X} size={14} />
         </button>
       </header>
       <ul className={styles.previewList}>
@@ -28,7 +29,7 @@ export function RepairPreviewList({ preview, onClose }: { preview: RepairPreview
           return (
             <li key={issue.id} className={styles.previewItem} data-status={status ?? 'unknown'}>
               <span className={styles.previewMark} aria-hidden>
-                {status ? STATUS_MARK[status] : '?'}
+                <Icon as={status ? STATUS_MARK[status] : Minus} size={14} />
               </span>
               <span className={styles.previewText}>
                 <span>{text}</span>

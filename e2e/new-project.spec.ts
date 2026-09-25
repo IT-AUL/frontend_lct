@@ -8,7 +8,7 @@ test('new project: create, upload a template, see the analysis', async ({ page }
   const name = `E2E проект ${Date.now()}`
   await openApp(page)
 
-  await page.getByRole('button', { name: '+ Новый проект' }).click()
+  await page.getByRole('button', { name: 'Новый проект' }).click()
   const dialog = page.getByRole('dialog', { name: 'Новый проект' })
   await expect(dialog).toBeVisible()
   await dialog.getByRole('textbox', { name: /^Название/ }).fill(name)

@@ -130,7 +130,7 @@ export function PlanPage() {
         basePlan={plan}
         headings={headings}
         eyebrow="Шаг 3 · План"
-        buildLabel="Пересобрать по этому плану →"
+        buildLabel="Пересобрать по этому плану"
         buildBody={rebuildBody(generation, plan, session?.id ?? null)}
         notice={owner ? <>План варианта «{owner}».</> : null}
       />

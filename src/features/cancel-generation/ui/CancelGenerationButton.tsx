@@ -1,5 +1,5 @@
 import { useCancelGeneration } from '@/entities/generation'
-import { Button, useToast } from '@/shared/ui'
+import { Button, Icon, useToast, X } from '@/shared/ui'
 
 interface CancelGenerationButtonProps {
   generationId: string
@@ -22,6 +22,7 @@ export function CancelGenerationButton({ generationId, onCanceled }: CancelGener
 
   return (
     <Button size="lg" onClick={handleClick} disabled={cancel.isPending}>
+      <Icon as={X} />
       {cancel.isPending ? 'Отменяем…' : 'Отменить'}
     </Button>
   )

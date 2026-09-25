@@ -7,7 +7,7 @@ import { usePassport } from '@/entities/passport'
 import { DEFAULT_STRATEGY, strategyInfo, useVariantSlides, variantAxes, variantMetrics, variantRationale, type VariantSummary } from '@/entities/variant'
 import { useVariantFiles } from '@/features/variant-files'
 import { formatPercent } from '@/shared/lib/format'
-import { Badge, Meter } from '@/shared/ui'
+import { Badge, Check, Download, FileText, Icon, Meter, X } from '@/shared/ui'
 import { formatPei, issuesHeadline, peiNote, severityBreakdown, styleFidelityScore, validityView } from '../lib/metrics'
 import styles from './VariantCard.module.css'
 import { VariantThumbnails } from './VariantThumbnails'
@@ -72,7 +72,9 @@ export function VariantCard({ variant: listed, showThumbnails, auditHref }: Vari
       <dl className={styles.metrics}>
         <div className={styles.metric}>
           <dt>Открывается</dt>
-          <dd className={styles[`validity_${validity.tone}`]}>{validity.label}</dd>
+          <dd className={styles[`validity_${validity.tone}`]}>
+            {validity.tone !== 'muted' && <Icon as={validity.tone === 'ok' ? Check : X} size={14} strokeWidth={2.5} />} {validity.label}
+          </dd>
         </div>
         <div className={styles.metric}>
           <dt>Редактируемость</dt>
@@ -133,11 +135,13 @@ export function VariantCard({ variant: listed, showThumbnails, auditHref }: Vari
         )}
         {files.pdfUrl && (
           <a className={styles.action} href={files.pdfUrl} target="_blank" rel="noreferrer" aria-label={`Открыть PDF «${info.name}» в новой вкладке`}>
+            <Icon as={FileText} size={14} />
             PDF
           </a>
         )}
         {files.pptxUrl ? (
           <a className={styles.action} href={files.pptxUrl} download aria-label={`Скачать PPTX «${info.name}»`}>
+            <Icon as={Download} size={14} />
             PPTX
           </a>
         ) : (

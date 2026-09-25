@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type DragEvent } from 'react'
 import { formatBytes } from '@/shared/lib/format'
-import { Badge, Button, Segmented, TextArea } from '@/shared/ui'
+import { Badge, Button, Icon, Segmented, TextArea, X } from '@/shared/ui'
 import { CONTENT_EXTENSIONS, fileExtension, partitionContentFiles } from '../lib/brief'
 import type { ContentPlan } from '../lib/brief'
 import type { ContentMode, ParsedContent } from '../model/form'
@@ -111,7 +111,7 @@ export function ContentSection(props: ContentSectionProps) {
               </div>
               {ready && <Badge tone="ok">используется</Badge>}
               <button type="button" className={styles.iconButton} aria-label={`Убрать файл ${primary.name}`} onClick={() => remove(primary)}>
-                ×
+                <Icon as={X} size={14} />
               </button>
             </div>
           )}
@@ -133,7 +133,7 @@ export function ContentSection(props: ContentSectionProps) {
                 <span className={styles.fileWarn}>Не будет учтён: используется только первый файл.</span>
               </div>
               <button type="button" className={styles.iconButton} aria-label={`Убрать файл ${file.name}`} onClick={() => remove(file)}>
-                ×
+                <Icon as={X} size={14} />
               </button>
             </div>
           ))}
@@ -145,7 +145,7 @@ export function ContentSection(props: ContentSectionProps) {
                 <span className={styles.fileWarn}>Формат не поддерживается. Подойдут {EXTENSIONS_LABEL}</span>
               </div>
               <button type="button" className={styles.iconButton} aria-label={`Убрать файл ${file.name}`} onClick={() => remove(file)}>
-                ×
+                <Icon as={X} size={14} />
               </button>
             </div>
           ))}

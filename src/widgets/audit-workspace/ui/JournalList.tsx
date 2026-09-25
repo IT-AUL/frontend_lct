@@ -1,8 +1,8 @@
 import { journalActionText, ruleMeta, slideNumber, type JournalEntry, type RepairBatch } from '@/entities/audit'
-import { Mono } from '@/shared/ui'
+import { Check, Icon, type IconComponent, Minus, Mono, X } from '@/shared/ui'
 import styles from './IssuePanel.module.css'
 
-const MARK: Record<JournalEntry['outcome'], string> = { fixed: '✓', unresolved: '×', dismissed: '—' }
+const MARK: Record<JournalEntry['outcome'], IconComponent> = { fixed: Check, unresolved: X, dismissed: Minus }
 
 interface JournalListProps {
   entries: readonly JournalEntry[]
@@ -44,7 +44,7 @@ export function JournalList({ entries, batches }: JournalListProps) {
           return (
             <li key={entry.id} className={styles.entry}>
               <span className={styles.entryMark} data-outcome={entry.outcome} aria-hidden>
-                {MARK[entry.outcome]}
+                <Icon as={MARK[entry.outcome]} size={12} strokeWidth={3} />
               </span>
               <div className={styles.entryText}>
                 <div className={styles.entryTitle}>

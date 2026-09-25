@@ -5,6 +5,7 @@ import { formatNumber, formatPercent, pluralize } from '@/shared/lib/format'
 import { countLabel, formatShare, FORMS, GROUP_LABEL, OF_FORMS, ofCountLabel } from '../model/labels'
 import type { DnaFacts } from '../model/facts'
 import styles from './DesignDna.module.css'
+import { ArrowRightLeft, Check, Icon } from '@/shared/ui'
 
 interface UnderstandingPanelProps {
   system: DesignSystem
@@ -54,7 +55,9 @@ function ConflictCard({ conflict }: { conflict: UnderstandingConflict }) {
   if (conflict.kind === 'font') {
     return (
       <div className={styles.conflict}>
-        <div className={styles.conflictTitle}>⇄ Шрифт</div>
+        <div className={styles.conflictTitle}>
+          <Icon as={ArrowRightLeft} size={13} /> Шрифт
+        </div>
         <div>
           Заявлен {joinNames(conflict.declared)}, на слайдах{' '}
           {conflict.observed.map((font, index) => (
@@ -70,7 +73,9 @@ function ConflictCard({ conflict }: { conflict: UnderstandingConflict }) {
   }
   return (
     <div className={styles.conflict}>
-      <div className={styles.conflictTitle}>⇄ Цвет</div>
+      <div className={styles.conflictTitle}>
+        <Icon as={ArrowRightLeft} size={13} /> Цвет
+      </div>
       <div>
         <Strong>{conflict.color.hex}</Strong> — {formatPercent(conflict.color.share)} употреблений, но в теме такого цвета нет.
       </div>
@@ -125,7 +130,7 @@ export function UnderstandingPanel({ system, understanding, facts }: Understandi
             .map(({ group }) => (
               <li key={group} className={styles.coverageRow}>
                 <span className={styles.coverageMark} aria-hidden>
-                  ✓
+                  <Icon as={Check} size={10} strokeWidth={3} />
                 </span>
                 <span className={styles.coverageLabel}>{GROUP_LABEL[group]}</span>
                 <span className={styles.coverageValue}>{coverageValue(group, system, facts)}</span>

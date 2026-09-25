@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, useToast } from '@/shared/ui'
+import { Button, Check, Copy, Icon, useToast } from '@/shared/ui'
 import { buildReproductionCommand, CONTENT_PLACEHOLDER, TEMPLATE_PLACEHOLDER, type ReproductionInput } from '../lib/reproductionCommand'
 import styles from './ReproduceCommand.module.css'
 
@@ -48,6 +48,7 @@ export function ReproduceCommand(input: ReproductionInput) {
         </p>
       )}
       <Button size="sm" className={styles.button} onClick={copy}>
+        <Icon as={copied ? Check : Copy} size={14} />
         <span aria-live="polite">{copied ? 'Скопировано' : 'Скопировать команду'}</span>
       </Button>
     </section>

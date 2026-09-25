@@ -6,7 +6,7 @@ import { describeFailure, failureMeta, GenerationProgress, isTrackingLost, RunNo
 import { isTrackingId, useGenerationTracker, type GenerationPhase, type GenerationTracker } from '@/entities/generation'
 import { markEvidence, projectRunId, rememberRun, useProject } from '@/entities/project'
 import { routes } from '@/shared/config'
-import { Button, PageHeader } from '@/shared/ui'
+import { ArrowRight, Button, Icon, PageHeader } from '@/shared/ui'
 import styles from './GenerationPage.module.css'
 
 const VARIANT_WORD: Record<number, string> = { 1: 'один вариант', 2: 'два варианта', 3: 'три варианта' }
@@ -133,7 +133,8 @@ export function GenerationPage() {
           План колоды
         </Link>
         <Link className={styles.primaryLink} to={routes.variants(projectId, generationId)}>
-          Сравнить варианты →
+          Сравнить варианты
+          <Icon as={ArrowRight} />
         </Link>
       </>
     ) : undefined

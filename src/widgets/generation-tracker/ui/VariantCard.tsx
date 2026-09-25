@@ -4,7 +4,7 @@ import { variantMetrics, type VariantSummary } from '@/entities/variant'
 import { artifactUrl } from '@/shared/api'
 import { formatClock } from '@/shared/lib/format'
 import { useNow } from '@/shared/lib/time'
-import { PdfPage } from '@/shared/ui'
+import { CircleCheck, Icon, PdfPage } from '@/shared/ui'
 import { VARIANT_STATE_LABEL, variantElapsedSeconds, variantStageLabel, type VariantCard as VariantCardModel } from '../lib/variants'
 import styles from './VariantCard.module.css'
 
@@ -32,7 +32,9 @@ function DoneBody({ variant, name }: { variant: VariantSummary; name: string }) 
       ) : (
         <DashedSlots />
       )}
-      {opensCleanly === true && <div className={styles.okLine}>✓ Файл открыт повторно без ошибок</div>}
+      {opensCleanly === true && <div className={styles.okLine}>
+          <Icon as={CircleCheck} size={14} /> Файл открыт повторно без ошибок
+        </div>}
       {opensCleanly === false && <div className={styles.warnLine}>Повторное открытие файла выявило ошибки</div>}
     </>
   )

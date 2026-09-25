@@ -3,6 +3,7 @@ import type { DesignSystem } from '@/entities/template'
 import { formatNumber } from '@/shared/lib/format'
 import { countLabel, FORMS, formatShare } from '../model/labels'
 import styles from './DesignDna.module.css'
+import { ArrowRightLeft, Icon } from '@/shared/ui'
 
 const BAR_LIMIT = 5
 
@@ -22,7 +23,9 @@ export function FontsSection({ system, className }: { system: DesignSystem; clas
         <h2 id="dna-fonts" className={styles.sectionTitle}>
           Шрифты
         </h2>
-        {fontConflict && <span className={styles.warnPill}>⇄ заявлено ≠ фактически</span>}
+        {fontConflict && <span className={styles.warnPill}>
+            <Icon as={ArrowRightLeft} size={12} /> заявлено ≠ фактически
+          </span>}
       </div>
 
       <div className={clsx(styles.fontCompare, !(declared && primaryFont && fragments > 0) && styles.fontCompareSingle)}>

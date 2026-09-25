@@ -12,7 +12,7 @@ import {
   type Severity,
 } from '@/entities/audit'
 import { strategyInfo, type VariantSummary } from '@/entities/variant'
-import { Mono } from '@/shared/ui'
+import { ArrowRight, Check, Icon, Mono, RefreshCw } from '@/shared/ui'
 import { CHECK_STATUS_LABEL } from '../model/labels'
 import styles from './AuditSummary.module.css'
 
@@ -113,10 +113,12 @@ export function AuditSummary(props: AuditSummaryProps) {
         {contextualPending ? 'Модель проверяет…' : 'Смысл моделью'}
       </button>
       <button type="button" className={styles.action} onClick={props.onReaudit} disabled={reauditPending} aria-busy={reauditPending}>
+        <Icon as={RefreshCw} size={14} className={reauditPending ? styles.spin : undefined} />
         {reauditPending ? 'Идёт повторный аудит…' : 'Повторный аудит'}
       </button>
       <Link to={props.exportHref} className={styles.primary}>
-        Экспорт →
+        Экспорт
+        <Icon as={ArrowRight} size={14} />
       </Link>
     </section>
   )
@@ -148,7 +150,7 @@ export function PolicyStrip({ counts, audit, active, onToggle }: PolicyStripProp
             title={!checked ? 'Проверки этой категории ещё не запускались' : undefined}
           >
             <span>{CATEGORY_LABEL[category]}</span>
-            <Mono className={styles.policyValue}>{state === 'unchecked' ? '—' : state === 'clean' ? '✓' : count}</Mono>
+            <Mono className={styles.policyValue}>{state === 'unchecked' ? '—' : state === 'clean' ? <Icon as={Check} size={12} strokeWidth={3} /> : count}</Mono>
           </button>
         )
       })}

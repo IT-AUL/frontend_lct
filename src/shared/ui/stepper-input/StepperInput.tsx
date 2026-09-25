@@ -1,4 +1,5 @@
 import styles from './StepperInput.module.css'
+import { Icon, Minus } from '../icon'
 
 interface StepperInputProps {
   value: number
@@ -12,7 +13,7 @@ export function StepperInput({ value, min, max, onChange, label }: StepperInputP
   return (
     <div className={styles.root} role="group" aria-label={label}>
       <button type="button" className={styles.button} aria-label="Меньше" disabled={value <= min} onClick={() => onChange(Math.max(min, value - 1))}>
-        −
+        <Icon as={Minus} size={14} />
       </button>
       <output className={styles.value}>{value}</output>
       <button type="button" className={styles.button} aria-label="Больше" disabled={value >= max} onClick={() => onChange(Math.min(max, value + 1))}>

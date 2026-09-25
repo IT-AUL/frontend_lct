@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import { useActiveProviderSession } from '@/entities/provider-session'
-import { Switch } from '@/shared/ui'
+import { Icon, Minus, Plus, Switch } from '@/shared/ui'
 import styles from './BriefForm.module.css'
 
 interface ModeSectionProps {
@@ -21,7 +21,7 @@ export function ModeSection({ useLlm, onUseLlmChange }: ModeSectionProps) {
         <span className={styles.modeLabel}>{useLlm ? 'С моделью · 1–5 мин' : 'Быстрый · секунды'}</span>
         <span className={styles.spacer} />
         <span className={styles.modeArrow} aria-hidden="true">
-          {open ? '−' : '+'}
+          <Icon as={open ? Minus : Plus} size={14} />
         </span>
       </button>
       {open && (

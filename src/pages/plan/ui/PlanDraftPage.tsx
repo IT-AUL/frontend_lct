@@ -76,7 +76,7 @@ export function PlanDraftPage() {
       basePlan={proposal.deckPlan}
       headings={headings}
       eyebrow="Шаг 3 · План"
-      buildLabel="Собрать 3 варианта по плану →"
+      buildLabel="Собрать 3 варианта по плану"
       buildBody={buildBody(stored)}
       notice={null}
       toolbar={

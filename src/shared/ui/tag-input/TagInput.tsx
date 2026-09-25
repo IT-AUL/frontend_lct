@@ -1,5 +1,6 @@
 import { useState, type KeyboardEvent } from 'react'
 import styles from './TagInput.module.css'
+import { Icon, X } from '../icon'
 
 interface TagInputProps {
   id?: string
@@ -27,7 +28,7 @@ export function TagInput({ id, values, onChange, placeholder }: TagInputProps) {
         <span key={value} className={styles.tag}>
           {value}
           <button type="button" className={styles.remove} aria-label={`Убрать «${value}»`} onClick={() => onChange(values.filter((item) => item !== value))}>
-            ×
+            <Icon as={X} size={12} />
           </button>
         </span>
       ))}

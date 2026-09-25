@@ -131,7 +131,7 @@ describe('VariantsPage', () => {
     const faithfulCard = within(faithful as HTMLElement)
     const balancedCard = within(balanced as HTMLElement)
 
-    expect(faithfulCard.getByText('✓ без ошибок')).toBeInTheDocument()
+    expect(faithfulCard.getByText(/без ошибок/)).toBeInTheDocument()
     expect(faithfulCard.getByText('3/5')).toBeInTheDocument()
     expect(faithfulCard.getByText('92 проблемы')).toBeInTheDocument()
     expect(balancedCard.getByText('108 проблем')).toBeInTheDocument()

@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { routes } from '@/shared/config'
 import { useTheme } from '@/shared/lib/theme'
 import styles from './AppHeader.module.css'
+import { Icon, Moon, Sun } from '@/shared/ui'
 
 export type StatusTone = 'ok' | 'info' | 'warn' | 'error' | 'neutral'
 
@@ -66,7 +67,7 @@ export function AppHeader({ projectName, status, providerConnected, onOpenProvid
         title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
         data-theme-target={theme === 'dark' ? 'light' : 'dark'}
       >
-        <span aria-hidden>{theme === 'dark' ? '☀' : '☾'}</span>
+        <Icon as={theme === 'dark' ? Sun : Moon} size={15} />
       </button>
     </header>
   )

@@ -1,6 +1,7 @@
 import { clsx } from 'clsx'
 import type { MouseEvent } from 'react'
 import styles from './Checkbox.module.css'
+import { Check, Icon } from '../icon'
 
 interface CheckboxProps {
   checked: boolean
@@ -27,7 +28,7 @@ export function Checkbox({ checked, onChange, label, visibleLabel, size = 'md', 
       className={clsx(styles.root, styles[size])}
     >
       <span className={styles.box} aria-hidden>
-        {checked ? '✓' : ''}
+        {checked ? <Icon as={Check} size={12} strokeWidth={3} /> : null}
       </span>
       {visibleLabel && <span className={styles.label}>{label}</span>}
     </button>

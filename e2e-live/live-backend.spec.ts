@@ -26,7 +26,7 @@ test('live backend: template, brief, three variants, audit repair, export', asyn
   await expect(page.getByRole('banner').getByRole('link', { name: 'DeckDNA — к проектам' })).toBeVisible()
 
   await test.step('create project and upload a real template', async () => {
-    await page.getByRole('button', { name: '+ Новый проект' }).click()
+    await page.getByRole('button', { name: 'Новый проект' }).click()
     const dialog = page.getByRole('dialog', { name: 'Новый проект' })
     await dialog.getByRole('textbox', { name: /^Название/ }).fill(name)
     await dialog.getByRole('button', { name: 'Создать и загрузить шаблон' }).click()

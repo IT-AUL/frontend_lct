@@ -61,7 +61,7 @@ describe('DesignDna on the recorded VK Tech analysis', () => {
 
   it('highlights the declared versus observed font mismatch', () => {
     const fonts = screen.getByRole('region', { name: 'Шрифты' })
-    expect(within(fonts).getByText('⇄ заявлено ≠ фактически')).toBeInTheDocument()
+    expect(within(fonts).getByText('заявлено ≠ фактически')).toBeInTheDocument()
     expect(within(fonts).getByText('Play · основной')).toBeInTheDocument()
     expect(within(fonts).getByText('Фактически · 1 396 фрагментов')).toBeInTheDocument()
     expect(within(fonts).getByText('На Arial приходится 1 фрагмент текста из 1 396.')).toBeInTheDocument()

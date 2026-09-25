@@ -2,6 +2,7 @@ import { clsx } from 'clsx'
 import { useId } from 'react'
 import type { PipelineView } from '../lib/pipeline'
 import styles from './PipelineStages.module.css'
+import { Check, Icon } from '@/shared/ui'
 
 const STATE_LABEL = {
   idle: '',
@@ -41,7 +42,7 @@ export function PipelineStages({ view }: { view: PipelineView }) {
         {view.steps.map((step, index) => (
           <li key={step.stage} className={clsx(styles.step, styles[step.state])}>
             <span className={styles.number} aria-hidden>
-              {step.state === 'done' ? '✓' : index + 1}
+              {step.state === 'done' ? <Icon as={Check} size={12} strokeWidth={3} /> : index + 1}
             </span>
             <span className={styles.label}>{step.label}</span>
             {STATE_LABEL[step.state] && <span className={styles.srOnly}>{`, ${STATE_LABEL[step.state]}`}</span>}

@@ -4,7 +4,7 @@ import { CreateProjectDialog, defaultProjectName } from '@/features/create-proje
 import { useCreateProject, useProjects, type Project } from '@/entities/project'
 import { isApiError } from '@/shared/api'
 import { API_MODE, routes } from '@/shared/config'
-import { Button, EmptyState, PageHeader, useToast } from '@/shared/ui'
+import { Button, EmptyState, Icon, PageHeader, Play, Plus, useToast } from '@/shared/ui'
 import { ProjectList, ProjectListSkeleton } from '@/widgets/project-list'
 import styles from './ProjectsPage.module.css'
 
@@ -45,7 +45,8 @@ export function ProjectsPage() {
         description="Шаблон и бриф на входе — три редактируемые колоды с аудитом на выходе."
         actions={
           <Button variant="primary" size="lg" onClick={() => setDialogOpen(true)}>
-            + Новый проект
+            <Icon as={Plus} />
+            Новый проект
           </Button>
         }
       />
@@ -53,13 +54,13 @@ export function ProjectsPage() {
       {IS_MOCK && (
         <button type="button" className={styles.demo} onClick={openDemo} disabled={createDemo.isPending}>
           <span className={styles.demoIcon} aria-hidden>
-            ▶
+            <Icon as={Play} size={14} />
           </span>
           <span className={styles.demoText}>
             <span className={styles.demoTitle}>Демо</span>
             <span className={styles.demoDescription}>{DEMO_DESCRIPTION}</span>
           </span>
-          <span className={styles.demoAction}>{createDemo.isPending ? 'Открываю…' : 'Открыть →'}</span>
+          <span className={styles.demoAction}>{createDemo.isPending ? 'Открываю…' : 'Открыть'}</span>
         </button>
       )}
 

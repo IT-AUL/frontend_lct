@@ -13,7 +13,7 @@ import { useVariantFiles } from '@/features/variant-files'
 import { buildPassportView, EditabilityProof, QualityPassport as PassportPanel } from '@/widgets/quality-passport'
 import { artifactUrl } from '@/shared/api'
 import { GENERATION_BUDGET_SECONDS, routes } from '@/shared/config'
-import { Button, EmptyState, PageHeader, Segmented, Skeleton } from '@/shared/ui'
+import { ArrowLeft, Button, Download, EmptyState, Icon, PageHeader, Segmented, Skeleton } from '@/shared/ui'
 import { currentRevisionOf, exportFileName, htmlExportSupported, pickVariantId, serverSkillVersion, withPassportMeta } from '../lib/exportPage'
 import styles from './ExportPage.module.css'
 
@@ -120,7 +120,8 @@ function ExportContent({ projectId, runId, variant, variants }: ExportContentPro
               />
             )}
             <Button size="lg" onClick={() => navigate(routes.audit(projectId, runId, variant.id))}>
-              ← К аудиту
+              <Icon as={ArrowLeft} />
+              К аудиту
             </Button>
           </>
         }
@@ -171,7 +172,7 @@ function ExportContent({ projectId, runId, variant, variants }: ExportContentPro
             actions={
               variantFiles.passportArtifactId && (
                 <a className={styles.jsonLink} href={artifactUrl(variantFiles.passportArtifactId)} download={exportFileName(variant.strategy, 'quality_passport', passportRevision)}>
-                  Скачать JSON паспорта
+                  <Icon as={Download} size={12} /> Скачать JSON паспорта
                 </a>
               )
             }

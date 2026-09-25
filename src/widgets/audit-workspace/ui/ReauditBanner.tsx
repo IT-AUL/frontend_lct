@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import styles from './ReauditBanner.module.css'
+import { ArrowRight, CircleCheck, Icon } from '@/shared/ui'
 
 interface ReauditBannerProps {
   revision: number
@@ -14,7 +15,7 @@ export function ReauditBanner({ revision, openCritical, stats, exportHref, onClo
     return (
       <div role="status" className={styles.success}>
         <span className={styles.check} aria-hidden>
-          ✓
+          <Icon as={CircleCheck} size={18} />
         </span>
         <div className={styles.text}>
           <div className={styles.successTitle}>Повторный аудит: 0 критических проблем</div>
@@ -24,7 +25,8 @@ export function ReauditBanner({ revision, openCritical, stats, exportHref, onClo
           </div>
         </div>
         <Link to={exportHref} className={styles.primary}>
-          Скачать PPTX и паспорт →
+          Скачать PPTX и паспорт
+          <Icon as={ArrowRight} size={14} />
         </Link>
       </div>
     )

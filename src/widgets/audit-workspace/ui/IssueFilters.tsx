@@ -1,6 +1,6 @@
 import { clsx } from 'clsx'
 import { CATEGORY_LABEL, SEVERITY, SEVERITY_ORDER, type IssueGrouping, type IssueViewFilter } from '@/entities/audit'
-import { Checkbox } from '@/shared/ui'
+import { Checkbox, Icon, X } from '@/shared/ui'
 import styles from './IssuePanel.module.css'
 
 interface Option<T extends string> {
@@ -86,7 +86,7 @@ export function IssueFilters({ filter, onFilterChange, grouping, onGroupingChang
       {filter.category !== 'all' && (
         <div className={styles.filterRow}>
           <button type="button" className={styles.categoryChip} onClick={() => update({ category: 'all' })} aria-label={`Снять фильтр категории ${CATEGORY_LABEL[filter.category]}`}>
-            Категория: {CATEGORY_LABEL[filter.category]} <span aria-hidden>✕</span>
+            Категория: {CATEGORY_LABEL[filter.category]} <Icon as={X} size={12} />
           </button>
         </div>
       )}

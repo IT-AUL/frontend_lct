@@ -15,7 +15,7 @@ import {
   type IssueView,
 } from '@/entities/audit'
 import { DismissIssueForm } from '@/features/dismiss-issue'
-import { Badge, Checkbox, Mono, type Tone } from '@/shared/ui'
+import { Badge, Checkbox, CircleCheck, Icon, Mono, type Tone } from '@/shared/ui'
 import { STATUS_LABEL } from '../model/labels'
 import styles from './IssueCard.module.css'
 
@@ -165,7 +165,9 @@ export function IssueCard({ view, active, hovered, auditId, repairPending, onAct
             </div>
           )}
           {status === 'dismissed' && <div className={styles.dismissed}>Отклонено: {note?.reason ?? 'причина сохранена'}</div>}
-          {status === 'fixed' && <div className={styles.fixed}>✓ Исправлено{note ? ` в ревизии r${note.revision}` : ''}</div>}
+          {status === 'fixed' && <div className={styles.fixed}>
+              <Icon as={CircleCheck} size={14} /> Исправлено{note ? ` в ревизии r${note.revision}` : ''}
+            </div>}
           {earlierDismissal && (
             <div className={styles.dismissed}>
               Ранее отклонено в r{earlierDismissal.revision}: {earlierDismissal.reason}. После новой ревизии сервис снова нашёл проблему.

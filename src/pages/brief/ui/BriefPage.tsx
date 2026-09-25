@@ -6,7 +6,7 @@ import { useActiveProviderSession } from '@/entities/provider-session'
 import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
 import { useTemplate } from '@/entities/template'
 import { routes } from '@/shared/config'
-import { Button, EmptyState, PageHeader, Skeleton } from '@/shared/ui'
+import { ArrowRight, Button, EmptyState, Icon, ListOrdered, PageHeader, Skeleton } from '@/shared/ui'
 import { resolveContent, toContentBrief, validateBrief } from '../lib/brief'
 import type { ContentPlan } from '../lib/brief'
 import { useBriefDraft } from '../model/draft'
@@ -108,11 +108,13 @@ function BriefScreen({ project }: { project: Project }) {
           />
           <div className={styles.cta}>
             <Button variant="primary" size="xl" block disabled={busy || !templateId} onClick={start}>
-              {submit.isPending ? 'Отправляю…' : upload.isPending ? 'Разбираю контент…' : 'Собрать 3 варианта →'}
+              {submit.isPending ? 'Отправляю…' : upload.isPending ? 'Разбираю контент…' : 'Собрать 3 варианта'}
+              {!busy && <Icon as={ArrowRight} />}
             </Button>
             {planOnly && (
               <Button variant="secondary" size="lg" block disabled={busy || !templateId} onClick={startWithPlan}>
-                {planFirst.isPending ? 'Строю план…' : 'Сначала план — поправить до вёрстки'}
+                <Icon as={ListOrdered} />
+                {planFirst.isPending ? 'Строю план…' : 'Сначала план'}
               </Button>
             )}
             {actionError && (

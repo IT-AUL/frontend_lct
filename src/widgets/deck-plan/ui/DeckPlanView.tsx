@@ -4,6 +4,7 @@ import type { DeckPlan } from '@/entities/generation'
 import { pluralize } from '@/shared/lib/format'
 import { buildPlanView, deckPurposeLabel, type PlanRow } from '../lib/plan'
 import styles from './DeckPlanView.module.css'
+import { ArrowDown, ArrowUp, CornerDownRight, Icon, Plus, X } from '@/shared/ui'
 
 export interface PlanEditor {
   onMove: (slideId: string, delta: -1 | 1) => void
@@ -33,10 +34,10 @@ function RowActions({ row, first, last, single, editor }: PlanRowItemProps) {
   return (
     <div className={styles.rowActions}>
       <button type="button" className={clsx(styles.iconButton, styles.live)} aria-label={`Поднять слайд ${row.number} выше`} disabled={first} onClick={() => editor.onMove(row.id, -1)}>
-        ↑
+        <Icon as={ArrowUp} size={14} />
       </button>
       <button type="button" className={clsx(styles.iconButton, styles.live)} aria-label={`Опустить слайд ${row.number} ниже`} disabled={last} onClick={() => editor.onMove(row.id, 1)}>
-        ↓
+        <Icon as={ArrowDown} size={14} />
       </button>
       <button
         type="button"
@@ -45,7 +46,7 @@ function RowActions({ row, first, last, single, editor }: PlanRowItemProps) {
         disabled={single}
         onClick={() => editor.onRemove(row.id)}
       >
-        ×
+        <Icon as={X} size={14} />
       </button>
     </div>
   )
@@ -100,7 +101,7 @@ function PlanRowItem({ row, first, last, single, editor }: PlanRowItemProps) {
         {row.sources.length > 0 ? (
           row.sources.map((source) => (
             <span key={source.key} className={styles.source} title={`${source.label}\n${source.refs.join('\n')}`}>
-              ↳ {source.label}
+              <Icon as={CornerDownRight} size={12} /> {source.label}
             </span>
           ))
         ) : (
@@ -146,7 +147,7 @@ export function DeckPlanView({ plan, headings, editor }: DeckPlanViewProps) {
         </ol>
         {editor && (
           <button type="button" className={clsx(styles.addButton, styles.live)} onClick={editor.onAdd}>
-            + Добавить слайд
+            <Icon as={Plus} size={14} /> Добавить слайд
           </button>
         )}
       </div>
