@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-import { SEEDED_PROJECT, expectRenderedPreview, openApp } from './support'
+import { SEEDED_PROJECT, downloadFrom, expectRenderedPreview, openApp } from './support'
 
 async function canvasSize(preview: Locator): Promise<{ width: number; height: number }> {
   return preview.locator('canvas').evaluate((canvas: HTMLCanvasElement) => ({ width: canvas.width, height: canvas.height }))
@@ -30,6 +30,10 @@ test('demo path: template DNA, brief, three variants, audit repair, export', asy
     const fonts = page.getByRole('region', { name: 'Шрифты' })
     await expect(fonts).toContainText('заявлено ≠ фактически')
     await expect(fonts.getByRole('list', { name: 'Шрифты на слайдах' }).getByRole('listitem')).not.toHaveCount(0)
+    const dna = await downloadFrom(page, page.getByRole('link', { name: 'ДНК в JSON' }))
+    expect(dna.name).toMatch(/^design-dna-.+\.json$/)
+    const parsed: unknown = JSON.parse(dna.bytes.toString('utf8'))
+    expect(parsed).toEqual(expect.objectContaining({ template_id: expect.any(String) }))
   })
 
   await test.step('brief: purpose «Продукт» and start generation', async () => {
@@ -90,8 +94,10 @@ test('demo path: template DNA, brief, three variants, audit repair, export', asy
     const pptx = files.getByRole('article', { name: /\.pptx$/ })
     const downloadLink = pptx.getByRole('link', { name: /^Скачать/ }).first()
     await expect(downloadLink).toBeVisible({ timeout: 20_000 })
-    const [download] = await Promise.all([page.waitForEvent('download'), downloadLink.click()])
-    expect(download.suggestedFilename()).toMatch(/\.pptx$/)
+    const deck = await downloadFrom(page, downloadLink)
+    expect(deck.name).toMatch(/\.pptx$/)
+    expect(deck.bytes.subarray(0, 2).toString('latin1')).toBe('PK')
+    expect(deck.bytes.length).toBeGreaterThan(1024)
     await expect(files.getByRole('article', { name: /\.html$/ })).toContainText('скоро')
   })
 })
