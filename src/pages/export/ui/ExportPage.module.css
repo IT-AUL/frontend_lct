@@ -1,8 +1,77 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  max-width: 1120px;
+  gap: 20px;
+  max-width: var(--page-width);
   margin: 0 auto;
-  padding: 40px 32px 64px;
+  padding: 28px 32px 64px;
+}
+
+.loading,
+.passportLoading {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.passportLoading {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.files {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.error {
+  color: var(--error);
+  font-size: 13px;
+}
+
+.jsonLink {
+  color: var(--ink-2);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.jsonLink:hover {
+  color: var(--ink);
+}
+
+.notice {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--warn-bg);
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.passportEmpty {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.emptyLink {
+  color: var(--ink);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }

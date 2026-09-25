@@ -1,0 +1,140 @@
+.card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+}
+
+.primary {
+  border-color: var(--ink);
+}
+
+.soon {
+  opacity: 0.7;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--sunken);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.tagOk {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.tagSoon {
+  background: var(--sunken);
+  color: var(--ink-3);
+}
+
+.note {
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+.meta {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.warn {
+  color: var(--warn);
+  font-size: 12px;
+}
+
+.error {
+  color: var(--error);
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.linkPrimary {
+  background: var(--ink);
+  color: var(--inv);
+  font-weight: 500;
+}
+
+.linkPrimary:hover {
+  background: var(--ink-2);
+}
+
+.linkSecondary {
+  height: auto;
+  padding: 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.linkSecondary:hover {
+  color: var(--ink);
+}
+
+.soonText {
+  color: var(--ink-3);
+  font-size: 12px;
+}
