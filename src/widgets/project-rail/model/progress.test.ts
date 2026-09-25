@@ -25,6 +25,13 @@ describe('buildRailSteps', () => {
   })
 })
 
+describe('buildRailSteps while the service has not returned a run id', () => {
+  it('keeps plan and run reachable but locks screens that need a real run id', () => {
+    const steps = buildRailSteps({ ...base, hasTemplate: true, hasContent: true, runId: 'local-1', runPending: true }, 'run')
+    expect(steps.map((step) => step.state)).toEqual(['done', 'done', 'available', 'current', 'locked', 'locked', 'locked'])
+  })
+})
+
 describe('buildProofChain', () => {
   it('reports eight links and marks only proven ones', () => {
     const chain = buildProofChain({ ...base, hasTemplate: true })

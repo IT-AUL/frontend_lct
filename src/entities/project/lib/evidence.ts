@@ -22,6 +22,13 @@ export function markEvidence(projectId: string, mark: EvidenceMark): void {
   listeners.forEach((listener) => listener())
 }
 
+export function resetEvidence(projectId: string): void {
+  if (!snapshot[projectId]) return
+  snapshot = Object.fromEntries(Object.entries(snapshot).filter(([id]) => id !== projectId))
+  writeJson(STORAGE_KEY, snapshot)
+  listeners.forEach((listener) => listener())
+}
+
 const EMPTY: Partial<Record<EvidenceMark, true>> = {}
 
 export function useProjectEvidence(projectId: string | undefined): Partial<Record<EvidenceMark, true>> {

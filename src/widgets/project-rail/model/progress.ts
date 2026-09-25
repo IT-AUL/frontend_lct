@@ -3,6 +3,7 @@ import { routes, type ProjectStep } from '@/shared/config'
 export interface ProjectProgress {
   projectId: string
   runId?: string
+  runPending?: boolean
   hasTemplate: boolean
   hasContent: boolean
   targetSlides: number
@@ -36,6 +37,7 @@ function stepHref(step: ProjectStep, progress: ProjectProgress): string | undefi
   if (!runId) return undefined
   if (step === 'plan') return routes.plan(projectId, runId)
   if (step === 'run') return routes.run(projectId, runId)
+  if (progress.runPending) return undefined
   if (step === 'variants') return routes.variants(projectId, runId)
   if (step === 'audit') return routes.audit(projectId, runId)
   return routes.export(projectId, runId)

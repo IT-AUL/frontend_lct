@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { uploadContentPack } from '@/entities/content-pack'
-import { startGeneration } from '@/entities/generation'
-import { useInvalidateProject } from '@/entities/project'
+import { startGeneration, whenGenerationAccepted } from '@/entities/generation'
+import { rememberRun, useInvalidateProject } from '@/entities/project'
 import { resolveContent, toBrief, toGenerationBody } from '../lib/brief'
 import type { BriefForm, ParsedContent } from './form'
 
@@ -50,6 +50,10 @@ export function useSubmitBrief(projectId: string) {
         contentPackId = plan.packId
       }
       const trackingId = startGeneration(projectId, toGenerationBody({ brief, templateId, contentPackId, useLlm: form.useLlm, providerSessionId }))
+      whenGenerationAccepted(trackingId)?.then(
+        (accepted) => rememberRun(projectId, accepted.generation_id),
+        () => undefined,
+      )
       void invalidateProject(projectId)
       return trackingId
     },

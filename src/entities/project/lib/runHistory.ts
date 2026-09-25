@@ -1,4 +1,5 @@
 import { readJson, writeJson } from '@/shared/lib/storage'
+import { resetEvidence } from './evidence'
 
 const STORAGE_KEY = 'deckdna.runs.v1'
 
@@ -14,6 +15,8 @@ export function latestRunId(projectId: string): string | undefined {
 
 export function rememberRun(projectId: string, runId: string): void {
   const history = readJson<RunHistory>(STORAGE_KEY, {})
-  const runs = (history[projectId] ?? []).filter((id) => id !== runId)
-  writeJson(STORAGE_KEY, { ...history, [projectId]: [...runs, runId] })
+  const known = history[projectId] ?? []
+  if (known.at(-1) === runId) return
+  writeJson(STORAGE_KEY, { ...history, [projectId]: [...known.filter((id) => id !== runId), runId] })
+  if (!known.includes(runId)) resetEvidence(projectId)
 }

@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useNavigate } from 'react-router'
-import { useRetryGeneration } from '@/entities/generation'
+import { useRetryGeneration, whenGenerationAccepted } from '@/entities/generation'
+import { rememberRun } from '@/entities/project'
 import { routes } from '@/shared/config'
 import { useToast } from '@/shared/ui'
 
@@ -18,7 +19,13 @@ export function useRerunGeneration(projectId: string): RerunGeneration {
   const rerun = useCallback(
     (generationId: string) => {
       mutate(generationId, {
-        onSuccess: (trackingId) => navigate(routes.run(projectId, trackingId)),
+        onSuccess: (trackingId) => {
+          whenGenerationAccepted(trackingId)?.then(
+            (accepted) => rememberRun(projectId, accepted.generation_id),
+            () => undefined,
+          )
+          navigate(routes.run(projectId, trackingId))
+        },
         onError: (error) => toast.show(error.message),
       })
     },
