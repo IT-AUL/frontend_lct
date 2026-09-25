@@ -4,20 +4,15 @@ import { useProject } from '@/entities/project'
 import type { Project } from '@/entities/project'
 import { useActiveProviderSession } from '@/entities/provider-session'
 import { useTemplate } from '@/entities/template'
-import {
-  resolveContent,
-  toContentBrief,
-  useBriefDraft,
-  useContentUpload,
-  useSubmitBrief,
-  validateBrief,
-} from '@/features/submit-brief'
-import type { ContentPlan } from '@/features/submit-brief'
-import { BriefForm } from '@/widgets/brief-form'
-import { ContentPreview } from '@/widgets/content-preview'
 import { routes } from '@/shared/config'
 import { Button, EmptyState, PageHeader, Skeleton } from '@/shared/ui'
+import { resolveContent, toContentBrief, validateBrief } from '../lib/brief'
+import type { ContentPlan } from '../lib/brief'
+import { useBriefDraft } from '../model/draft'
+import { useContentUpload, useSubmitBrief } from '../model/mutations'
+import { BriefForm } from './BriefForm'
 import styles from './BriefPage.module.css'
+import { ContentPreview } from './ContentPreview'
 
 type UploadPlan = Extract<ContentPlan, { kind: 'upload' }>
 

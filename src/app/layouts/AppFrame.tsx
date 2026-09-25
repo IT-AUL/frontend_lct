@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useActiveProviderSession } from '@/entities/provider-session'
 import { AboutPanel } from '@/widgets/about-panel'
 import { AppHeader, type RunStatus } from '@/widgets/app-header'
 import { ProviderPanel } from '@/widgets/provider-panel'
@@ -15,6 +16,7 @@ interface AppFrameProps {
 
 export function AppFrame({ projectName, status, rail, children }: AppFrameProps) {
   const [panel, setPanel] = useState<Panel>(null)
+  const providerSession = useActiveProviderSession()
   const closeWhen = (open: boolean) => {
     if (!open) setPanel(null)
   }
@@ -24,7 +26,7 @@ export function AppFrame({ projectName, status, rail, children }: AppFrameProps)
       <AppHeader
         projectName={projectName}
         status={status}
-        providerConnected={false}
+        providerConnected={Boolean(providerSession)}
         onOpenProvider={() => setPanel('provider')}
         onOpenAbout={() => setPanel('about')}
       />

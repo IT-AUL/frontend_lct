@@ -1,6 +1,6 @@
-import { LANGUAGES, SLIDE_COUNT_MAX, SLIDE_COUNT_MIN } from '@/features/submit-brief'
-import type { BriefForm } from '@/features/submit-brief'
 import { Field, Segmented, StepperInput, TagInput, TextInput } from '@/shared/ui'
+import { LANGUAGES, SLIDE_COUNT_MAX, SLIDE_COUNT_MIN } from '../model/form'
+import type { BriefForm } from '../model/form'
 import styles from './BriefForm.module.css'
 
 interface ParamsSectionProps {

@@ -1,8 +1,9 @@
 import { useId, useRef, useState, type DragEvent } from 'react'
-import { CONTENT_EXTENSIONS, fileExtension, partitionContentFiles } from '@/features/submit-brief'
-import type { ContentMode, ContentPlan, ParsedContent } from '@/features/submit-brief'
 import { formatBytes } from '@/shared/lib/format'
 import { Badge, Button, Segmented, TextArea } from '@/shared/ui'
+import { CONTENT_EXTENSIONS, fileExtension, partitionContentFiles } from '../lib/brief'
+import type { ContentPlan } from '../lib/brief'
+import type { ContentMode, ParsedContent } from '../model/form'
 import styles from './BriefForm.module.css'
 
 const MODES = [
@@ -31,7 +32,7 @@ export interface ContentSectionProps {
 function FileIcon({ name }: { name: string }) {
   return (
     <span className={styles.fileIcon} aria-hidden="true">
-      {fileExtension(name).slice(0, 4)}
+      {fileExtension(name).slice(0, 4) || 'DOC'}
     </span>
   )
 }

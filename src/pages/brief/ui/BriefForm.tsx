@@ -1,4 +1,5 @@
-import type { BriefErrors, BriefForm as BriefFormState, ContentPlan } from '@/features/submit-brief'
+import type { BriefErrors, ContentPlan } from '../lib/brief'
+import type { BriefForm as BriefFormState } from '../model/form'
 import { ContentSection } from './ContentSection'
 import { ModeSection } from './ModeSection'
 import { ParamsSection } from './ParamsSection'

@@ -1,7 +1,7 @@
 import { useId, useRef, type KeyboardEvent } from 'react'
-import { PURPOSES } from '@/features/submit-brief'
-import type { PurposeKey } from '@/features/submit-brief'
 import { Field, TextInput } from '@/shared/ui'
+import { PURPOSES } from '../model/form'
+import type { PurposeKey } from '../model/form'
 import styles from './BriefForm.module.css'
 
 interface PurposeSectionProps {
