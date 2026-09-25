@@ -10,7 +10,6 @@ interface UnderstandingPanelProps {
   system: DesignSystem
   understanding: Understanding
   facts: DnaFacts
-  parserVersion: string | null
 }
 
 function coverageValue(group: DnaGroup, system: DesignSystem, facts: DnaFacts): string {
@@ -91,13 +90,14 @@ function gapText(gap: UnderstandingGap): ReactNode {
     case 'unused_layouts':
       return `${formatNumber(gap.unused)} из ${ofCountLabel(gap.total, OF_FORMS.layout)} не используются ни на одном слайде.`
     case 'missing':
-      return `Анализатор не вернул: ${gap.groups.map((group) => GROUP_LABEL[group].toLowerCase()).join(', ')}. Эти блоки скрыты.`
+      return null
     case 'warning':
       return gap.text
   }
 }
 
-export function UnderstandingPanel({ system, understanding, facts, parserVersion }: UnderstandingPanelProps) {
+export function UnderstandingPanel({ system, understanding, facts }: UnderstandingPanelProps) {
+  const gaps = understanding.gaps.filter((gap) => gap.kind !== 'missing')
   const headline = system.counts.slides || system.counts.layouts
   const headlineForms = system.counts.slides ? FORMS.slide : FORMS.layout
   const rest = [
@@ -114,25 +114,23 @@ export function UnderstandingPanel({ system, understanding, facts, parserVersion
           {pluralize(headline, headlineForms)}
           {rest.length ? `, ${rest.join(' и ')}` : ''} разобраны без подготовки шаблона
         </div>
-        <div className={styles.footnote}>
-          Источник правил — мастер, макеты и обычные слайды.{parserVersion ? ` Анализатор ${parserVersion}.` : ''}
-        </div>
+        <div className={styles.footnote}>Правила взяты из мастера, макетов и обычных слайдов.</div>
       </div>
 
       <div className={styles.column}>
         <div className={styles.subTitle}>Что извлечено</div>
         <ul className={styles.coverage}>
-          {understanding.coverage.map(({ group, available }) => (
-            <li key={group} className={styles.coverageRow}>
-              <span className={clsx(styles.coverageMark, !available && styles.coverageMarkOff)} aria-hidden>
-                ✓
-              </span>
-              <span className={styles.coverageLabel}>{GROUP_LABEL[group]}</span>
-              <span className={clsx(styles.coverageValue, !available && styles.coverageValueOff)}>
-                {available ? coverageValue(group, system, facts) : 'нет данных'}
-              </span>
-            </li>
-          ))}
+          {understanding.coverage
+            .filter(({ available }) => available)
+            .map(({ group }) => (
+              <li key={group} className={styles.coverageRow}>
+                <span className={styles.coverageMark} aria-hidden>
+                  ✓
+                </span>
+                <span className={styles.coverageLabel}>{GROUP_LABEL[group]}</span>
+                <span className={styles.coverageValue}>{coverageValue(group, system, facts)}</span>
+              </li>
+            ))}
         </ul>
       </div>
 
@@ -150,17 +148,17 @@ export function UnderstandingPanel({ system, understanding, facts, parserVersion
 
       <div className={styles.column}>
         <div className={styles.countHead}>
-          <div className={styles.subTitle}>Пробелы</div>
-          <div className={clsx(styles.count, styles.countNeutral)}>{understanding.gaps.length}</div>
+          <div className={styles.subTitle}>Особенности</div>
+          <div className={clsx(styles.count, styles.countNeutral)}>{gaps.length}</div>
         </div>
-        {understanding.gaps.length ? (
-          understanding.gaps.map((gap, index) => (
+        {gaps.length ? (
+          gaps.map((gap, index) => (
             <div key={`${gap.kind}-${index}`} className={styles.gap}>
               {gapText(gap)}
             </div>
           ))
         ) : (
-          <div className={styles.calm}>Пробелов не найдено.</div>
+          <div className={styles.calm}>Шаблон используется равномерно.</div>
         )}
       </div>
     </section>

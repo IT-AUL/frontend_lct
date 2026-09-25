@@ -24,7 +24,7 @@ export function RepairPreviewList({ preview, onClose }: { preview: RepairPreview
             ? outcome.status === 'fixed'
               ? (outcome.summary ?? plannedFix(issue) ?? 'Будет исправлено')
               : (outcome.reason ?? (outcome.status === 'skipped' ? 'Сервис пропустит эту проблему' : 'Исправить не получится'))
-            : 'Сервис не описал действие для этой проблемы'
+            : 'Действие не описано'
           return (
             <li key={issue.id} className={styles.previewItem} data-status={status ?? 'unknown'}>
               <span className={styles.previewMark} aria-hidden>

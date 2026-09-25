@@ -58,7 +58,7 @@ describe('deck plan view', () => {
     const view = buildPlanView(plan, headings)
     expect(view.rows).toHaveLength(12)
     const [first, second, third] = view.rows
-    expect(first).toMatchObject({ number: '01', purpose: 'Титул', idea: null, visual: 'Визуализация не задана', sectionId: null })
+    expect(first).toMatchObject({ number: '01', purpose: 'Титул', idea: null, visual: '', sectionId: null })
     expect(first?.sources.map((source) => source.label)).toEqual(['Заголовок контента'])
     expect(second).toMatchObject({ number: '02', purpose: 'Данные', visual: 'Текст', sectionId: 'sec-0' })
     expect(third).toMatchObject({ purpose: 'Проблема', sectionId: 'sec-1', sectionTitle: 'Проблема' })

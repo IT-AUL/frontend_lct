@@ -19,7 +19,7 @@ export function JournalList({ entries, batches }: JournalListProps) {
   if (entries.length === 0) {
     return (
       <div className={styles.journal}>
-        <div className={styles.empty}>Журнал пуст. Каждое исправление и отклонение попадёт сюда с правилом и ревизией.</div>
+        <div className={styles.empty}>Исправлений и отклонений пока нет.</div>
       </div>
     )
   }

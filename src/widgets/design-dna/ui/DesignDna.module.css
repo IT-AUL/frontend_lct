@@ -188,12 +188,6 @@
   line-height: 1;
 }
 
-.coverageMarkOff {
-  border-style: dashed;
-  border-color: var(--line-2);
-  color: transparent;
-}
-
 .coverageLabel {
   color: var(--ink-2);
 }
@@ -201,10 +195,6 @@
 .coverageValue {
   min-width: 0;
   font-variant-numeric: tabular-nums;
-}
-
-.coverageValueOff {
-  color: var(--ink-3);
 }
 
 .countHead {

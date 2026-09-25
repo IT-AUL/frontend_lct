@@ -103,7 +103,6 @@ test('live backend: system panel reflects the real capabilities', async ({ page 
   await expect(capabilities.getByRole('listitem').filter({ hasText: 'Экспорт PPTX' })).toContainText('есть')
   await expect(capabilities.getByRole('listitem').filter({ hasText: 'Экспорт PDF' })).toContainText('есть')
   await expect(capabilities.getByRole('listitem').filter({ hasText: 'Паспорт качества' })).toContainText('есть')
-  await expect(capabilities.getByRole('listitem').filter({ hasText: 'Экспорт HTML' })).toBeVisible()
   expect(apiFailures).toEqual([])
 })
 

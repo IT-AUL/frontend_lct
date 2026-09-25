@@ -64,7 +64,7 @@ function VersionBlock() {
 function CapabilitiesBlock() {
   const { data, error, isPending } = useCapabilities()
   return (
-    <Block title="Возможности сервиса" note="Интерфейс подстраивается под этот список: чего нет — помечено, а не сломано.">
+    <Block title="Возможности сервиса">
       {isPending ? (
         <Loading />
       ) : error ? (
@@ -81,20 +81,18 @@ function CapabilitiesBlock() {
                 <Badge tone="ok">есть</Badge>
               </li>
             ))}
-            {capabilityRows(data).map((row) => (
+            {capabilityRows(data)
+              .filter((row) => row.state === 'on')
+              .map((row) => (
               <li key={row.id} className={styles.row}>
                 <span className={styles.rowText}>
                   <span className={styles.rowLabel}>{row.label}</span>
                   <span className={styles.rowDetail}>{row.description}</span>
                 </span>
-                {row.state === 'on' ? <Badge tone="ok">есть</Badge> : <Badge tone="muted">скоро</Badge>}
+                <Badge tone="ok">есть</Badge>
               </li>
-            ))}
+              ))}
           </ul>
-          <details className={styles.raw}>
-            <summary>Ответ /capabilities</summary>
-            <pre className={styles.pre}>{JSON.stringify(data, null, 2)}</pre>
-          </details>
         </>
       )}
     </Block>
@@ -105,7 +103,7 @@ function ManifestBlock() {
   const { data, error, isPending } = useSkillManifest()
   const manifest = describeManifest(data)
   return (
-    <Block title="Скилл, промпты и конфиги" note="Версии хранятся в Git вместе с кодом; каждая колода ссылается на них в паспорте качества.">
+    <Block title="Скилл, промпты и конфиги" note="Каждая колода ссылается на эти версии в паспорте качества.">
       {isPending ? (
         <Loading />
       ) : error ? (
@@ -148,7 +146,7 @@ function ManifestBlock() {
 }
 
 function RulesBlock() {
-  const { data: catalog } = useRuleCatalog()
+  useRuleCatalog()
   const groups = ruleGroups()
   const counts = countRules(groups)
   return (
@@ -157,8 +155,7 @@ function RulesBlock() {
       note={
         <>
           {counts.D} детерминированных <CheckKindBadge kind="D" /> — правило в коде, результат всегда один; {counts.N} контекстных{' '}
-          <CheckKindBadge kind="N" /> — отвечает модель по картинке слайда.{' '}
-          {catalog ? 'Список и автоисправления — из каталога правил сервиса.' : 'Сервис пока не отдаёт каталог правил — показан справочник интерфейса.'}
+          <CheckKindBadge kind="N" /> — отвечает модель по картинке слайда.
         </>
       }
     >

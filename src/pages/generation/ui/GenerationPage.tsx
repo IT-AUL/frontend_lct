@@ -32,13 +32,13 @@ function headline(phase: GenerationPhase, count: number): string {
 function lead(phase: GenerationPhase): string {
   switch (phase) {
     case 'submitting':
-      return 'Сервис ответит, когда соберёт все варианты. Можно перейти на другой экран — прогон продолжится; не перезагружайте вкладку до ответа.'
+      return 'Можно перейти на другой экран — сборка продолжится.'
     case 'running':
-      return 'Можно уйти со страницы — прогон продолжится, результат сохранится в проекте.'
+      return 'Можно перейти на другой экран — сборка продолжится.'
     case 'completed':
-      return 'Варианты собраны по правилам шаблона и проверены аудитом внутри конвейера.'
+      return 'Варианты собраны по правилам шаблона и проверены.'
     case 'failed':
-      return 'Бриф и загруженные файлы сохранены — можно повторить запуск или вернуться к брифу.'
+      return 'Бриф и файлы сохранены.'
     case 'canceled':
       return 'Бриф и загруженные файлы сохранены.'
   }
@@ -58,8 +58,8 @@ function RecoveryNotice({ projectId, runId, tracker }: { projectId: string; runI
         title="Связь с запуском потеряна"
         message={
           <>
-            {error?.message}. Сервис мог закончить генерацию, но её номер не успел прийти в браузер.
-            {canOpenLatest ? ' Откройте последний сохранённый прогон проекта или запустите генерацию заново из брифа.' : ' Запустите генерацию заново из брифа.'}
+            Страница перезагрузилась до ответа сервиса.
+            {canOpenLatest ? ' Откройте последний прогон или запустите сборку заново.' : ' Запустите сборку заново.'}
           </>
         }
         actions={
@@ -91,7 +91,7 @@ function RecoveryNotice({ projectId, runId, tracker }: { projectId: string; runI
     <RunNotice
       tone={phase === 'failed' ? 'error' : 'neutral'}
       title={phase === 'failed' ? 'Вёрстка не завершилась' : 'Генерация отменена'}
-      message={failure ? failure.message : 'Прогон остановлен по вашему запросу. Его можно запустить заново с теми же данными.'}
+      message={failure ? failure.message : 'Сборку можно запустить заново с теми же данными.'}
       meta={failure ? failureMeta(failure) : null}
       actions={
         <>

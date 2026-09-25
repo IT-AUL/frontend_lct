@@ -95,7 +95,7 @@ export function ExportFileCard({ projectId, variantId, format, file, currentRevi
           </>
         )}
         {state.status === 'unavailable' &&
-          (state.file ? downloadLink('secondary', `Скачать${revisionLabel(state.file.deckRevision)}`) : <span className={styles.soonText}>в разработке</span>)}
+          (state.file ? downloadLink('secondary', `Скачать${revisionLabel(state.file.deckRevision)}`) : <span className={styles.soonText}>недоступно</span>)}
         {state.status === 'error' && (
           <>
             <Button variant="secondary" size="md" onClick={create}>

@@ -98,7 +98,7 @@ describe('buildPassportView', () => {
     expect(rows('pipeline').value).toBe('deckdna-poc/0.1.0')
     expect(rows('planner').value).toBe('story-director/deterministic-0.1.0')
     expect(rows('prompts')).toMatchObject({ muted: true })
-    expect(rows('models')).toMatchObject({ value: 'не вызывались — детерминированная сборка', muted: true })
+    expect(rows('models')).toMatchObject({ value: 'без модели', muted: true })
     expect(rows('config:configs/generation.default.yaml').value).toBe('configs/generation.default.yaml · sha 80f8…6056')
   })
 

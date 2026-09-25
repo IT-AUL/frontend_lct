@@ -1,3 +1,4 @@
+import { clsx } from 'clsx'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { routes } from '@/shared/config'
@@ -50,15 +51,22 @@ export function AppHeader({ projectName, status, providerConnected, onOpenProvid
           <span>{status.label}</span>
         </div>
       )}
-      <button type="button" className={styles.action} onClick={onOpenProvider}>
+      <button type="button" className={styles.action} onClick={onOpenProvider} aria-label="Провайдер моделей">
         <span className={styles.providerDot} data-connected={providerConnected} />
-        <span>Провайдер моделей</span>
+        <span>Модели</span>
       </button>
       <button type="button" className={styles.action} onClick={onOpenAbout}>
         О системе
       </button>
-      <button type="button" className={styles.action} onClick={toggleTheme} aria-label="Переключить тему">
-        {theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+      <button
+        type="button"
+        className={clsx(styles.action, styles.iconAction)}
+        onClick={toggleTheme}
+        aria-label="Переключить тему"
+        title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+        data-theme-target={theme === 'dark' ? 'light' : 'dark'}
+      >
+        <span aria-hidden>{theme === 'dark' ? '☀' : '☾'}</span>
       </button>
     </header>
   )

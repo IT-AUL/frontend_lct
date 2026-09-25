@@ -1,7 +1,7 @@
 import { clsx } from 'clsx'
 import { budgetStatus, elapsedSeconds } from '@/entities/generation'
 import { GENERATION_BUDGET_SECONDS } from '@/shared/config'
-import { formatClock, formatSeconds } from '@/shared/lib/format'
+import { formatClock } from '@/shared/lib/format'
 import { useNow } from '@/shared/lib/time'
 import { Meter } from '@/shared/ui'
 import { budgetTicks, budgetTone, budgetVerdict } from '../lib/timer'
@@ -39,7 +39,6 @@ export function BudgetTimer({ startedAt, finishedAt, ticking }: BudgetTimerProps
           </span>
           <span className={styles.budget}>/ {formatClock(GENERATION_BUDGET_SECONDS)}</span>
         </div>
-        {finished && <div className={styles.exact}>{formatSeconds(elapsed)} по данным сервиса</div>}
       </div>
       <div className={styles.scale}>
         <Meter value={status.fraction} height={10} color={TONE_COLOR[tone]} label={`Прошло ${formatClock(elapsed)} из ${formatClock(GENERATION_BUDGET_SECONDS)}`} />
@@ -49,7 +48,6 @@ export function BudgetTimer({ startedAt, finishedAt, ticking }: BudgetTimerProps
           ))}
         </div>
         <div className={clsx(styles.verdict, styles[tone])}>{budgetVerdict(elapsed, status, finished)}</div>
-        <div className={styles.note}>Шкала показывает время, а не готовность: сервис сообщает статус каждого варианта, но не процент.</div>
       </div>
     </section>
   )

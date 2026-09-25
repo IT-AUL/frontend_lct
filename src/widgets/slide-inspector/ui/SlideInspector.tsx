@@ -115,11 +115,11 @@ export function SlideInspector(props: SlideInspectorProps) {
                 {item.label}
               </span>
             ))}
-            <span className={styles.legendHint}>Рамки — в координатах слайда · j / k — по проблемам · ← → — по слайдам</span>
+            <span className={styles.legendHint}>j / k — проблемы · ← → — слайды</span>
           </div>
           {staleRender && (
             <p className={styles.stale}>
-              Картинка — ревизия r{renderRevision}: сервис ещё не перерисовал слайд после правок. Рамки и список — из аудита r{revision}.
+              Картинка — ревизия r{renderRevision}, проблемы — ревизия r{revision}.
             </p>
           )}
         </>
@@ -170,7 +170,7 @@ function CompareView({ pdfUrl, pdfRevision, afterImageUrl, revision, slideNumber
         )}
         <div className={styles.changes}>
           {journal.length === 0 ? (
-            <div className={styles.muted}>На этом слайде ещё ничего не менялось. Выберите проблемы и нажмите «Исправить выбранное».</div>
+            <div className={styles.muted}>На этом слайде ничего не менялось.</div>
           ) : (
             <ul className={styles.changeList}>
               {journal.map((entry) => (
@@ -187,11 +187,6 @@ function CompareView({ pdfUrl, pdfRevision, afterImageUrl, revision, slideNumber
                 </li>
               ))}
             </ul>
-          )}
-          {!afterImageUrl && (
-            <div className={styles.footnote}>
-              Картинка «после» появится, когда сервис начнёт перерисовывать слайды после правок. Сейчас — точный список действий над PPTX.
-            </div>
           )}
         </div>
       </div>

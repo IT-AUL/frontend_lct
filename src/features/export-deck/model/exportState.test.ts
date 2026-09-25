@@ -51,14 +51,14 @@ describe('deriveExportState', () => {
   it('reports a rebuilt PDF that the backend refuses after repair honestly', () => {
     const state = deriveExportState(input({ currentRevision: 2, mutation: { status: 'success', data: notImplemented } }))
 
-    expect(state).toMatchObject({ status: 'unavailable', stale: true, message: 'PDF для новой ревизии пока не пересобирается' })
+    expect(state).toMatchObject({ status: 'unavailable', stale: true, message: 'PDF относится к прошлой ревизии' })
     expect(state.file?.deckRevision).toBe(1)
   })
 
   it('treats HTML as coming soon when capabilities do not list it', () => {
     expect(deriveExportState(input({ format: 'html', file: null, supported: false }))).toMatchObject({
       status: 'unavailable',
-      message: 'HTML-экспорт — скоро: сервис пока не собирает HTML',
+      message: 'HTML-экспорт недоступен',
     })
   })
 

@@ -70,7 +70,6 @@ export function VariantCard({ card, failureMessage }: VariantCardProps) {
     <article className={clsx(styles.card, styles[`card_${state}`])} aria-label={`${strategy.name}: ${VARIANT_STATE_LABEL[state]}`}>
       <header className={styles.head}>
         <h3 className={styles.name}>{strategy.name}</h3>
-        <span className={styles.code}>{strategy.id}</span>
         <span className={styles.spacer} />
         <span className={clsx(styles.status, styles[`status_${state}`])}>
           <span className={styles.dot} aria-hidden />
@@ -82,23 +81,18 @@ export function VariantCard({ card, failureMessage }: VariantCardProps) {
       {(state === 'running' || state === 'pending') && (
         <>
           <PulseSlots />
-          <div className={styles.hint}>
-            {state === 'pending'
-              ? 'Сервис вернёт варианты одним ответом, когда соберёт все.'
-              : 'Слайды появятся, когда вариант будет готов целиком.'}
-          </div>
+          <div className={styles.hint}>Слайды появятся, когда вариант будет готов.</div>
         </>
       )}
       {state === 'queued' && (
         <>
           <DashedSlots />
-          <div className={styles.hint}>Ждёт свободного исполнителя.</div>
         </>
       )}
       {state === 'canceled' && (
         <>
           <DashedSlots />
-          <div className={styles.hint}>Вариант не собран: генерация отменена.</div>
+          <div className={styles.hint}>Сборка отменена.</div>
         </>
       )}
       {state === 'error' && (

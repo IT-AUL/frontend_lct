@@ -149,7 +149,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
 
     expect(await screen.findByRole('tab', { name: 'Проблемы · 108' })).toHaveAttribute('aria-selected', 'true')
     const checks = screen.getByRole('group', { name: 'Типы проверок' })
-    expect(within(checks).getByText('нужен провайдер моделей')).toBeInTheDocument()
+    expect(within(checks).getByText('не запускалась')).toBeInTheDocument()
     expect(screen.getAllByRole('checkbox', { name: /Выбрать для исправления/ })).toHaveLength(fixableCount)
     expect(screen.getAllByRole('article')).toHaveLength(108)
 
@@ -240,7 +240,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
     renderAudit(routes.audit(PROJECT_ID, RUN_ID, VARIANT_ID))
 
     await user.click(await screen.findByRole('button', { name: /Смысл моделью/ }))
-    expect(screen.getByText(/Подключите провайдера моделей/)).toBeInTheDocument()
+    expect(screen.getByText(/подключите модель/)).toBeInTheDocument()
     expect(postSpy).not.toHaveBeenCalledWith('/api/v1/variants/{variant_id}/audits', expect.objectContaining({ body: expect.objectContaining({ provider_session_id: expect.any(String) }) }))
   })
 })

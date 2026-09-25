@@ -53,7 +53,7 @@ function stepMeta(step: ProjectStep, progress: ProjectProgress): string {
     case 'brief':
       return progress.hasContent ? `контент · ${progress.targetSlides} слайдов` : `${progress.targetSlides} слайдов`
     case 'plan':
-      return progress.planFirst ? 'до вёрстки, можно править' : 'после генерации (v1)'
+      return progress.planFirst ? 'до вёрстки, можно править' : 'структура колоды'
     case 'run':
       return 'бюджет 5:00'
     case 'variants':

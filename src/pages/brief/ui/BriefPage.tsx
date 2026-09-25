@@ -82,7 +82,7 @@ function BriefScreen({ project }: { project: Project }) {
       <PageHeader
         eyebrow="Шаг 2 · Бриф и контент"
         title="О чём презентация"
-        description="Обязательны только назначение и контент. Остальное заполнено разумными значениями."
+        description="Обязательны назначение и контент."
       />
       <div className={styles.grid}>
         <BriefForm

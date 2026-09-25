@@ -37,7 +37,7 @@ export function AuditSummary(props: AuditSummaryProps) {
   const selectId = useId()
   const current = variants.find((variant) => variant.id === variantId)
   const contextualDone = audit.contextual_status === 'completed'
-  const contextualNote = contextualDone ? CHECK_STATUS_LABEL.completed : hasProvider ? CHECK_STATUS_LABEL[audit.contextual_status] : 'нужен провайдер моделей'
+  const contextualNote = contextualDone ? CHECK_STATUS_LABEL.completed : hasProvider ? CHECK_STATUS_LABEL[audit.contextual_status] : 'не запускалась'
 
   return (
     <section aria-label="Сводка аудита" className={styles.summary}>
@@ -105,7 +105,7 @@ export function AuditSummary(props: AuditSummaryProps) {
         onClick={props.onRunContextual}
         disabled={contextualPending}
         aria-busy={contextualPending}
-        title={hasProvider ? 'Запустить контекстные проверки (N) моделью по картинкам слайдов' : 'Контекстные проверки (N) выполняет модель — подключите провайдера моделей'}
+        title={hasProvider ? 'Проверить смысл слайдов моделью' : 'Подключите модель в разделе «Модели»'}
       >
         <span className={styles.nMark} aria-hidden>
           N
@@ -131,8 +131,8 @@ interface PolicyStripProps {
 
 export function PolicyStrip({ counts, audit, active, onToggle }: PolicyStripProps) {
   return (
-    <div className={styles.policies} role="group" aria-label="Пакеты политик">
-      <span className={styles.policiesLabel}>Пакеты политик</span>
+    <div className={styles.policies} role="group" aria-label="Категории проверок">
+      <span className={styles.policiesLabel}>Категории</span>
       {CATEGORY_ORDER.map((category) => {
         const checked = category === 'meaning' ? audit.contextual_status === 'completed' : audit.deterministic_status === 'completed'
         const count = counts[category]
@@ -148,7 +148,7 @@ export function PolicyStrip({ counts, audit, active, onToggle }: PolicyStripProp
             title={!checked ? 'Проверки этой категории ещё не запускались' : undefined}
           >
             <span>{CATEGORY_LABEL[category]}</span>
-            <Mono className={styles.policyValue}>{state === 'unchecked' ? 'не проверено' : state === 'clean' ? '✓' : count}</Mono>
+            <Mono className={styles.policyValue}>{state === 'unchecked' ? '—' : state === 'clean' ? '✓' : count}</Mono>
           </button>
         )
       })}

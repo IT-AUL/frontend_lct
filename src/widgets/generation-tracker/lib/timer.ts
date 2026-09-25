@@ -14,7 +14,7 @@ export function budgetTicks(budgetSeconds: number, stepSeconds = 60): BudgetTick
   const ticks: BudgetTick[] = []
   const safeStep = stepSeconds > 0 ? stepSeconds : budgetSeconds
   for (let seconds = 0; seconds < budgetSeconds; seconds += safeStep) ticks.push({ seconds, label: formatClock(seconds) })
-  ticks.push({ seconds: budgetSeconds, label: `лимит ТЗ ${formatClock(budgetSeconds)}` })
+  ticks.push({ seconds: budgetSeconds, label: `лимит ${formatClock(budgetSeconds)}` })
   return ticks
 }
 

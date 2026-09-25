@@ -5,7 +5,7 @@ export function NotFoundPage() {
   return (
     <div className={styles.page}>
       <PageHeader title="Страница не найдена" />
-      <EmptyState title="Экран в разработке" />
+      <EmptyState title="Страница не найдена" />
     </div>
   )
 }

@@ -115,7 +115,7 @@ describe('ExportFileCard', () => {
 
     expect(card()).toHaveAttribute('data-status', 'unavailable')
     expect(screen.getByText('Скоро')).toBeInTheDocument()
-    expect(screen.getByText('HTML-экспорт — скоро: сервис пока не собирает HTML')).toBeInTheDocument()
+    expect(screen.getByText('HTML-экспорт недоступен')).toBeInTheDocument()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
@@ -131,7 +131,7 @@ describe('ExportFileCard', () => {
     await user.click(screen.getByRole('button', { name: 'Пересобрать для r2' }))
 
     await waitFor(() => expect(card()).toHaveAttribute('data-status', 'unavailable'))
-    expect(screen.getByText('PDF для новой ревизии пока не пересобирается')).toBeInTheDocument()
+    expect(screen.getByText('PDF относится к прошлой ревизии')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Скачать r1' })).toHaveAttribute('href', `/api/v1/artifacts/${files.pdf?.artifactId}/download`)
   })
 

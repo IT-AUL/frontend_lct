@@ -130,7 +130,7 @@ export function ContentSection(props: ContentSectionProps) {
               <FileIcon name={file.name} />
               <div className={styles.fileText}>
                 <span className={styles.fileName}>{file.name}</span>
-                <span className={styles.fileWarn}>Не будет разобран: сейчас обрабатывается один файл. Перенесите нужное в основной документ.</span>
+                <span className={styles.fileWarn}>Не будет учтён: используется только первый файл.</span>
               </div>
               <button type="button" className={styles.iconButton} aria-label={`Убрать файл ${file.name}`} onClick={() => remove(file)}>
                 ×
@@ -174,7 +174,7 @@ export function ContentSection(props: ContentSectionProps) {
             rows={7}
             className={styles.textarea}
             value={text}
-            placeholder="Вставьте текст: о чём продукт, какие есть цифры и выводы. Заголовки в Markdown (#, ##) станут разделами."
+            placeholder="О чём продукт, какие есть цифры и выводы. Заголовки # и ## станут разделами."
             onChange={(event) => onTextChange(event.target.value)}
           />
           <div className={styles.textRow}>
@@ -182,7 +182,7 @@ export function ContentSection(props: ContentSectionProps) {
               {parsing ? 'Разбираю…' : 'Разобрать текст'}
             </Button>
             <span className={parseError ? styles.fileError : styles.fileMeta}>
-              {parseError ?? (ready && text.trim() ? 'Текст разобран — сохранится как brief.md' : 'Текст отправится файлом brief.md')}
+              {parseError ?? (ready && text.trim() ? 'Текст разобран' : null)}
             </span>
           </div>
         </div>

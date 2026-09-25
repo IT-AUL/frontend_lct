@@ -18,7 +18,7 @@ export function ModeSection({ useLlm, onUseLlmChange }: ModeSectionProps) {
     <section className={styles.mode}>
       <button type="button" className={styles.modeToggle} aria-expanded={open} aria-controls={bodyId} onClick={() => setOpen((value) => !value)}>
         <span className={styles.modeTitle}>Режим сборки</span>
-        <span className={styles.modeLabel}>{useLlm ? 'С языковой моделью · 1–5 мин' : 'Быстрый детерминированный · секунды'}</span>
+        <span className={styles.modeLabel}>{useLlm ? 'С моделью · 1–5 мин' : 'Быстрый · секунды'}</span>
         <span className={styles.spacer} />
         <span className={styles.modeArrow} aria-hidden="true">
           {open ? '−' : '+'}
@@ -30,7 +30,7 @@ export function ModeSection({ useLlm, onUseLlmChange }: ModeSectionProps) {
             checked={useLlm}
             onCheckedChange={onUseLlmChange}
             label="Использовать языковую модель"
-            description="План, заголовки-выводы и контекстные проверки. Без модели — только детерминированные правила, за секунды."
+            description="Модель пишет план и заголовки-выводы и проверяет смысл слайдов."
           />
           <div className={styles.provider} data-tone={tone} role="status">
             <span className={styles.providerDot} aria-hidden="true" />
@@ -43,10 +43,8 @@ export function ModeSection({ useLlm, onUseLlmChange }: ModeSectionProps) {
               </span>
             ) : (
               <span className={styles.providerText}>
-                <span className={styles.providerTitle}>Провайдер моделей не подключён</span>
-                <span>
-                  Без сессии провайдера сервис использует встроенный детерминированный mock-провайдер. Подключить свой — кнопка «Провайдер моделей» в шапке.
-                </span>
+                <span className={styles.providerTitle}>Своя модель не подключена</span>
+                <span>Подключить можно в разделе «Модели» в шапке.</span>
               </span>
             )}
           </div>

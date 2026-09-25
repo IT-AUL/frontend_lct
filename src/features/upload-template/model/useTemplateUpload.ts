@@ -20,7 +20,7 @@ const ERROR_TEXT: Record<string, string> = {
   payload_too_large: 'Файл больше, чем принимает сервер: предел — 200 МБ.',
   unsupported_media_type: 'Сервер принимает только .pptx и .potx.',
   invalid_template: 'Файл не открылся как пакет PowerPoint: возможно, он повреждён или это не .pptx.',
-  network_error: 'Сервис недоступен. Проверьте, что бэкенд запущен, и попробуйте ещё раз.',
+  network_error: 'Сервис недоступен. Попробуйте ещё раз.',
 }
 
 function describeError(error: unknown, fallback: string): string {

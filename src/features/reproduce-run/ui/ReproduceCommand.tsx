@@ -7,7 +7,7 @@ const COPIED_MS = 1800
 
 const PLACEHOLDER_HINT: Record<string, string> = {
   [TEMPLATE_PLACEHOLDER]: 'путь к шаблону',
-  [CONTENT_PLACEHOLDER]: 'путь к файлу контента — сервис не хранит его имя',
+  [CONTENT_PLACEHOLDER]: 'путь к файлу контента',
 }
 
 export function ReproduceCommand(input: ReproductionInput) {
@@ -44,7 +44,7 @@ export function ReproduceCommand(input: ReproductionInput) {
       </code>
       {placeholders.length > 0 && (
         <p className={styles.hint}>
-          Подставьте {placeholders.map((placeholder) => `${placeholder} — ${PLACEHOLDER_HINT[placeholder] ?? 'значение'}`).join('; ')}.
+          {placeholders.map((placeholder) => `${placeholder} — ${PLACEHOLDER_HINT[placeholder] ?? 'значение'}`).join(', ')}
         </p>
       )}
       <Button size="sm" className={styles.button} onClick={copy}>

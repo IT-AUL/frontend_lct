@@ -115,7 +115,7 @@ afterEach(() => {
 describe('VariantsPage', () => {
   it('explains the axis and shows three strategy cards in catalog order', async () => {
     renderPage()
-    expect(screen.getByText(/соотношением текста и визуализации/)).toBeInTheDocument()
+    expect(screen.getByText(/разный баланс текста и визуализации/)).toBeInTheDocument()
 
     const [faithful, balanced, visual] = await cards()
     expect(within(faithful as HTMLElement).getByRole('heading')).toHaveTextContent('Близко к шаблону')
@@ -138,7 +138,7 @@ describe('VariantsPage', () => {
     expect(await balancedCard.findByTitle('Ошибка: 54')).toBeInTheDocument()
     expect(balancedCard.getByText('без растровых слайдов')).toBeInTheDocument()
     expect(faithfulCard.queryByTitle(/Ошибка:/)).not.toBeInTheDocument()
-    expect(faithfulCard.getByText('скоро')).toBeInTheDocument()
+    expect(faithfulCard.queryByText('Соответствие')).not.toBeInTheDocument()
   })
 
   it('renders PDF thumbnails that open the slide in the audit', async () => {
@@ -198,7 +198,7 @@ describe('VariantsPage', () => {
   it('switches views and keeps the choice in the URL', async () => {
     const router = renderPage()
     await cards()
-    await userEvent.click(screen.getByRole('radio', { name: 'Слайд N во всех трёх' }))
+    await userEvent.click(screen.getByRole('radio', { name: 'По слайдам' }))
     expect(router.state.location.search).toBe('?view=compare')
     expect(await screen.findByRole('table')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('radio', { name: 'Карточки' }))

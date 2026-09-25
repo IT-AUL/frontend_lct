@@ -76,8 +76,8 @@ describe('PlanPage', () => {
     vi.mocked(useGenerationTracker).mockReturnValue(makeTracker({}))
     renderPage()
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Сначала план, потом вёрстка' })).toBeInTheDocument()
-    expect(screen.getByRole('note')).toHaveTextContent('Показан план варианта «Близко к шаблону»; у остальных вариантов свои планы')
+    expect(screen.getByRole('heading', { level: 1, name: 'План колоды' })).toBeInTheDocument()
+    expect(screen.getByRole('note')).toHaveTextContent('План варианта «Близко к шаблону». У остальных вариантов свои планы')
 
     const list = screen.getByRole('list', { name: 'Слайды плана' })
     expect(within(list).getAllByText(/^\d{2}$/)).toHaveLength(12)
@@ -91,16 +91,13 @@ describe('PlanPage', () => {
     expect(within(aside).getByText('story-director/deterministic-0.1.0')).toBeInTheDocument()
   })
 
-  it('keeps edit affordances visibly disabled with an explanation', () => {
+  it('shows no edit controls while the service cannot take an edited plan', () => {
     vi.mocked(useGenerationTracker).mockReturnValue(makeTracker({}))
     renderPage()
 
-    for (const name of ['Сбросить правки', 'Добавить слайд']) {
-      const button = screen.getByRole('button', { name })
-      expect(button).toHaveAttribute('aria-disabled', 'true')
-      expect(button).toHaveAccessibleDescription('Скоро: правка плана до вёрстки')
-    }
-    expect(screen.getAllByRole('button', { name: 'Убрать слайд' })).toHaveLength(12)
+    expect(screen.queryByRole('button', { name: 'Сбросить правки' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Добавить слайд/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Убрать слайд/ })).not.toBeInTheDocument()
   })
 
   it('rebuilds with the same inputs', async () => {
@@ -108,7 +105,7 @@ describe('PlanPage', () => {
     vi.mocked(useGenerationTracker).mockReturnValue(makeTracker({}))
     renderPage()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Пересобрать с теми же данными →' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Пересобрать' }))
     expect(retryMutate).toHaveBeenCalledWith(RUN, expect.anything())
     expect(screen.getByTestId('location')).toHaveTextContent(routes.run(PROJECT, 'local-rebuild-1'))
   })

@@ -2,7 +2,7 @@ import { clsx } from 'clsx'
 import type { ReactNode } from 'react'
 import { SEVERITY } from '@/entities/audit'
 import { formatDateTime, formatIndex, formatNumber, formatPercent, pluralize } from '@/shared/lib/format'
-import { Badge, Meter } from '@/shared/ui'
+import { Meter } from '@/shared/ui'
 import type { PassportView } from '../model/passportView'
 import styles from './QualityPassport.module.css'
 
@@ -29,16 +29,7 @@ function number(value: number | null): string {
 }
 
 function StyleBody({ view }: { view: PassportView }) {
-  if (view.style.status === 'soon') {
-    return (
-      <p className={styles.muted}>
-        <Badge tone="muted" shape="tag">
-          скоро
-        </Badge>{' '}
-        Доля палитры, шрифтов, макетов и якорей из шаблона пока не считается сервисом. Соответствие правилам шаблона видно в аудите.
-      </p>
-    )
-  }
+  if (view.style.status === 'soon') return null
   return (
     <div className={styles.scores}>
       {view.style.scores.map((score) => (
@@ -54,7 +45,7 @@ function StyleBody({ view }: { view: PassportView }) {
 
 function SourcesBody({ view }: { view: PassportView }) {
   const sources = view.sources
-  if (!sources) return <p className={styles.muted}>Сервис не передал сведений о подкреплённости утверждений.</p>
+  if (!sources) return null
   const { supported, unsupported, total, numbersVerified, numbersFailed } = sources
   return (
     <p className={styles.text}>
@@ -117,7 +108,7 @@ function IssuesBody({ view }: { view: PassportView }) {
       </div>
       <div className={styles.muted}>
         Всего {formatNumber(total)}
-        {unresolved !== null && ` · не исправлено ${formatNumber(unresolved)}`}. Исправить выбранные проблемы можно на шаге аудита.
+        {unresolved !== null && ` · не исправлено ${formatNumber(unresolved)}`}.
       </div>
     </div>
   )
@@ -168,7 +159,7 @@ function TimingBody({ view }: { view: PassportView }) {
         <>
           <Meter value={timing.fraction} height={14} label="Время прогона от бюджета 5 минут" color={timing.withinBudget === false ? 'var(--error)' : 'var(--ink)'} />
           <div className={styles.muted}>
-            {timing.withinBudget ? 'В пределах бюджета 5 минут на колоду.' : 'Бюджет 5 минут превышен.'} Время по этапам сервис пока не передаёт.
+            {timing.withinBudget ? 'В пределах 5 минут на колоду.' : 'Дольше 5 минут.'}
           </div>
         </>
       )}
@@ -195,7 +186,7 @@ function NoteList({ items }: { items: PassportView['fallbacks'] }) {
 }
 
 function FallbacksBody({ view }: { view: PassportView }) {
-  if (view.fallbacks.length === 0) return <p className={styles.muted}>Упрощений не было: сервис не сообщил ни об одном фолбэке.</p>
+  if (view.fallbacks.length === 0) return <p className={styles.muted}>Упрощений не было.</p>
   return <NoteList items={view.fallbacks} />
 }
 
@@ -221,17 +212,17 @@ function ProvenanceBody({ view }: { view: PassportView }) {
 
 export function QualityPassport({ view, revisionLabel, notice, actions }: QualityPassportProps) {
   const sections: Section[] = [
-    { key: 'style', title: 'В стиле шаблона', body: <StyleBody view={view} /> },
-    { key: 'sources', title: 'По источникам', body: <SourcesBody view={view} /> },
+    ...(view.style.status === 'ready' ? [{ key: 'style', title: 'В стиле шаблона', body: <StyleBody view={view} /> }] : []),
+    ...(view.sources ? [{ key: 'sources', title: 'По источникам', body: <SourcesBody view={view} /> }] : []),
     { key: 'readability', title: 'Читаемо', body: <ReadabilityBody view={view} /> },
     { key: 'issues', title: 'Итоги аудита', body: <IssuesBody view={view} /> },
     { key: 'timing', title: <TimingTitle view={view} />, body: <TimingBody view={view} /> },
     ...(view.autoFixes.length > 0 ? [{ key: 'autoFixes', title: 'Исправлено до показа', body: <AutoFixesBody view={view} /> }] : []),
-    { key: 'fallbacks', title: 'Где система упростила', body: <FallbacksBody view={view} /> },
+    ...(view.fallbacks.length > 0 ? [{ key: 'fallbacks', title: 'Где система упростила', body: <FallbacksBody view={view} /> }] : []),
     { key: 'provenance', title: 'Происхождение', body: <ProvenanceBody view={view} /> },
   ]
 
-  const meta = [revisionLabel && `паспорт ${revisionLabel}`, view.generatedAt && formatDateTime(view.generatedAt), view.schemaVersion && `схема ${view.schemaVersion}`]
+  const meta = [revisionLabel && `паспорт ${revisionLabel}`, view.generatedAt && formatDateTime(view.generatedAt)]
     .filter(Boolean)
     .join(' · ')
 

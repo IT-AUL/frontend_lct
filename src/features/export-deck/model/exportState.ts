@@ -58,9 +58,9 @@ export function isStaleFile(file: DeckFile | null, currentRevision: number | nul
 }
 
 export function unavailableMessage(format: ExportFormat, hasPreviousFile: boolean): string {
-  if (format === 'html') return 'HTML-экспорт — скоро: сервис пока не собирает HTML'
-  if (hasPreviousFile) return `${FORMAT_NAME[format]} для новой ревизии пока не пересобирается`
-  return `Экспорт ${FORMAT_NAME[format]} пока не поддерживается сервисом`
+  if (format === 'html') return 'HTML-экспорт недоступен'
+  if (hasPreviousFile) return `${FORMAT_NAME[format]} относится к прошлой ревизии`
+  return `Экспорт ${FORMAT_NAME[format]} недоступен`
 }
 
 function errorMessage(error: unknown): string {

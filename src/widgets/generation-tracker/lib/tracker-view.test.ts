@@ -8,7 +8,7 @@ import { variantCards } from './variants'
 
 describe('budget timer', () => {
   it('lays out minute ticks up to the TZ limit', () => {
-    expect(budgetTicks(300).map((tick) => tick.label)).toEqual(['0:00', '1:00', '2:00', '3:00', '4:00', 'лимит ТЗ 5:00'])
+    expect(budgetTicks(300).map((tick) => tick.label)).toEqual(['0:00', '1:00', '2:00', '3:00', '4:00', 'лимит 5:00'])
     expect(budgetTicks(90, 30).map((tick) => tick.seconds)).toEqual([0, 30, 60, 90])
   })
 

@@ -73,7 +73,7 @@ export function DesignDna({ detail, dna }: DesignDnaProps) {
         </div>
       </div>
 
-      <UnderstandingPanel system={system} understanding={understanding} facts={facts} parserVersion={detail.latest_analysis?.parser_version ?? null} />
+      <UnderstandingPanel system={system} understanding={understanding} facts={facts} />
 
       <div className={styles.grid}>
         {rows.map((cells, index) => (

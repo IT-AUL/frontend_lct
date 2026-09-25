@@ -118,7 +118,7 @@ export function ContentPreview({ packId, sourceLabel, parsing = false, stale = f
           {error}
         </p>
       ) : !packId ? (
-        <p className={styles.empty}>Загрузите файл или вставьте текст — здесь появятся разделы, таблицы и числа, которые сервис нашёл в контенте.</p>
+        <p className={styles.empty}>Здесь появятся разделы, таблицы и числа из контента.</p>
       ) : loadError || !pack ? (
         <p className={styles.error} role="alert">
           Не удалось загрузить разбор контента{loadError ? `: ${loadError.message}` : ''}

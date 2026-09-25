@@ -140,7 +140,6 @@ describe('GenerationPage', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Три варианта готовы' })).toBeInTheDocument()
     expect(screen.getByRole('timer')).toHaveTextContent('0:08')
-    expect(screen.getByText('8,2 с по данным сервиса')).toBeInTheDocument()
     expect(screen.getByText('В пределах бюджета 5:00: запас 4:51')).toBeInTheDocument()
     expect(screen.getAllByRole('article', { name: /: Готово$/ })).toHaveLength(3)
     expect(screen.getByRole('link', { name: 'Сравнить варианты →' })).toHaveAttribute('href', routes.variants(PROJECT, RUN))

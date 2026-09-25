@@ -34,8 +34,7 @@ function ModelRule() {
         Только открытые модели · {ALLOWED_MODEL_LICENSES.join(' или ')} · до {MODEL_PARAMETER_LIMIT_B.text}B
       </span>
       <span>
-        Генерация изображений — до {MODEL_PARAMETER_LIMIT_B.image}B. Закрытые API в продукте не используются. Без подключения сервис работает на встроенном
-        детерминированном провайдере.
+        Изображения — до {MODEL_PARAMETER_LIMIT_B.image}B. Закрытые API не используются.
       </span>
     </div>
   )

@@ -149,3 +149,10 @@
 .providerDot[data-connected='true'] {
   background: var(--ok);
 }
+
+.iconAction {
+  justify-content: center;
+  width: 32px;
+  padding: 0;
+  font-size: 15px;
+}

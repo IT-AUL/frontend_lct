@@ -32,7 +32,7 @@ export function ReauditBanner({ revision, openCritical, stats, exportHref, onClo
   return (
     <div role="status" className={styles.partial}>
       <div className={styles.partialTitle}>Повторный аудит: осталось {openCritical} критических</div>
-      <div className={styles.detail}>Исправьте или отклоните их с причиной — экспорт доступен, но паспорт это отметит.</div>
+      <div className={styles.detail}>Исправьте или отклоните их — иначе это попадёт в паспорт.</div>
       <div className={styles.spacer} />
       <button type="button" className={styles.close} onClick={onClose}>
         Понятно

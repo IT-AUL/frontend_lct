@@ -226,7 +226,6 @@ export function LayoutsSection({ blueprints, totalLayouts, aspectRatio, classNam
           Ещё {countLabel(rest.length, FORMS.layout)} — {countLabel(restSlides, FORMS.slide)} вместе.
         </div>
       )}
-      <div className={clsx(styles.note, styles.divided)}>Координат плейсхолдеров в этом разборе нет, поэтому макеты показаны по частоте, без чертежей.</div>
     </section>
   )
 }

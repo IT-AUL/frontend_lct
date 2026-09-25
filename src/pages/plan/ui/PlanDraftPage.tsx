@@ -49,10 +49,10 @@ export function PlanDraftPage() {
   if (!stored || !proposal) {
     return (
       <div className={styles.page}>
-        <PageHeader eyebrow="Шаг 3 · План" title="Сначала план, потом вёрстка" />
+        <PageHeader eyebrow="Шаг 3 · План" title="План колоды" />
         <EmptyState
           title="Плана пока нет"
-          description="Заполните бриф и нажмите «Сначала план» — сервис предложит структуру колоды до вёрстки."
+          description="Заполните бриф и нажмите «Сначала план»."
           actions={
             <Link className={styles.secondaryLink} to={routes.brief(projectId)}>
               К брифу
@@ -78,7 +78,7 @@ export function PlanDraftPage() {
       eyebrow="Шаг 3 · План"
       buildLabel="Собрать 3 варианта по плану →"
       buildBody={buildBody(stored)}
-      notice={<>План построен до вёрстки. Все три варианта соберутся по нему: стратегии поменяют раскладку, но не историю.</>}
+      notice={null}
       toolbar={
         options.length > 1 ? (
           <Segmented label="План какой стратегии править" options={options} value={proposalKey(proposal, Math.max(0, index))} onChange={setSelected} />

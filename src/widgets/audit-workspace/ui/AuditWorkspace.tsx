@@ -262,7 +262,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
 
   const runContextual = () => {
     if (!session) {
-      toast.show('Смысл проверяет модель по картинке слайда. Подключите провайдера моделей — кнопка «Провайдер моделей» в шапке.')
+      toast.show('Для смысловых проверок подключите модель — кнопка «Модели» в шапке.')
       return
     }
     if (audit?.contextual_status === 'completed') {

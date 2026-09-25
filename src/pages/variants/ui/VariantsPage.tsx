@@ -11,7 +11,7 @@ import styles from './VariantsPage.module.css'
 
 const VIEW_OPTIONS: readonly SegmentedOption<VariantsView>[] = [
   { value: 'cards', label: 'Карточки' },
-  { value: 'compare', label: 'Слайд N во всех трёх' },
+  { value: 'compare', label: 'По слайдам' },
 ]
 
 export function VariantsPage() {
@@ -49,7 +49,7 @@ export function VariantsPage() {
           <>
             <Segmented label="Вид сравнения" options={VIEW_OPTIONS} value={view} onChange={changeView} />
             <Link className={styles.secondaryLink} to={routes.plan(projectId, runId)}>
-              Изменить план
+              План колоды
             </Link>
           </>
         }
@@ -80,7 +80,7 @@ export function VariantsPage() {
       ) : variants.length === 0 ? (
         <EmptyState
           title="Вариантов пока нет"
-          description="Генерация ещё не создала ни одного варианта. Вернитесь к прогону, чтобы проследить за ней."
+          description="Сборка ещё идёт."
           actions={
             <Link className={styles.secondaryLink} to={routes.run(projectId, runId)}>
               К генерации

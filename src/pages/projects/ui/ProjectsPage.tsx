@@ -10,9 +10,7 @@ import styles from './ProjectsPage.module.css'
 
 const IS_MOCK = API_MODE === 'mock'
 
-const DEMO_DESCRIPTION = IS_MOCK
-  ? 'Готовый прогон на записанных ответах API: ДНК шаблона → план → 3 варианта → аудит → экспорт. Работает без сети и модели.'
-  : 'Быстрый старт для показа: создам проект и открою загрузку шаблона. Дальше — бриф, 3 варианта, аудит и экспорт на живом сервисе.'
+const DEMO_DESCRIPTION = 'Готовый прогон: ДНК шаблона, план, три варианта, аудит и экспорт.'
 
 function seededProject(projects: readonly Project[] | undefined): Project | undefined {
   const oldestFirst = [...(projects ?? [])].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))
@@ -27,14 +25,14 @@ export function ProjectsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
 
   const openDemo = () => {
-    const seeded = IS_MOCK ? seededProject(projects.data) : undefined
+    const seeded = seededProject(projects.data)
     if (seeded) {
       navigate(routes.template(seeded.id))
       return
     }
-    createDemo.mutate(defaultProjectName('Демо-сценарий'), {
-      onSuccess: (project) => navigate(routes.template(project.id), { state: { demo: true } }),
-      onError: (error) => toast.show(isApiError(error) ? error.message : 'Не удалось создать демо-проект'),
+    createDemo.mutate(defaultProjectName('Демо'), {
+      onSuccess: (project) => navigate(routes.template(project.id)),
+      onError: (error) => toast.show(isApiError(error) ? error.message : 'Не удалось открыть демо'),
     })
   }
 
@@ -44,7 +42,7 @@ export function ProjectsPage() {
     <div className={styles.page}>
       <PageHeader
         title="Проекты"
-        description="Загрузите корпоративный шаблон и бриф — получите три редактируемые колоды с аудитом качества."
+        description="Шаблон и бриф на входе — три редактируемые колоды с аудитом на выходе."
         actions={
           <Button variant="primary" size="lg" onClick={() => setDialogOpen(true)}>
             + Новый проект
@@ -52,23 +50,25 @@ export function ProjectsPage() {
         }
       />
 
-      <button type="button" className={styles.demo} onClick={openDemo} disabled={createDemo.isPending}>
-        <span className={styles.demoIcon} aria-hidden>
-          ▶
-        </span>
-        <span className={styles.demoText}>
-          <span className={styles.demoTitle}>Демо-сценарий</span>
-          <span className={styles.demoDescription}>{DEMO_DESCRIPTION}</span>
-        </span>
-        <span className={styles.demoAction}>{createDemo.isPending ? 'Создаю…' : 'Открыть →'}</span>
-      </button>
+      {IS_MOCK && (
+        <button type="button" className={styles.demo} onClick={openDemo} disabled={createDemo.isPending}>
+          <span className={styles.demoIcon} aria-hidden>
+            ▶
+          </span>
+          <span className={styles.demoText}>
+            <span className={styles.demoTitle}>Демо</span>
+            <span className={styles.demoDescription}>{DEMO_DESCRIPTION}</span>
+          </span>
+          <span className={styles.demoAction}>{createDemo.isPending ? 'Открываю…' : 'Открыть →'}</span>
+        </button>
+      )}
 
       {projects.isPending ? (
         <ProjectListSkeleton />
       ) : projects.isError ? (
         <EmptyState
           title="Не удалось загрузить проекты"
-          description={isApiError(projects.error) ? projects.error.message : 'Сервис не ответил. Проверьте, что бэкенд запущен.'}
+          description={isApiError(projects.error) ? projects.error.message : 'Сервис не ответил.'}
           actions={
             <Button size="lg" onClick={() => projects.refetch()}>
               Повторить
@@ -80,16 +80,11 @@ export function ProjectsPage() {
       ) : (
         <EmptyState
           title="Проектов пока нет"
-          description="Начните с корпоративного шаблона .pptx или прошлой презентации. Система разберёт его на правила и покажет, что поняла."
+          description="Начните с корпоративного шаблона или прошлой презентации."
           actions={
-            <>
-              <Button variant="primary" size="lg" onClick={() => setDialogOpen(true)}>
-                Создать первый проект
-              </Button>
-              <Button size="lg" onClick={openDemo} disabled={createDemo.isPending}>
-                Открыть демо
-              </Button>
-            </>
+            <Button variant="primary" size="lg" onClick={() => setDialogOpen(true)}>
+              Создать первый проект
+            </Button>
           }
         />
       )}

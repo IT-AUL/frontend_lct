@@ -151,7 +151,7 @@ export function buildPlanView(plan: DeckPlan, headings: ReadonlyMap<string, stri
       titleIntent: slide.title_intent,
       keyMessage: slide.key_message,
       idea: slideIdea(slide, plan.objective),
-      visual: plannedVisual(slide) ?? 'Визуализация не задана',
+      visual: plannedVisual(slide) ?? '',
       sources: slideSources(slide.evidence_ids, headings),
       sectionId: section?.id ?? null,
       sectionTitle: section?.title ?? null,

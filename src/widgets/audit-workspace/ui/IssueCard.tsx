@@ -47,14 +47,14 @@ function fixGuidance(view: IssueView): { title: string; text: string; note: stri
   if (!issue.deterministic) {
     return {
       title: 'Как исправить',
-      text: planned ? `Модель предлагает: ${planned.charAt(0).toLowerCase()}${planned.slice(1)}.` : 'Поправьте слайд в PowerPoint или отклоните замечание с причиной.',
-      note: 'Смысловые замечания модели сервис не исправляет автоматически.',
+      text: planned ? `Модель предлагает: ${planned.charAt(0).toLowerCase()}${planned.slice(1)}.` : 'Поправьте в PowerPoint или отклоните с причиной.',
+      note: null,
     }
   }
   return {
     title: 'Как исправить',
-    text: 'Автоисправления для этого правила пока нет: поправьте в PowerPoint или отклоните с причиной.',
-    note: issue.repairable ? 'Сервис помечает проблему исправимой, но обработчика для правила нет — правка ушла бы в «не удалось».' : null,
+    text: 'Поправьте в PowerPoint или отклоните с причиной.',
+    note: null,
   }
 }
 
@@ -161,10 +161,10 @@ export function IssueCard({ view, active, hovered, auditId, repairPending, onAct
           {status === 'unresolved' && (
             <div className={styles.failed}>
               <b>Не удалось исправить.</b>{' '}
-              {note ? `Проблема осталась после ревизии r${note.revision}.` : 'Сервис не смог применить правку.'} Поправьте вручную или отклоните с причиной.
+              {note ? `Не исправилось в ревизии r${note.revision}.` : 'Правка не применилась.'} Поправьте вручную или отклоните.
             </div>
           )}
-          {status === 'dismissed' && <div className={styles.dismissed}>Отклонено: {note?.reason ?? 'причина сохранена в сервисе'}</div>}
+          {status === 'dismissed' && <div className={styles.dismissed}>Отклонено: {note?.reason ?? 'причина сохранена'}</div>}
           {status === 'fixed' && <div className={styles.fixed}>✓ Исправлено{note ? ` в ревизии r${note.revision}` : ''}</div>}
           {earlierDismissal && (
             <div className={styles.dismissed}>

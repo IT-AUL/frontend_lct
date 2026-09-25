@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { TemplateDropzone, UploadProgress, useTemplateUpload } from '@/features/upload-template'
 import { useProject } from '@/entities/project'
 import { analysisState, useDesignDna, useTemplate, type TemplateDetail } from '@/entities/template'
@@ -27,8 +27,6 @@ function useAnalysisPolling(detail: TemplateDetail | undefined, refetch: () => u
 export function TemplatePage() {
   const { projectId = '' } = useParams()
   const navigate = useNavigate()
-  const location = useLocation()
-  const demo = Boolean((location.state as { demo?: boolean } | null)?.demo)
 
   const project = useProject(projectId)
   const upload = useTemplateUpload(projectId)
@@ -92,11 +90,6 @@ export function TemplatePage() {
     if (!templateId || replacing) {
       return (
         <div className={styles.upload}>
-          {demo && !templateId && (
-            <div className={styles.hint} role="note">
-              <b>Демо-сценарий.</b> Загрузите корпоративный шаблон или прошлую презентацию — например, любой шаблон из датасета. Дальше система разберёт его, соберёт три варианта и проверит их.
-            </div>
-          )}
           <TemplateDropzone onFile={onFile} error={upload.state.phase === 'error' && !failedAnalysis ? upload.state.message : null} />
           {failedAnalysis && (
             <p className={styles.error} role="alert">
@@ -178,8 +171,8 @@ export function TemplatePage() {
         title="ДНК шаблона"
         description={
           showDna
-            ? 'Шаблон разобран на правила: цвета, шрифты, кегли, сетку, якоря и макеты. По этим правилам будут собираться новые слайды.'
-            : 'Загрузите корпоративный шаблон или прошлую презентацию — система разберёт его на правила: цвета, шрифты, кегли, сетку, якоря и макеты.'
+            ? 'Цвета, шрифты, кегли, сетка и макеты — по этим правилам соберутся новые слайды.'
+            : 'Корпоративный шаблон или прошлая презентация — система извлечёт из неё правила оформления.'
         }
         actions={
           showDna && templateId ? (

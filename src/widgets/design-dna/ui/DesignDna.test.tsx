@@ -48,7 +48,8 @@ describe('DesignDna on the recorded VK Tech analysis', () => {
     expect(within(panel).getByText(/Заявлен/)).toHaveTextContent('Заявлен Arial, на слайдах Play (53%) и Calibri (41%).')
     expect(panel).toHaveTextContent('36 из 54 слайдов собраны на одном макете 11.')
     expect(panel).toHaveTextContent('21 из 39 макетов не используются ни на одном слайде.')
-    expect(within(panel).getByText(/Анализатор не вернул: шкала кеглей, сетка и поля, якоря, роли слайдов/)).toBeInTheDocument()
+    expect(panel).not.toHaveTextContent('нет данных')
+    expect(panel).not.toHaveTextContent('Шкала кеглей')
   })
 
   it('renders the palette with theme slots and observed colors', () => {

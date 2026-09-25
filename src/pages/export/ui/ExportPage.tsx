@@ -97,7 +97,9 @@ function ExportContent({ projectId, runId, variant, variants }: ExportContentPro
       primary: true,
     },
     { format: 'pdf' as const, file: files?.pdf ?? null, note: 'Для рассылки и печати' },
-    { format: 'html' as const, file: files?.html ?? null, note: 'Слайды разметкой для просмотра в браузере', supported: htmlSupported },
+    ...(htmlSupported || files?.html
+      ? [{ format: 'html' as const, file: files?.html ?? null, note: 'Слайды разметкой для браузера', supported: htmlSupported }]
+      : []),
     { format: 'quality_passport' as const, file: files?.quality_passport ?? null, note: 'Паспорт качества целиком' },
   ]
 
@@ -176,8 +178,7 @@ function ExportContent({ projectId, runId, variant, variants }: ExportContentPro
             notice={
               passportStale && (
                 <p className={styles.notice}>
-                  Паспорт собран для ревизии {revisionText(passportRevision)}, текущая — {revisionLabel}. Для новой ревизии сервис пока не пересобирает паспорт,
-                  поэтому метрики относятся к исходной колоде.
+                  Паспорт относится к ревизии {revisionText(passportRevision)}, текущая — {revisionLabel}.
                 </p>
               )
             }
@@ -191,7 +192,7 @@ function ExportContent({ projectId, runId, variant, variants }: ExportContentPro
               description={
                 passportQuery.error
                   ? passportQuery.error.message
-                  : 'Соберите паспорт в списке файлов: в нём метрики валидности, редактируемости и версии скилла, промптов и моделей.'
+                  : 'Соберите его в списке файлов слева.'
               }
             />
           </div>

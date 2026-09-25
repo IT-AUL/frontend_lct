@@ -45,8 +45,7 @@ export function VariantThumbnails({ variantId, variantName, slides, slidesError,
     return (
       <div className={styles.placeholder}>
         <p className={styles.placeholderText}>
-          Миниатюры рисуются из PDF варианта, а PDF для него ещё не создан. В колоде {slides.length}{' '}
-          {pluralize(slides.length, ['слайд', 'слайда', 'слайдов'])}.
+          {slides.length} {pluralize(slides.length, ['слайд', 'слайда', 'слайдов'])} · превью появятся после сборки PDF.
         </p>
         <RequestPdfExport variantId={variantId} variantName={variantName} />
       </div>

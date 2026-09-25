@@ -43,10 +43,9 @@ describe('AboutPanel', () => {
     expect(await within(dialog).findByText('deckdna-api')).toBeInTheDocument()
 
     const capabilities = within(dialog).getByRole('region', { name: 'Возможности сервиса' })
-    const html = (await within(capabilities).findByText('Экспорт HTML')).closest('li') as HTMLElement
-    expect(within(html).getByText('скоро')).toBeInTheDocument()
-    const pptx = within(capabilities).getByText('Экспорт PPTX').closest('li') as HTMLElement
+    const pptx = (await within(capabilities).findByText('Экспорт PPTX')).closest('li') as HTMLElement
     expect(within(pptx).getByText('есть')).toBeInTheDocument()
+    expect(within(capabilities).queryByText('Экспорт HTML')).not.toBeInTheDocument()
 
     const manifest = within(dialog).getByRole('region', { name: 'Скилл, промпты и конфиги' })
     expect(await within(manifest).findByText('Инструменты')).toBeInTheDocument()

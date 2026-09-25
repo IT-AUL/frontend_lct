@@ -87,7 +87,7 @@ test('demo path: template DNA, brief, three variants, audit repair, export', asy
     await expect(entries.locator('[data-outcome="fixed"]')).toHaveCount(2)
   })
 
-  await test.step('export: PPTX downloads, HTML is marked as coming soon', async () => {
+  await test.step('export: PPTX downloads, HTML is hidden until the service builds it', async () => {
     await auditSummary(page).getByRole('link', { name: /Экспорт/ }).click()
     await expect(page.getByRole('heading', { level: 1, name: 'Редактируемый PPTX в стиле шаблона' })).toBeVisible()
     const files = page.getByRole('region', { name: 'Файлы' })
@@ -98,6 +98,6 @@ test('demo path: template DNA, brief, three variants, audit repair, export', asy
     expect(deck.name).toMatch(/\.pptx$/)
     expect(deck.bytes.subarray(0, 2).toString('latin1')).toBe('PK')
     expect(deck.bytes.length).toBeGreaterThan(1024)
-    await expect(files.getByRole('article', { name: /\.html$/ })).toContainText('скоро')
+    await expect(files.getByRole('article', { name: /\.html$/ })).toHaveCount(0)
   })
 })

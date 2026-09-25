@@ -6,10 +6,10 @@ test('dark theme survives a reload', async ({ page }) => {
   const html = page.locator('html')
   await expect(html).toHaveAttribute('data-theme', 'light')
   const toggle = page.getByRole('button', { name: 'Переключить тему' })
-  await expect(toggle).toHaveText('Тёмная тема')
+  await expect(toggle).toHaveAttribute('data-theme-target', 'dark')
   await toggle.click()
   await expect(html).toHaveAttribute('data-theme', 'dark')
-  await expect(toggle).not.toHaveText('Тёмная тема')
+  await expect(toggle).toHaveAttribute('data-theme-target', 'light')
   const darkBackground = await page.evaluate(() => getComputedStyle(document.body).backgroundColor)
 
   await page.reload()

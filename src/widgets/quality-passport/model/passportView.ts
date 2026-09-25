@@ -268,13 +268,13 @@ function provenanceRows(passport: QualityPassport, context: PassportContext): Pr
             .join(' · '),
           note: prompts.length > PROMPT_LIMIT ? `и ещё ${prompts.length - PROMPT_LIMIT}` : undefined,
         }
-      : { key: 'prompts', label: 'Промпты', value: 'не применялись в этом прогоне', muted: true },
+      : { key: 'prompts', label: 'Промпты', value: 'не использовались', muted: true },
   )
 
   rows.push(
     provenance.modelProfiles.length > 0
       ? { key: 'models', label: 'Модели', value: provenance.modelProfiles.map(modelLabel).join(' · ') }
-      : { key: 'models', label: 'Модели', value: 'не вызывались — детерминированная сборка', muted: true },
+      : { key: 'models', label: 'Модели', value: 'без модели', muted: true },
   )
 
   for (const [path, hash] of Object.entries(provenance.configHashes)) {

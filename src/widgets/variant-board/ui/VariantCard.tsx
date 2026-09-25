@@ -7,7 +7,7 @@ import { usePassport } from '@/entities/passport'
 import { DEFAULT_STRATEGY, strategyInfo, useVariantSlides, variantAxes, variantMetrics, variantRationale, type VariantSummary } from '@/entities/variant'
 import { useVariantFiles } from '@/features/variant-files'
 import { formatPercent } from '@/shared/lib/format'
-import { Badge, Meter, Mono } from '@/shared/ui'
+import { Badge, Meter } from '@/shared/ui'
 import { formatPei, issuesHeadline, peiNote, severityBreakdown, styleFidelityScore, validityView } from '../lib/metrics'
 import styles from './VariantCard.module.css'
 import { VariantThumbnails } from './VariantThumbnails'
@@ -43,7 +43,6 @@ export function VariantCard({ variant: listed, showThumbnails, auditHref }: Vari
         </h2>
         {isDefault && <span className={styles.defaultBadge}>по умолчанию</span>}
         <span className={styles.spacer} />
-        <Mono className={styles.code}>{variant.strategy}</Mono>
       </header>
 
       <p className={styles.rationale}>{variantRationale(variant)}</p>
@@ -80,18 +79,14 @@ export function VariantCard({ variant: listed, showThumbnails, auditHref }: Vari
           <dd className={styles.mono}>{formatPei(metrics.editabilityLevel)}</dd>
           {note && <dd className={styles.note}>{note}</dd>}
         </div>
-        <div className={styles.metric}>
-          <dt>Соответствие</dt>
-          {fidelity === null ? (
-            <dd className={styles.soon} title="Сервис пока не считает соответствие шаблону">
-              скоро
-            </dd>
-          ) : (
-            <dd className={styles.mono} title="Соответствие правилам шаблона: палитра, шрифты, макеты, якоря">
+        {fidelity !== null && (
+          <div className={styles.metric}>
+            <dt>Соответствие</dt>
+            <dd className={styles.mono} title="Палитра, шрифты, макеты и якоря шаблона">
               {formatPercent(fidelity)}
             </dd>
-          )}
-        </div>
+          </div>
+        )}
       </dl>
 
       <div className={styles.issues}>

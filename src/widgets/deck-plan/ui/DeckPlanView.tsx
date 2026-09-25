@@ -1,10 +1,9 @@
 import { clsx } from 'clsx'
 import { Fragment, useMemo } from 'react'
 import type { DeckPlan } from '@/entities/generation'
-import { formatShortHash, pluralize } from '@/shared/lib/format'
+import { pluralize } from '@/shared/lib/format'
 import { buildPlanView, deckPurposeLabel, type PlanRow } from '../lib/plan'
 import styles from './DeckPlanView.module.css'
-import { SoonButton } from './SoonButton'
 
 export interface PlanEditor {
   onMove: (slideId: string, delta: -1 | 1) => void
@@ -30,21 +29,7 @@ interface PlanRowItemProps {
 }
 
 function RowActions({ row, first, last, single, editor }: PlanRowItemProps) {
-  if (!editor) {
-    return (
-      <div className={styles.rowActions}>
-        <SoonButton label={first ? 'Выше: уже первый' : 'Выше'} className={styles.iconButton}>
-          ↑
-        </SoonButton>
-        <SoonButton label={last ? 'Ниже: уже последний' : 'Ниже'} className={styles.iconButton}>
-          ↓
-        </SoonButton>
-        <SoonButton label="Убрать слайд" className={clsx(styles.iconButton, styles.remove)}>
-          ×
-        </SoonButton>
-      </div>
-    )
-  }
+  if (!editor) return <div className={styles.rowActions} />
   return (
     <div className={styles.rowActions}>
       <button type="button" className={clsx(styles.iconButton, styles.live)} aria-label={`Поднять слайд ${row.number} выше`} disabled={first} onClick={() => editor.onMove(row.id, -1)}>
@@ -71,10 +56,13 @@ function RowMain({ row, editor }: Pick<PlanRowItemProps, 'row' | 'editor'>) {
     return (
       <div className={styles.main}>
         <div className={styles.title}>{row.title}</div>
-        <div className={styles.idea}>
-          {row.idea && <>{row.idea} · </>}
-          <span className={styles.visual}>{row.visual}</span>
-        </div>
+        {(row.idea || row.visual) && (
+          <div className={styles.idea}>
+            {row.idea}
+            {row.idea && row.visual && ' · '}
+            {row.visual && <span className={styles.visual}>{row.visual}</span>}
+          </div>
+        )}
       </div>
     )
   }
@@ -95,7 +83,7 @@ function RowMain({ row, editor }: Pick<PlanRowItemProps, 'row' | 'editor'>) {
         aria-label={`Мысль слайда ${row.number}`}
         onChange={(event) => editor.onUpdate(row.id, { key_message: event.target.value })}
       />
-      <span className={styles.visual}>{row.visual}</span>
+      {row.visual && <span className={styles.visual}>{row.visual}</span>}
     </div>
   )
 }
@@ -156,14 +144,10 @@ export function DeckPlanView({ plan, headings, editor }: DeckPlanViewProps) {
             )
           })}
         </ol>
-        {editor ? (
+        {editor && (
           <button type="button" className={clsx(styles.addButton, styles.live)} onClick={editor.onAdd}>
             + Добавить слайд
           </button>
-        ) : (
-          <SoonButton label="Добавить слайд" block className={styles.addButton}>
-            + Добавить слайд
-          </SoonButton>
         )}
       </div>
 
@@ -173,7 +157,7 @@ export function DeckPlanView({ plan, headings, editor }: DeckPlanViewProps) {
           Назначение «{deckPurposeLabel(brief.purpose || plan.objective)}», аудитория «{plan.audience || brief.audience}».{' '}
           {namedSections > 0
             ? `План делит историю на ${namedSections} ${pluralize(namedSections, ['раздел', 'раздела', 'разделов'])}; у каждого — слайды, которые его раскрывают.`
-            : 'Сервис не разбил этот план на разделы.'}
+            : ''}
         </p>
         {sections.length > 0 && (
           <>
@@ -233,20 +217,7 @@ export function DeckPlanView({ plan, headings, editor }: DeckPlanViewProps) {
               <dt>Промпт</dt>
               <dd>{provenance.prompt_version}</dd>
             </div>
-            <div>
-              <dt>Схема</dt>
-              <dd>{provenance.schema_version}</dd>
-            </div>
-            <div>
-              <dt>План</dt>
-              <dd>{plan.id}</dd>
-            </div>
-            {provenance.input_hashes && provenance.input_hashes.length > 0 && (
-              <div>
-                <dt>Входы</dt>
-                <dd title={provenance.input_hashes.join('\n')}>{provenance.input_hashes.map(formatShortHash).join(', ')}</dd>
-              </div>
-            )}
+
           </dl>
         </div>
       </aside>

@@ -51,7 +51,7 @@ describe('BriefForm', () => {
     const input = container.querySelector('input[type="file"]') as HTMLInputElement
     await user.upload(input, [new File(['# a'], 'brief.md'), new File(['x'], 'metrics.xlsx')])
     expect(screen.getByText('brief.md')).toBeInTheDocument()
-    expect(screen.getByText(/Не будет разобран: сейчас обрабатывается один файл/)).toBeInTheDocument()
+    expect(screen.getByText(/Не будет учтён: используется только первый файл/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('radio', { name: 'Вставить текст' }))
     await user.type(screen.getByLabelText('Текст контента'), 'Контент')

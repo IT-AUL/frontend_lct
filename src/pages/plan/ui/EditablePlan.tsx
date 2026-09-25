@@ -38,8 +38,8 @@ export function EditablePlan({ projectId, draftKey, basePlan, headings, eyebrow,
     <div className={styles.page}>
       <PageHeader
         eyebrow={eyebrow}
-        title="Сначала план, потом вёрстка"
-        description="Проверьте историю: порядок, заголовки-выводы и источники. Поправить план дешевле, чем перегенерировать колоду."
+        title="План колоды"
+        description="Поправьте порядок, заголовки и мысли — варианты соберутся по вашему плану."
         actions={
           <>
             <Button variant="secondary" size="lg" disabled={!draft.edited || isPending} onClick={draft.reset}>
@@ -51,13 +51,14 @@ export function EditablePlan({ projectId, draftKey, basePlan, headings, eyebrow,
           </>
         }
       />
-      <div className={styles.banner} role="note">
-        <div className={styles.bannerTag}>План до вёрстки</div>
-        <div className={styles.bannerText}>
-          {notice} {draft.edited ? describeEdits(basePlan, draft.plan) : 'Правки сохраняются в браузере, пока вы не соберёте варианты.'}
-          {untitled && ' У каждого слайда должен быть заголовок.'}
+      {(notice || draft.edited || untitled) && (
+        <div className={styles.banner} role="note">
+          <div className={styles.bannerText}>
+            {notice} {draft.edited && describeEdits(basePlan, draft.plan)}
+            {untitled && ' У каждого слайда должен быть заголовок.'}
+          </div>
         </div>
-      </div>
+      )}
       {toolbar}
       <DeckPlanView
         plan={draft.plan}

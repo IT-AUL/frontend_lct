@@ -119,7 +119,7 @@ export function ProviderFormView({ initial, submitting, error, replacing, onSubm
               onChange={(event) => set('apiToken')(event.target.value)}
             />
             <span id={`${id}-note`} className={errors.apiToken ? styles.fieldError : styles.fieldNote} role={errors.apiToken ? 'alert' : undefined}>
-              {errors.apiToken ?? 'Уходит только в сервис при подключении. Браузер его не хранит, API его не возвращает.'}
+              {errors.apiToken ?? 'Не сохраняется в браузере.'}
             </span>
           </>
         )}
