@@ -131,13 +131,13 @@ services:
       GF_LOG_MODE: console
       GF_METRICS_ENABLED: "true"
       GF_INSTALL_PLUGINS: victoriametrics-logs-datasource
-      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/deckdna-overview.json
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/deckdna-overview.json
       GF_UNIFIED_ALERTING_ENABLED: "true"
       GF_ALERTING_ENABLED: "false"
     volumes:
       - grafana-data:/var/lib/grafana
       - ${CONFIG_DIR:?}/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ${CONFIG_DIR:?}/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ${CONFIG_DIR:?}/grafana/dashboards:/etc/grafana/dashboards:ro
     ports:
       - 127.0.0.1:${GRAFANA_PORT:-18101}:3000
     mem_limit: 320m
