@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
@@ -30,12 +31,15 @@ describe('BriefForm', () => {
   it('picks a purpose, adjusts the slide count and warns that only one file is parsed', async () => {
     const user = userEvent.setup()
     const seen = { form: createBriefForm() }
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { container } = render(
-      <Harness
-        onState={(form) => {
-          seen.form = form
-        }}
-      />,
+      <QueryClientProvider client={client}>
+        <Harness
+          onState={(form) => {
+            seen.form = form
+          }}
+        />
+      </QueryClientProvider>,
     )
 
     const purposes = screen.getByRole('radiogroup', { name: 'Назначение' })
