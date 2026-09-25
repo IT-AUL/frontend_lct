@@ -1,6 +1,8 @@
 node_modules
 dist
 dist-e2e
+dist-live
+test-results-live
 e2e
 .git
 .github

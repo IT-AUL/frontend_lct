@@ -1,6 +1,6 @@
 # 16 · Правки для бэкенда (передать команде DeckDNA)
 
-Собрано по реальным прогонам API (`main` @ `931ad6f`, 25.09.2026; шаблон «VK Tech шаблон.pptx»,
+Собрано по реальным прогонам API (`main` @ `3c466d2`, перепроверено 25.09.2026; шаблон «VK Tech шаблон.pptx»,
 контент `tests/fixtures/content/deckdna_pitch_rich.md`, 3 варианта без LLM — **8,2 с**).
 Фронт уже работает с текущим API. Пункты ниже открывают возможности, которые показаны в дизайне.
 
@@ -8,11 +8,25 @@
 
 | # | Что | Как воспроизвести | Ожидание |
 |---|---|---|---|
-| B1 | `GET /audits/{id}/issues?status=dismissed` → **500 Internal Server Error** | после `POST /issues/{id}/dismiss` запросить список с фильтром по статусу | 200 и отфильтрованный список |
+| B1 | После `POST /issues/{id}/dismiss` **любой** фильтр `GET /audits/{id}/issues?status=…` (open, dismissed, …) → **500 Internal Server Error**; без `status` и с другими фильтрами всё работает | dismiss любой проблемы, затем запрос с `status=open` | 200 и отфильтрованный список |
 | B2 | После `POST /audits/{id}/repairs` у варианта пропадают PDF и паспорт: `POST /variants/{id}/exports {"formats":["pdf"]}` → 501 `not_implemented` | исправить любую проблему и запросить экспорт PDF | после repair перерендерить PDF и паспорт новой ревизии |
 | B3 | `POST /generations/{id}/cancel` на **завершённом** прогоне переводит его в `canceled` | отменить уже completed-генерацию | 409 `state_conflict` (исправлено в ветке `devin/async-job-lifecycle`) |
 | B5 | `repairable: true` стоит и у правил без обработчика в `repair/planner.py` (`template.font_scale`, `text.font_floor`, `density.*`, `chart.metadata`, `template.layout_origin`, `layout.unintended_overlap`, `integrity.package`) — такие проблемы уходят в `unresolved` | выбрать любую `template.font_scale` и запустить repair | `repairable` = есть обработчик в планировщике |
 | B4 | В ответе `GET /audits/{id}/issues` у issues первой ревизии `deck_revision: 0`, у аудита — `1` | сравнить после генерации | одинаковая ревизия |
+| B6 | Исправление `text.overflow` почти не работает: выбрано 5 проблем → job «applied 6, skipped 4, failed 0», но проблем этого правила было 29, стало 28 | выбрать 5 `text.overflow` и запустить repair; сравнить число проблем правила до и после | `applied` совпадает с реально исправленным; или честный `failed` |
+
+### Эффективность repair по правилам (замер 25.09, VK Tech, вариант balanced, до 5 проблем на правило)
+
+| Правило | Выбрано | Было → стало | Ответ job |
+|---|---|---|---|
+| `template.color_palette` | 4 | 4 → 0 | applied 4 |
+| `image.aspect_ratio` | 5 | 10 → 5 | applied 5 |
+| `accessibility.contrast` | 5 | 21 → 16 | applied 5 |
+| `text.overflow` | 5 | 29 → 28 | applied 6, skipped 4 (B6) |
+| `template.font_scale` | 5 | 50 → 50 | unresolved 5 (B5) |
+| `text.font_floor` | 5 | 8 → 8 | unresolved 5 (B5) |
+
+Фронт показывает «не удалось», когда проблема осталась в новой ревизии, и не верит счётчику `applied`.
 
 ## Данные, которых не хватает UI (по приоритету)
 

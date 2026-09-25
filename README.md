@@ -86,6 +86,14 @@ E2E (`e2e/`) сами собирают приложение в mock-режиме
 `npm run e2e -- --project=chromium`; свой бинарник Chromium — `PW_CHROMIUM_PATH=/path/to/chrome`.
 Отчёт — `npx playwright show-report`.
 
+Проверка совместимости с настоящим бэкендом (`e2e-live/`): сценарий проходит весь путь на реальном
+шаблоне — загрузка, разбор, три варианта, PDF-превью, исправление, скачивание PPTX — и падает при любом
+ответе 5xx или ошибке страницы. Нужен запущенный DeckDNA (`BACKEND_URL`, по умолчанию `http://localhost:8000`):
+
+```bash
+E2E_TEMPLATE=/path/to/template.pptx npm run e2e:live
+```
+
 CI (GitHub Actions, `.github/workflows/ci.yml`) на push и PR в `main`: lint, typecheck, тесты,
 сборка; e2e в Chromium, Firefox и WebKit (при падении HTML-отчёт в артефактах); отдельно
 собирается Docker-образ (без публикации). `lint:fsd` блокирует сборку.

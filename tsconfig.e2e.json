@@ -16,5 +16,5 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["playwright.config.ts", "e2e"]
+  "include": ["playwright.config.ts", "e2e", "e2e-live", "playwright.live.config.ts"]
 }

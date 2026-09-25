@@ -12,6 +12,7 @@ CLAUDE.local.md
 node_modules/
 dist/
 dist-e2e/
+dist-live/
 coverage/
 *.tsbuildinfo
 .npm-cache/
@@ -19,6 +20,7 @@ coverage/
 # Tests
 playwright-report/
 test-results/
+test-results-live/
 
 # OS and editors
 .DS_Store
