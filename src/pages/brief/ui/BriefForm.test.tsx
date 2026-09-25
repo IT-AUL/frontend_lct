@@ -1,0 +1,61 @@
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
+import { resolveContent } from '../lib/brief'
+import { createBriefForm } from '../model/form'
+import type { BriefForm as BriefFormState } from '../model/form'
+import { BriefForm } from './BriefForm'
+
+function Harness({ onState }: { onState: (form: BriefFormState) => void }) {
+  const [form, setForm] = useState(createBriefForm({ targetSlideCount: 12 }))
+  const [files, setFiles] = useState<File[]>([])
+  const plan = resolveContent({ mode: form.contentMode, files, text: form.text, parsed: form.parsed })
+  onState(form)
+  return (
+    <BriefForm
+      form={form}
+      onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
+      files={files}
+      onFilesChange={setFiles}
+      plan={plan}
+      parsing={false}
+      parseError={null}
+      onParseText={() => undefined}
+      errors={{}}
+    />
+  )
+}
+
+describe('BriefForm', () => {
+  it('picks a purpose, adjusts the slide count and warns that only one file is parsed', async () => {
+    const user = userEvent.setup()
+    const seen = { form: createBriefForm() }
+    const { container } = render(
+      <Harness
+        onState={(form) => {
+          seen.form = form
+        }}
+      />,
+    )
+
+    const purposes = screen.getByRole('radiogroup', { name: 'Назначение' })
+    await user.click(within(purposes).getByRole('radio', { name: /Инициатива/ }))
+    expect(within(purposes).getByRole('radio', { name: /Инициатива/ })).toHaveAttribute('aria-checked', 'true')
+    await user.keyboard('{ArrowRight}')
+    expect(seen.form.purpose).toBe('other')
+    expect(screen.getByLabelText(/Что за презентация/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Больше' }))
+    expect(seen.form.slideCount).toBe(13)
+
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
+    await user.upload(input, [new File(['# a'], 'brief.md'), new File(['x'], 'metrics.xlsx')])
+    expect(screen.getByText('brief.md')).toBeInTheDocument()
+    expect(screen.getByText(/Не будет разобран: сейчас обрабатывается один файл/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('radio', { name: 'Вставить текст' }))
+    await user.type(screen.getByLabelText('Текст контента'), 'Контент')
+    expect(seen.form.text).toBe('Контент')
+    expect(screen.getByRole('button', { name: 'Разобрать текст' })).toBeEnabled()
+  })
+})
