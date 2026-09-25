@@ -64,27 +64,27 @@ interface CapabilitySpec {
 }
 
 const CAPABILITY_SPECS: readonly CapabilitySpec[] = [
-  { id: 'pptx', label: 'Экспорт PPTX', paths: ['exports.pptx', 'export_formats.pptx', 'exports.formats.pptx'], on: 'нативные объекты, редактируемый файл', off: 'сервис не заявил формат' },
-  { id: 'pdf', label: 'Экспорт PDF', paths: ['exports.pdf', 'export_formats.pdf', 'exports.formats.pdf'], on: 'рендер колоды', off: 'сервис не заявил формат' },
-  { id: 'html', label: 'Экспорт HTML', paths: ['exports.html', 'export_formats.html', 'exports.formats.html'], on: 'разметка, не скриншоты', off: 'в разработке' },
+  { id: 'pptx', label: 'Экспорт PPTX', paths: ['exporters.pptx', 'exports.pptx', 'export_formats.pptx', 'exports.formats.pptx'], on: 'нативные объекты, редактируемый файл', off: 'сервис не заявил формат' },
+  { id: 'pdf', label: 'Экспорт PDF', paths: ['exporters.pdf', 'exports.pdf', 'export_formats.pdf', 'exports.formats.pdf'], on: 'рендер колоды', off: 'сервис не заявил формат' },
+  { id: 'html', label: 'Экспорт HTML', paths: ['features.html_export', 'exporters.html', 'exports.html', 'export_formats.html', 'exports.formats.html'], on: 'разметка, не скриншоты', off: 'в разработке' },
   {
     id: 'passport',
     label: 'Паспорт качества',
-    paths: ['exports.quality_passport', 'export_formats.quality_passport', 'exports.formats.quality_passport'],
+    paths: ['exporters.quality_passport', 'exports.quality_passport', 'export_formats.quality_passport', 'exports.formats.quality_passport'],
     on: 'метрики, версии и происхождение колоды',
     off: 'в разработке',
   },
   {
     id: 'contextual',
     label: 'Контекстные проверки моделью',
-    paths: ['audit.contextual_rules', 'audit.contextual', 'contextual_audit'],
+    paths: ['features.contextual_audit', 'audit.contextual_rules', 'audit.contextual', 'contextual_audit'],
     on: 'нужна сессия провайдера моделей',
     off: 'в разработке',
   },
-  { id: 'async', label: 'Статус каждого варианта', paths: ['generation.async_jobs', 'async_jobs'], on: 'варианты готовятся по очереди', off: 'сейчас три варианта готовы вместе' },
-  { id: 'sse', label: 'Стриминг прогресса этапов', paths: ['events.sse', 'sse'], on: 'события по этапам конвейера', off: 'сейчас только статус задачи' },
-  { id: 'previews', label: 'PNG-превью слайдов', paths: ['previews.slide_png', 'slide_previews'], on: 'картинки слайдов от сервиса', off: 'превью строятся из PDF в браузере' },
-  { id: 'plan', label: 'План до вёрстки', paths: ['generation.plan_only', 'plan_only'], on: 'план можно поправить до вёрстки', off: 'сейчас план показывается после сборки' },
+  { id: 'async', label: 'Статус каждого варианта', paths: ['features.async_generation', 'generation.async_jobs', 'async_jobs'], on: 'варианты готовятся по очереди', off: 'сейчас три варианта готовы вместе' },
+  { id: 'sse', label: 'Стриминг прогресса этапов', paths: ['features.sse_progress', 'events.sse', 'sse'], on: 'события по этапам конвейера', off: 'сейчас только статус задачи' },
+  { id: 'previews', label: 'PNG-превью слайдов', paths: ['features.png_previews', 'previews.slide_png', 'slide_previews'], on: 'картинки слайдов от сервиса', off: 'превью строятся из PDF в браузере' },
+  { id: 'plan', label: 'План до вёрстки', paths: ['features.plan_only', 'generation.plan_only', 'plan_only'], on: 'план можно поправить до вёрстки', off: 'сейчас план показывается после сборки' },
 ]
 
 export function capabilityRows(capabilities: Capabilities | null | undefined): CapabilityRow[] {

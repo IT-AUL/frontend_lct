@@ -107,3 +107,6 @@ CI (GitHub Actions, `.github/workflows/ci.yml`) на push и PR в `main`: lint,
   терминируется снаружи (обратный прокси или балансировщик).
 - Профиль `backend` предполагает Dockerfile в корне клона бэкенда; иначе задайте `BACKEND_DOCKERFILE`,
   а переменные бэкенда положите в `$BACKEND_DIR/.env`.
+
+
+[`docs/BACKEND_HANDOFF.md`](docs/BACKEND_HANDOFF.md) — что нужно от бэкенда DeckDNA, чтобы интерфейс совпал с макетами.

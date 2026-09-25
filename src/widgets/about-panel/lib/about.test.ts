@@ -1,3 +1,4 @@
+import capabilitiesFixture from '@/shared/api/mocks/fixtures/capabilities.json'
 import { capabilityRows, countRules, describeManifest, formatRows, ruleGroups, versionRows } from './about'
 
 describe('about panel data', () => {
@@ -43,5 +44,15 @@ describe('about panel data', () => {
     expect(countRules(groups).D).toBe(24)
     expect(countRules(groups).N).toBeGreaterThan(0)
     expect(groups.find((group) => group.category === 'meaning')?.rules.every((rule) => rule.kind === 'N')).toBe(true)
+  })
+
+  it('recognises the capabilities shape the live backend returns', () => {
+    const state = Object.fromEntries(capabilityRows(capabilitiesFixture).map((row) => [row.id, row.state]))
+    expect(state).toMatchObject({ pptx: 'on', pdf: 'on', passport: 'on', html: 'soon' })
+  })
+
+  it('turns features on from the explicit features block', () => {
+    const features = { html_export: true, plan_only: true, png_previews: true, async_generation: true, sse_progress: true, contextual_audit: true }
+    expect(capabilityRows({ features }).every((row) => ['html', 'plan', 'previews', 'async', 'sse', 'contextual'].includes(row.id) ? row.state === 'on' : true)).toBe(true)
   })
 })

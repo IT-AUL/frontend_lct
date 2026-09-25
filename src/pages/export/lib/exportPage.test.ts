@@ -17,6 +17,9 @@ describe('export page helpers', () => {
     expect(htmlExportSupported({ exports: { pptx: true, pdf: true, html: false, formats: ['pptx', 'pdf', 'quality_passport'] } })).toBe(false)
     expect(htmlExportSupported({ exports: { html: true } })).toBe(true)
     expect(htmlExportSupported({ export_formats: ['pptx', 'html'] })).toBe(true)
+    expect(htmlExportSupported({ exporters: ['pdf', 'pptx', 'quality_passport'] })).toBe(false)
+    expect(htmlExportSupported({ exporters: ['pdf', 'pptx', 'html'] })).toBe(true)
+    expect(htmlExportSupported({ features: { html_export: true } })).toBe(true)
     expect(htmlExportSupported(undefined)).toBe(false)
   })
 

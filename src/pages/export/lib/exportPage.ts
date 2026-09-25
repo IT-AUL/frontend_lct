@@ -2,7 +2,7 @@ import type { ExportFormat, QualityPassport } from '@/entities/passport'
 import { isCapabilityAvailable, type Capabilities } from '@/entities/system'
 import { DEFAULT_STRATEGY, orderVariants, type DeckFile, type VariantSummary } from '@/entities/variant'
 
-const HTML_CAPABILITY_PATHS = ['exports.html', 'exports.formats.html', 'export_formats.html', 'formats.html', 'export.html', 'html_export'] as const
+const HTML_CAPABILITY_PATHS = ['features.html_export', 'exporters.html', 'exports.html', 'exports.formats.html', 'export_formats.html', 'formats.html', 'export.html', 'html_export'] as const
 
 const EXTENSION: Record<ExportFormat, string> = {
   pptx: 'pptx',
