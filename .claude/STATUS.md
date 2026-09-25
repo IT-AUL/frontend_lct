@@ -4,7 +4,7 @@
 > и **обновляет его в конце каждой значимой работы** (правила — внизу).
 > Время — МСК. Стоп-код: **29.09.2026 23:59**.
 
-**Обновлено:** 2026-09-25 17:15 · **Фаза:** 1 — каркас фронта (CP-02 в работе) · **Передано удалённому агенту**
+**Обновлено:** 2026-09-25 17:42 · **Фаза:** 2 — экраны (волна агентов CP-05…CP-10) · **Ведёт удалённый агент-оркестратор**, ветка `new/festive-newton-hlnl7c`
 
 ---
 
@@ -44,7 +44,7 @@
 
 | Слой | Что готово | Что дальше |
 |---|---|---|
-| Инфраструктура | `package.json` (React 19.3, React Router 7, TanStack Query 5, TS 5.9, Vite 7, Vitest 3, ESLint 10, Steiger, MSW, Playwright, pdfjs-dist 6, openapi-fetch), tsconfig (strict, алиас `@/`), vite.config (прокси `/api` → `BACKEND_URL`, vitest jsdom), eslint.config, steiger.config, index.html, favicon | `npm run lint` и `lint:fsd` ещё не прогонялись; Dockerfile + nginx.conf.template + compose (CP-03); README |
+| Инфраструктура | `package.json` (React 19.3, React Router 7, TanStack Query 5, TS 5.9, Vite 7, Vitest 3, ESLint 10, Steiger, MSW, Playwright, pdfjs-dist 6, openapi-fetch), tsconfig (strict, алиас `@/`), vite.config (прокси `/api` → `BACKEND_URL`, vitest jsdom), eslint.config, steiger.config, index.html, favicon , Dockerfile + nginx-шаблон + compose + CI | e2e (Playwright) |
 | `src/app/styles` | `tokens.css` (токены дизайна 1:1, светлая + тёмная), `global.css` (шрифты Onest/JetBrains Mono через @fontsource, анимации) | `app/`: main.tsx, providers (QueryClient, Toast, theme), router, layout |
 | `src/shared` | `api` (schema.d.ts из живого OpenAPI, openapi-fetch клиент + `unwrap`, `ApiError` из error envelope, upload с прогрессом через XHR, `artifactUrl`); `config`; `lib` (format + тесты, storage, useNow, pdf: loadPdf/renderPdfPage/usePdfDocument); `ui` (Button, Badge, Segmented, Card, PageHeader, Meter, Mono, Skeleton, EmptyState, Drawer (Radix), Toast, Field/TextInput/TextArea, Switch (Radix), Checkbox, StepperInput, TagInput) | `mocks/` MSW-хендлеры по фикстурам |
 | `src/entities` | **audit** (типы, SEVERITY, словарь 24 D + 10 N правил с категориями и реальным покрытием автоисправления, фильтры/группировки/сигнатуры + тесты на реальных данных, хуки useVariantAudit/useAuditIssues/useRepairIssues/useDismissIssue/useContextualAudit, SeverityBadge, CheckKindBadge); **project** (хуки, runHistory в localStorage); **template** (хуки, upload/analyze, `buildDesignSystem` из package_inventory + тесты); **content-pack** (хук, upload, summarize) | **generation**, **variant** (каталог стратегий faithful/balanced/visual), **provider-session**, **passport** |
@@ -60,15 +60,15 @@
 |---|---|---|---|---|
 | CP-00 | Контекст собран, инструменты | 25.09 | ✅ | docs/01–16, STATUS |
 | CP-01 | Решения по стеку и дизайну | 25.09 | ✅ | см. §5 |
-| CP-02 | Каркас: конфиги, shared, entities, app | 25.09 | 🟡 | `npm run lint/typecheck/test/build` зелёные, пустое приложение открывается |
-| CP-03 | Docker: Dockerfile + nginx.conf.template (`BACKEND_URL` в рантайме) + compose с их API | 25.09 | ⬜ | `docker compose up` → UI, `/api` проксируется |
-| CP-04 | MSW mock-режим по фикстурам | 26.09 | ⬜ | `VITE_API_MODE=mock npm run dev` проходит весь путь без бэка |
-| CP-05 | Оболочка (хедер, рельс шагов, «цепочка доказательств», тема) + Проекты + Шаблон/ДНК | 26.09 | ⬜ | ДНК реального VK Tech отрисована по `buildDesignSystem` |
-| CP-06 | Бриф и контент (файл или текст → `brief.md`), провайдер (drawer) | 26.09 | ⬜ | content-pack создаётся с UI |
-| CP-07 | Генерация: трекер sync/async, таймер против 5:00 | 27.09 | ⬜ | 3 варианта доходят до completed |
-| CP-08 | Превью через pdf.js, варианты (карточки + «слайд N во всех трёх»), план колоды (v1, после генерации) | 27.09 | ⬜ | миниатюры и сравнение работают |
-| CP-09 | Аудит: bbox-оверлей, фильтры D/N, выбор, repair, dismiss, журнал, повторный аудит | 28.09 | ⬜ | выбранные проблемы исправляются, журнал по сигнатурам |
-| CP-10 | Экспорт + Quality Passport + «О системе» (`/capabilities`) | 28.09 | ⬜ | PPTX/PDF скачиваются, HTML — «скоро» |
+| CP-02 | Каркас: конфиги, shared, entities, app | 25.09 | ✅ | `npm run lint/typecheck/test/build` зелёные, пустое приложение открывается |
+| CP-03 | Docker: Dockerfile + nginx.conf.template (`BACKEND_URL` в рантайме) + compose с их API | 25.09 | ✅ | `docker compose up` → UI, `/api` проксируется |
+| CP-04 | MSW mock-режим по фикстурам | 26.09 | 🟡 | `VITE_API_MODE=mock npm run dev` проходит весь путь без бэка |
+| CP-05 | Оболочка (хедер, рельс шагов, «цепочка доказательств», тема) + Проекты + Шаблон/ДНК | 26.09 | 🟡 | ДНК реального VK Tech отрисована по `buildDesignSystem` |
+| CP-06 | Бриф и контент (файл или текст → `brief.md`), провайдер (drawer) | 26.09 | 🟡 | content-pack создаётся с UI |
+| CP-07 | Генерация: трекер sync/async, таймер против 5:00 | 27.09 | 🟡 | 3 варианта доходят до completed |
+| CP-08 | Превью через pdf.js, варианты (карточки + «слайд N во всех трёх»), план колоды (v1, после генерации) | 27.09 | 🟡 | миниатюры и сравнение работают |
+| CP-09 | Аудит: bbox-оверлей, фильтры D/N, выбор, repair, dismiss, журнал, повторный аудит | 28.09 | 🟡 | выбранные проблемы исправляются, журнал по сигнатурам |
+| CP-10 | Экспорт + Quality Passport + «О системе» (`/capabilities`) | 28.09 | 🟡 | PPTX/PDF скачиваются, HTML — «скоро» |
 | CP-11 | Подключение новых ручек бэка по `docs/16` | 29.09 | ⬜ | адаптеры переключены |
 | CP-12 | E2E, браузеры, README/ARCHITECTURE для сдачи | 29.09 | ⬜ | happy path в 2+ браузерах |
 | CP-13 | **Заморозка** | 29.09 20:00 | ⬜ | всё запушено до 23:59 |
@@ -105,6 +105,14 @@
 5. После каждого шага обновлять этот файл.
 
 ## 7. Журнал (новые записи сверху)
+
+- **2026-09-25 17:42** — Удалённый оркестратор: `main` вмёржен в `new/festive-newton-hlnl7c`, поставлены плагины
+  superpowers/feature-dev/code-review/pr-review-toolkit. Каркас приложения (роутер, `AppFrame`, шапка,
+  рельс шагов + цепочка доказательств из реального состояния, тема, `routes` в `shared/config`,
+  `markEvidence`), `PdfPage`, `useVariantFiles`. Волна 1 агентов влита: сущности generation/variant/
+  passport/provider-session/system (68 тестов), Docker+nginx+compose+CI (проверено в dockerd).
+  Волна 2 (6 агентов в worktree) делает экраны по `docs/17-screen-agent-brief.md`; MSW в работе.
+  Бэкенд-репо приватный — из облака недоступен, работаем по фикстурам и `schema.d.ts`.
 
 - **2026-09-25 17:15** — Проект передан удалённому агенту: `.claude/` теперь в репозитории
   (пароль организаторов вычищен), каркас фронта запушен. Реальный прогон API записан в фикстуры:
