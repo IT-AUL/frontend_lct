@@ -34,7 +34,7 @@ step "upload content"
 CP="$(api -X POST "$BASE_URL/api/v1/projects/$PID/content-packs" -F "files=@$HERE/smoke/brief.md;filename=brief.md" -F 'brief={"language":"ru"}' | json "d['content_pack']['id']")"
 
 step "generate"
-BODY="$(printf '{"template_id":"%s","content_pack_id":"%s","brief":{"purpose":"product","audience":"smoke","language":"ru","target_slide_count":12},"variants":[{"strategy":"balanced"}]}' "$TID" "$CP")"
+BODY="$(printf '{"template_id":"%s","content_pack_id":"%s","use_llm":false,"brief":{"purpose":"product","audience":"smoke","language":"ru","target_slide_count":12},"variants":[{"strategy":"balanced"}]}' "$TID" "$CP")"
 RUN="$(api -X POST "$BASE_URL/api/v1/projects/$PID/generations" -H 'content-type: application/json' -d "$BODY" | json "d['generation_id']")"
 
 deadline=$(( $(date +%s) + TIMEOUT ))
@@ -42,7 +42,11 @@ while :; do
   STATE="$(api "$BASE_URL/api/v1/generations/$RUN" | json "d['state']")"
   case "$STATE" in
     completed) break ;;
-    failed|canceled) echo "generation ended as $STATE" >&2; exit 1 ;;
+    failed|canceled)
+      echo "generation ended as $STATE:" >&2
+      api "$BASE_URL/api/v1/generations/$RUN" >&2 || true
+      exit 1
+      ;;
   esac
   [ "$(date +%s)" -lt "$deadline" ] || { echo "generation timed out after ${TIMEOUT}s (state=$STATE)" >&2; exit 1; }
   sleep 2
