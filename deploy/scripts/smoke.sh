@@ -47,6 +47,9 @@ done
 
 step "download deck"
 ART="$(api "$BASE_URL/api/v1/generations/$RUN/variants" | json "d['items'][0]['deck_artifact_id']")"
-MAGIC="$(api "$BASE_URL/api/v1/artifacts/$ART/download" | head -c 2)"
+DECK="$(mktemp)"
+trap 'rm -f "$DECK"' EXIT
+api -o "$DECK" "$BASE_URL/api/v1/artifacts/$ART/download"
+MAGIC="$(head -c 2 "$DECK")"
 [ "$MAGIC" = "PK" ] || { echo "downloaded deck is not a zip package" >&2; exit 1; }
 step "ok"
