@@ -27,6 +27,7 @@ services:
       DECKDNA_MAX_UPLOAD_MB: ${DECKDNA_MAX_UPLOAD_MB:-200}
       DECKDNA_JOB_TIMEOUT_S: ${DECKDNA_JOB_TIMEOUT_S:-600}
       DECKDNA_MAX_PARALLEL_VARIANTS: ${DECKDNA_MAX_PARALLEL_VARIANTS:-3}
+      DECKDNA_GEN_WORKERS: ${DECKDNA_GEN_WORKERS:-4}
       DECKDNA_OFFICIAL_MODE: ${DECKDNA_OFFICIAL_MODE:-true}
       DECKDNA_ARTIFACT_ROOT: /data/artifacts
       HOME: /tmp
@@ -40,8 +41,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
-    mem_limit: ${API_MEM_LIMIT:-1536m}
-    cpus: ${API_CPUS:-2}
+    mem_limit: ${API_MEM_LIMIT:-3072m}
+    cpus: ${API_CPUS:-3}
     pids_limit: 512
     security_opt:
       - no-new-privileges:true
