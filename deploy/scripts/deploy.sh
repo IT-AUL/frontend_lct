@@ -27,7 +27,7 @@ fi
 trap '[ "${registry_login:-0}" = 1 ] && docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
 
 sync_config() {
-  find "$CONFIG_DIR" -mindepth 1 -delete
+  mkdir -p "$CONFIG_DIR"
   cp -a "$REL/config/." "$CONFIG_DIR/"
   chmod -R a+rX "$CONFIG_DIR"
   CONFIG_HASH="$( { find "$CONFIG_DIR" "$RENDERED_DIR" -type f ! -name '*.caddy' -print0 | sort -z | xargs -0 sha256sum; } | sha256sum | cut -c1-16)"
