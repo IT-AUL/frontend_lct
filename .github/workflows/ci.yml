@@ -31,9 +31,8 @@ jobs:
 
       - run: npm run lint
 
-      - name: FSD lint (non-blocking)
+      - name: FSD lint
         run: npm run lint:fsd
-        continue-on-error: true
 
       - run: npm run typecheck
 

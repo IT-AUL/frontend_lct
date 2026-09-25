@@ -73,7 +73,7 @@ npm run build
 ```
 
 CI (GitHub Actions, `.github/workflows/ci.yml`) на push и PR в `main`: lint, typecheck, тесты,
-сборка; отдельно собирается Docker-образ (без публикации). `lint:fsd` пока не блокирует.
+сборка; отдельно собирается Docker-образ (без публикации). `lint:fsd` блокирует сборку.
 
 ## Ограничения
 
