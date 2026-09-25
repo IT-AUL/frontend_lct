@@ -89,7 +89,7 @@ export function toGenerationBody({ brief, templateId, contentPackId, useLlm, pro
     variants: STRATEGY_ORDER.map((strategy) => ({ strategy })),
     use_llm: useLlm,
   }
-  if (providerSessionId) body.provider_session_id = providerSessionId
+  if (useLlm && providerSessionId) body.provider_session_id = providerSessionId
   return body
 }
 

@@ -83,6 +83,9 @@ describe('brief body mapping', () => {
       use_llm: true,
       provider_session_id: 'ps_1',
     })
+    expect(toGenerationBody({ brief, templateId: 'tpl_1', contentPackId: 'pack_1', useLlm: false, providerSessionId: 'ps_1' })).not.toHaveProperty(
+      'provider_session_id',
+    )
     expect(toGenerationBody({ brief, templateId: 'tpl_1', contentPackId: 'pack_1', useLlm: false, providerSessionId: null })).not.toHaveProperty(
       'provider_session_id',
     )
