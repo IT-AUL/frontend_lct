@@ -21,7 +21,10 @@ api "$BASE_URL/api/v1/capabilities" | json "len(d['exporters'])" >/dev/null
 
 step "create project"
 PID="$(api -X POST "$BASE_URL/api/v1/projects" -H 'content-type: application/json' -d '{"name":"smoke-check"}' | json "d['id']")"
-cleanup() { curl -sS --max-time 20 -X DELETE "$BASE_URL/api/v1/projects/$PID" -o /dev/null || true; }
+cleanup() {
+  curl -sS --max-time 20 -X DELETE "$BASE_URL/api/v1/projects/$PID" -o /dev/null || true
+  [ -z "${DECK:-}" ] || rm -f "$DECK"
+}
 trap cleanup EXIT
 
 step "upload template"
@@ -48,7 +51,6 @@ done
 step "download deck"
 ART="$(api "$BASE_URL/api/v1/generations/$RUN/variants" | json "d['items'][0]['deck_artifact_id']")"
 DECK="$(mktemp)"
-trap 'rm -f "$DECK"' EXIT
 api -o "$DECK" "$BASE_URL/api/v1/artifacts/$ART/download"
 MAGIC="$(head -c 2 "$DECK")"
 [ "$MAGIC" = "PK" ] || { echo "downloaded deck is not a zip package" >&2; exit 1; }
