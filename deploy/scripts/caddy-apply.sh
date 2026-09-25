@@ -25,7 +25,7 @@ done
 
 [ "$changed" -eq 1 ] || { echo "caddy-apply: no changes"; exit 0; }
 
-if ! caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1; then
+if ! runuser -u caddy -- caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1; then
   echo "caddy-apply: validation failed, restoring previous files" >&2
   for file in "${FILES[@]}"; do
     if [ -f "$backup/$file" ]; then install -m 644 -o root -g root "$backup/$file" "$TARGET/$file"; else rm -f "$TARGET/$file"; fi
