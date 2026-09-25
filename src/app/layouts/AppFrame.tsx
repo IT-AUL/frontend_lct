@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useActiveProviderSession } from '@/entities/provider-session'
+import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
 import { AboutPanel } from '@/widgets/about-panel'
 import { AppHeader, type RunStatus } from '@/widgets/app-header'
 import { ProviderPanel } from '@/widgets/provider-panel'
@@ -17,6 +18,7 @@ interface AppFrameProps {
 export function AppFrame({ projectName, status, rail, children }: AppFrameProps) {
   const [panel, setPanel] = useState<Panel>(null)
   const providerSession = useActiveProviderSession()
+  const modelAuto = useCapabilityFlag(FEATURE_PATHS.modelAuto)
   const closeWhen = (open: boolean) => {
     if (!open) setPanel(null)
   }
@@ -26,7 +28,7 @@ export function AppFrame({ projectName, status, rail, children }: AppFrameProps)
       <AppHeader
         projectName={projectName}
         status={status}
-        providerConnected={Boolean(providerSession)}
+        providerConnected={Boolean(providerSession) || modelAuto}
         onOpenProvider={() => setPanel('provider')}
         onOpenAbout={() => setPanel('about')}
       />

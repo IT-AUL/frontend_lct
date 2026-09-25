@@ -9,6 +9,7 @@ import {
   useTestProviderSession,
 } from '@/entities/provider-session'
 import type { ActiveProviderSession, ProbeStatus } from '@/entities/provider-session'
+import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
 import { formatDateTime } from '@/shared/lib/format'
 import { Button, Drawer } from '@/shared/ui'
 import { EMPTY_PROVIDER_FORM, providerFormFromSession, toProviderSessionCreate } from '../model/form'
@@ -142,6 +143,7 @@ function SessionSummary({
 
 function ProviderPanelBody() {
   const session = useActiveProviderSession()
+  const modelAuto = useCapabilityFlag(FEATURE_PATHS.modelAuto)
   const [editing, setEditing] = useState(false)
   const create = useCreateProviderSession()
   const test = useTestProviderSession()
@@ -162,6 +164,15 @@ function ProviderPanelBody() {
     return (
       <>
         <ModelRule />
+        {modelAuto && !session && (
+          <div className={styles.serverModel}>
+            <span className={styles.serverModelDot} />
+            <div>
+              <strong>Модель сервера подключена</strong>
+              <p>Сервер использует встроенную языковую модель. Своя модель не обязательна, но вы можете подключить другую ниже.</p>
+            </div>
+          </div>
+        )}
         <ProviderFormView
           initial={session ? providerFormFromSession(session) : EMPTY_PROVIDER_FORM}
           submitting={create.isPending}

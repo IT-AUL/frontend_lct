@@ -3,4 +3,5 @@ export const FEATURE_PATHS = {
   repairDryRun: ['features.repair_dry_run', 'repair.dry_run'],
   pngPreviews: ['features.png_previews', 'previews.slide_png', 'slide_previews'],
   pdfAfterRepair: ['features.pdf_after_repair'],
+  modelAuto: ['features.model_auto', 'model_auto'],
 } as const satisfies Record<string, readonly string[]>

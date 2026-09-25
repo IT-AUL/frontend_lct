@@ -205,3 +205,28 @@
   color: var(--ink-2);
   font-size: 12px;
 }
+
+.serverModel {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--ok-bg);
+  font-size: 13px;
+}
+
+.serverModel p {
+  margin: 2px 0 0;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+.serverModelDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--ok);
+}

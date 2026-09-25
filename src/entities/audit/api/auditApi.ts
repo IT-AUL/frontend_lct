@@ -113,7 +113,7 @@ export function useDismissIssue(auditId: string | undefined) {
 export function useContextualAudit(variantId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (providerSessionId: string) => fetchVariantAudit(variantId, providerSessionId),
+    mutationFn: (providerSessionId?: string) => fetchVariantAudit(variantId, providerSessionId),
     onSuccess: async (audit) => {
       queryClient.setQueryData(auditKeys.forVariant(variantId), audit)
       await queryClient.invalidateQueries({ queryKey: auditKeys.issues(audit.id) })

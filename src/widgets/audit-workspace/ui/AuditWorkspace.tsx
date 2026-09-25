@@ -94,6 +94,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
   const queryClient = useQueryClient()
   const toast = useToast()
   const session = useActiveProviderSession()
+  const modelAuto = useCapabilityFlag(FEATURE_PATHS.modelAuto)
   const files = useVariantFiles(variantId)
   const variantsQuery = useVariants(runId)
   const auditQuery = useVariantAudit(variantId)
@@ -261,7 +262,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
   }
 
   const runContextual = () => {
-    if (!session) {
+    if (!session && !modelAuto) {
       toast.show('Для смысловых проверок подключите модель — кнопка «Модели» в шапке.')
       return
     }
@@ -269,7 +270,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
       toast.show('Контекстные проверки для этой ревизии уже выполнены')
       return
     }
-    contextual.mutate(session.id, {
+    contextual.mutate(session?.id, {
       onSuccess: (run) =>
         toast.show(run.contextual_status === 'completed' ? 'Модель проверила смысл слайдов' : `Контекстные проверки: ${run.contextual_status}`),
       onError: (error) => toast.show(`Модель не ответила: ${errorText(error)}`),
@@ -314,7 +315,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
         severityCounts={severityCounts}
         kindCounts={kindCounts}
         fixableCount={selectableIds(views).length}
-        hasProvider={Boolean(session)}
+        hasProvider={Boolean(session) || modelAuto}
         contextualPending={contextual.isPending}
         onRunContextual={runContextual}
         reauditPending={reauditPending}
