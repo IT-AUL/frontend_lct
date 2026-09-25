@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ApiError } from '@/shared/api'
+import { ApiError, isApiError } from '@/shared/api'
 import { isTerminalState, POLL_INTERVAL_MS } from '../model/state'
 import { retryGeneration } from '../model/tracker'
 import type { GenerationDetail, Job } from '../model/types'
@@ -48,7 +48,15 @@ export function useCancelGeneration() {
         queryClient.setQueryData(generationKeys.detail(generationId), current)
         throw new ApiError({ code: 'state_conflict', message: 'Генерация уже завершена, отменять нечего', status: 409 })
       }
-      return requestCancel(generationId)
+      try {
+        return await requestCancel(generationId)
+      } catch (error) {
+        if (isApiError(error) && error.code === 'state_conflict') {
+          await queryClient.invalidateQueries({ queryKey: generationKeys.detail(generationId) })
+          throw new ApiError({ code: 'state_conflict', message: 'Генерация уже завершена, отменять нечего', status: 409 })
+        }
+        throw error
+      }
     },
     onSuccess: async (job, generationId) => {
       queryClient.setQueryData(generationKeys.job(job.id), job)
