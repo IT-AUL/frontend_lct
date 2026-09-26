@@ -3,7 +3,7 @@ import type { Locator, Page } from '@playwright/test'
 import { SEEDED_PROJECT, downloadFrom, expectRenderedPreview, openApp } from './support'
 
 async function canvasSize(preview: Locator): Promise<{ width: number; height: number }> {
-  return preview.locator('canvas').evaluate((canvas: HTMLCanvasElement) => ({ width: canvas.width, height: canvas.height }))
+  return preview.evaluate((canvas: HTMLCanvasElement) => ({ width: canvas.width, height: canvas.height }))
 }
 
 function auditSummary(page: Page): Locator {

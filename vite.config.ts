@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       target: 'es2022',
-      sourcemap: true,
+      sourcemap: 'hidden',
     },
     test: {
       globals: true,

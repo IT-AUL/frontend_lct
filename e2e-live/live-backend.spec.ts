@@ -109,7 +109,7 @@ test('live backend: system panel reflects the real capabilities', async ({ page 
 test('live backend: provider session is created, probed and revoked', async ({ page }) => {
   trackApi(page)
   await page.goto('/')
-  await page.getByRole('button', { name: 'Провайдер моделей' }).click()
+  await page.getByRole('button', { name: 'Модели', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Провайдер моделей' })
   const form = dialog.getByRole('form', { name: 'Подключение провайдера моделей' })
   await form.getByRole('textbox', { name: 'Адрес API' }).fill('http://127.0.0.1:9/v1')

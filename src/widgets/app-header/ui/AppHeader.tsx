@@ -52,7 +52,7 @@ export function AppHeader({ projectName, status, providerConnected, onOpenProvid
           <span>{status.label}</span>
         </div>
       )}
-      <button type="button" className={styles.action} onClick={onOpenProvider} aria-label="Провайдер моделей">
+      <button type="button" className={styles.action} onClick={onOpenProvider} title="Провайдер моделей">
         <span className={styles.providerDot} data-connected={providerConnected} />
         <span>Модели</span>
       </button>

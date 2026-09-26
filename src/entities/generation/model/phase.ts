@@ -10,6 +10,7 @@ export interface PhaseInput {
   trackingLost: boolean
   generation: GenerationDetail | undefined
   generationError: Error | null
+  reconnecting?: boolean
 }
 
 const PHASE_BY_STATE: Record<JobState, GenerationPhase> = {
@@ -21,12 +22,12 @@ const PHASE_BY_STATE: Record<JobState, GenerationPhase> = {
   canceled: 'canceled',
 }
 
-export function resolvePhase({ tracked, trackingLost, generation, generationError }: PhaseInput): GenerationPhase {
+export function resolvePhase({ tracked, trackingLost, generation, generationError, reconnecting = false }: PhaseInput): GenerationPhase {
   if (trackingLost) return 'failed'
   if (tracked?.status === 'pending') return 'submitting'
   if (tracked?.status === 'rejected') return 'failed'
   if (generation) return PHASE_BY_STATE[generation.state]
-  if (generationError) return 'failed'
+  if (generationError && !reconnecting) return 'failed'
   return 'running'
 }
 

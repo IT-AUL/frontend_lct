@@ -14,7 +14,7 @@ COPY . .
 # "live" talks to the real API through /api; "mock" builds a self-contained demo (MSW).
 ARG VITE_API_MODE=live
 ENV VITE_API_MODE=${VITE_API_MODE}
-RUN npm run build
+RUN npm run build && find dist -name '*.map' -delete
 
 FROM nginx:${NGINX_VERSION}-alpine AS runtime
 

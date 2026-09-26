@@ -24,7 +24,7 @@ test('dark theme survives a reload', async ({ page }) => {
 
 test('provider panel rejects a model above 35B', async ({ page }) => {
   await openApp(page)
-  await page.getByRole('button', { name: 'Провайдер моделей' }).click()
+  await page.getByRole('button', { name: 'Модели', exact: true }).click()
   const panel = page.getByRole('dialog', { name: 'Провайдер моделей' })
   await expect(panel).toBeVisible()
   await expect(panel).toContainText('до 35B')

@@ -38,7 +38,7 @@ export function PipelineStages({ view }: { view: PipelineView }) {
           {statusLine(view)}
         </span>
       </div>
-      <ol className={styles.steps}>
+      <ol className={clsx(styles.steps, view.mode === 'opaque' && styles.busySteps)} aria-busy={view.mode === 'opaque' || view.mode === 'tracked'}>
         {view.steps.map((step, index) => (
           <li key={step.stage} className={clsx(styles.step, styles[step.state])}>
             <span className={styles.number} aria-hidden>

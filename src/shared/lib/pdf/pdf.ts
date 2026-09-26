@@ -1,32 +1,26 @@
-import { getDocument, GlobalWorkerOptions, type PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
-import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'
+import type * as PdfJsModule from 'pdfjs-dist/legacy/build/pdf.mjs'
+import type { PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
 
-GlobalWorkerOptions.workerSrc = workerUrl
+type PdfJs = typeof PdfJsModule
 
-const documents = new Map<string, Promise<PDFDocumentProxy>>()
+let pdfjs: Promise<PdfJs> | null = null
 
-export function loadPdf(url: string): Promise<PDFDocumentProxy> {
-  let pending = documents.get(url)
-  if (!pending) {
-    pending = getDocument({ url }).promise
-    pending.catch(() => documents.delete(url))
-    documents.set(url, pending)
-  }
-  return pending
+function loadPdfJs(): Promise<PdfJs> {
+  pdfjs ??= Promise.all([import('pdfjs-dist/legacy/build/pdf.mjs'), import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url')])
+    .then(([library, worker]) => {
+      library.GlobalWorkerOptions.workerSrc = worker.default
+      return library
+    })
+    .catch((error: unknown) => {
+      pdfjs = null
+      throw error
+    })
+  return pdfjs
 }
 
-export async function renderPdfPage(
-  document: PDFDocumentProxy,
-  pageNumber: number,
-  canvas: HTMLCanvasElement,
-  cssWidth: number,
-): Promise<{ aspectRatio: number }> {
-  const page = await document.getPage(pageNumber)
-  const base = page.getViewport({ scale: 1 })
-  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2)
-  const viewport = page.getViewport({ scale: (cssWidth / base.width) * pixelRatio })
-  canvas.width = Math.floor(viewport.width)
-  canvas.height = Math.floor(viewport.height)
-  await page.render({ canvas, viewport }).promise
-  return { aspectRatio: base.width / base.height }
+export async function loadPdf(url: string): Promise<PDFDocumentProxy> {
+  const { getDocument } = await loadPdfJs()
+  return getDocument({ url }).promise
 }
+
+export type { PDFDocumentProxy }

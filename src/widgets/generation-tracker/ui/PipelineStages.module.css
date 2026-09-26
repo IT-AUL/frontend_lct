@@ -85,6 +85,11 @@
   animation: global(dd-pulse) 1.6s infinite;
 }
 
+.busySteps .number {
+  color: var(--info);
+  animation: global(dd-pulse) 1.6s infinite;
+}
+
 .done .number {
   color: var(--ok);
 }

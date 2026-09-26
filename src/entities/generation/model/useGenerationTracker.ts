@@ -1,7 +1,9 @@
-import { useSyncExternalStore } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import { ApiError } from '@/shared/api'
+import { isTransientError } from '@/shared/lib/polling'
 import { useGeneration, useJob } from '../api/generationApi'
 import { resolvePhase, resolveTiming, type GenerationPhase } from './phase'
+import { isTerminalState } from './state'
 import { getTrackedGeneration, isTrackingId, subscribeToGenerations, type TrackedGeneration } from './tracker'
 import type { GenerationDetail, Job, JobError } from './types'
 
@@ -18,6 +20,8 @@ export interface GenerationTracker {
   error: Error | null
   jobError: JobError | null
   canCancel: boolean
+  reconnecting?: boolean
+  refetch?: () => void
 }
 
 const TRACKING_LOST = new ApiError({
@@ -34,9 +38,17 @@ export function useGenerationTracker(id: string | null | undefined): GenerationT
   const generationQuery = useGeneration(generationId)
   const generation = generationQuery.data
   const jobId = tracked?.accepted?.job_id ?? generation?.job_id ?? null
-  const job = useJob(jobId).data
+  const jobQuery = useJob(jobId)
+  const job = jobQuery.data
+  const reconnecting = generationQuery.isError && isTransientError(generationQuery.error) && !(generation && isTerminalState(generation.state))
+  const { refetch: refetchGeneration } = generationQuery
+  const { refetch: refetchJob } = jobQuery
+  const refetch = useCallback(() => {
+    void refetchGeneration()
+    if (jobId) void refetchJob()
+  }, [refetchGeneration, refetchJob, jobId])
 
-  const phase = resolvePhase({ tracked, trackingLost, generation, generationError: generationQuery.error })
+  const phase = resolvePhase({ tracked, trackingLost, generation, generationError: generationQuery.error, reconnecting })
   const { startedAt, finishedAt } = resolveTiming(tracked, generation)
 
   return {
@@ -52,5 +64,7 @@ export function useGenerationTracker(id: string | null | undefined): GenerationT
     error: trackingLost ? TRACKING_LOST : (tracked?.error ?? generationQuery.error ?? null),
     jobError: job?.error ?? null,
     canCancel: phase === 'running' && generationId !== null,
+    reconnecting,
+    refetch,
   }
 }

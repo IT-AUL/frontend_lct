@@ -78,13 +78,37 @@ function RecoveryNotice({ projectId, runId, tracker }: { projectId: string; runI
     )
   }
 
+  if (tracker.reconnecting && phase === 'running') {
+    return (
+      <RunNotice
+        tone="info"
+        title="Нет связи с сервисом — повторяем…"
+        message="Сборка на сервере продолжается. Статус обновится сам, как только связь вернётся."
+        actions={
+          tracker.refetch && (
+            <Button size="lg" onClick={tracker.refetch}>
+              Проверить сейчас
+            </Button>
+          )
+        }
+      />
+    )
+  }
+
   if (phase !== 'failed' && phase !== 'canceled') return null
 
   const failure = phase === 'failed' ? describeFailure(tracker) : null
+  const statusUnknown = !tracker.generation && Boolean(tracker.refetch)
   const retry = generationId ? (
-    <Button variant="primary" size="lg" onClick={() => rerun(generationId)} disabled={isPending}>
-      {isPending ? 'Запускаем…' : 'Повторить'}
-    </Button>
+    statusUnknown ? (
+      <Button variant="primary" size="lg" onClick={tracker.refetch}>
+        Повторить
+      </Button>
+    ) : (
+      <Button variant="primary" size="lg" onClick={() => rerun(generationId)} disabled={isPending}>
+        {isPending ? 'Запускаем…' : 'Повторить'}
+      </Button>
+    )
   ) : null
 
   return (
@@ -125,7 +149,9 @@ export function GenerationPage() {
   }, [phase, projectId])
 
   const actions =
-    phase === 'running' && canCancel && generationId ? (
+    phase === 'submitting' && !generationId ? (
+      <CancelGenerationButton generationId={null} />
+    ) : phase === 'running' && canCancel && generationId ? (
       <CancelGenerationButton generationId={generationId} onCanceled={() => navigate(routes.brief(projectId))} />
     ) : phase === 'completed' && generationId ? (
       <>

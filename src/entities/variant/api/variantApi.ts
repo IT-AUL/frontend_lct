@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { api, unwrap } from '@/shared/api'
+import { pollWithBackoff, type PollableQuery } from '@/shared/lib/polling'
 import { isVariantSettled } from '../model/status'
 import type { SlideInfo, VariantSummary } from '../model/types'
 
@@ -13,16 +14,8 @@ export const variantKeys = {
   slides: (variantId: string) => ['variant', variantId, 'slides'] as const,
 }
 
-interface PollableState<T> {
-  status: 'pending' | 'error' | 'success'
-  data: T | undefined
-}
-
 function pollWhile<T>(unsettled: (data: T) => boolean) {
-  return ({ state }: { state: PollableState<T> }): number | false => {
-    if (state.status === 'error' || state.data === undefined) return false
-    return unsettled(state.data) ? POLL_INTERVAL_MS : false
-  }
+  return (query: PollableQuery<T>): number | false => pollWithBackoff(query, (data) => data !== undefined && unsettled(data), POLL_INTERVAL_MS)
 }
 
 export function useVariants(generationId: string | null | undefined) {

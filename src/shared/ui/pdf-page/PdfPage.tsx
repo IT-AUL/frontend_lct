@@ -16,6 +16,12 @@ interface PdfPageProps {
 
 type RenderState = 'idle' | 'ready' | 'error'
 
+const WIDTH_STEP_PX = 32
+
+function renderWidth(width: number): number {
+  return width > 0 ? Math.ceil(width / WIDTH_STEP_PX) * WIDTH_STEP_PX : 0
+}
+
 export function PdfPage({ url, imageUrl, pageNumber, aspectRatio = 16 / 9, lazy = true, className, label, children }: PdfPageProps) {
   const frameRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -36,19 +42,26 @@ export function PdfPage({ url, imageUrl, pageNumber, aspectRatio = 16 / 9, lazy 
   useEffect(() => {
     const frame = frameRef.current
     if (!frame) return
-    const resize = new ResizeObserver((entries) => setWidth(Math.round(entries[0]?.contentRect.width ?? 0)))
+    let pendingFrame = 0
+    const resize = new ResizeObserver((entries) => {
+      const next = renderWidth(entries[0]?.contentRect.width ?? 0)
+      cancelAnimationFrame(pendingFrame)
+      pendingFrame = requestAnimationFrame(() => setWidth(next))
+    })
     resize.observe(frame)
-    if (visible) return () => resize.disconnect()
-    const intersect = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) setVisible(true)
-      },
-      { rootMargin: '200px' },
-    )
-    intersect.observe(frame)
+    const intersect = visible
+      ? null
+      : new IntersectionObserver(
+          (entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) setVisible(true)
+          },
+          { rootMargin: '200px' },
+        )
+    intersect?.observe(frame)
     return () => {
+      cancelAnimationFrame(pendingFrame)
       resize.disconnect()
-      intersect.disconnect()
+      intersect?.disconnect()
     }
   }, [visible])
 
@@ -84,23 +97,20 @@ export function PdfPage({ url, imageUrl, pageNumber, aspectRatio = 16 / 9, lazy 
 
   const outOfRange = !image && Boolean(pdf) && (pageNumber < 1 || pageNumber > (pdf?.numPages ?? 0))
   const failed = image ? false : isError || outOfRange || state === 'error' || (!url && Boolean(failedImage))
+  const renderState = failed ? 'error' : state
+  const name = label ?? `Слайд ${pageNumber}`
+  const accessibleName = failed ? `${name}: нет превью` : name
 
   return (
-    <div
-      ref={frameRef}
-      className={clsx(styles.frame, className)}
-      style={{ aspectRatio: ratio }}
-      role="img"
-      aria-label={label ?? `Слайд ${pageNumber}`}
-      data-state={failed ? 'error' : state}
-    >
+    <div ref={frameRef} className={clsx(styles.frame, className)} style={{ aspectRatio: ratio }} data-state={renderState}>
       {image ? (
-        visible && (
+        visible ? (
           <img
             className={styles.canvas}
             src={image}
-            alt=""
+            alt={accessibleName}
             decoding="async"
+            data-state={renderState}
             onLoad={(event) => {
               const { naturalWidth, naturalHeight } = event.currentTarget
               if (naturalWidth > 0 && naturalHeight > 0) setRatio(naturalWidth / naturalHeight)
@@ -108,11 +118,17 @@ export function PdfPage({ url, imageUrl, pageNumber, aspectRatio = 16 / 9, lazy 
             }}
             onError={() => setFailedImage(image)}
           />
+        ) : (
+          <div className={styles.canvas} role="img" aria-label={accessibleName} data-state={renderState} />
         )
       ) : (
-        <canvas ref={canvasRef} className={styles.canvas} />
+        <canvas ref={canvasRef} className={styles.canvas} role="img" aria-label={accessibleName} data-state={renderState} />
       )}
-      {failed && <span className={styles.fallback}>Нет превью</span>}
+      {failed && (
+        <span className={styles.fallback} aria-hidden>
+          Нет превью
+        </span>
+      )}
       {children && <div className={styles.overlay}>{children}</div>}
     </div>
   )

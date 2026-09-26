@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, isApiError } from '@/shared/api'
+import { pollWithBackoff, type PollableQuery } from '@/shared/lib/polling'
 import { isTerminalState, POLL_INTERVAL_MS } from '../model/state'
 import { retryGeneration } from '../model/tracker'
 import type { GenerationDetail, Job } from '../model/types'
@@ -11,14 +12,8 @@ export const generationKeys = {
   job: (jobId: string) => ['job', jobId] as const,
 }
 
-interface PollableState {
-  status: 'pending' | 'error' | 'success'
-  data: { state: GenerationDetail['state'] } | undefined
-}
-
-function pollUntilTerminal({ state }: { state: PollableState }): number | false {
-  if (state.status === 'error') return false
-  return state.data && isTerminalState(state.data.state) ? false : POLL_INTERVAL_MS
+function pollUntilTerminal(query: PollableQuery<{ state: GenerationDetail['state'] }>): number | false {
+  return pollWithBackoff(query, (data) => !data || !isTerminalState(data.state), POLL_INTERVAL_MS)
 }
 
 export function useGeneration(generationId: string | null | undefined) {

@@ -4,4 +4,5 @@ export const FEATURE_PATHS = {
   pngPreviews: ['features.png_previews', 'previews.slide_png', 'slide_previews'],
   pdfAfterRepair: ['features.pdf_after_repair'],
   modelAuto: ['features.model_auto', 'model_auto'],
+  ruleCatalog: ['features.audit_rules', 'features.rule_catalog', 'features.audit_rule_catalog'],
 } as const satisfies Record<string, readonly string[]>

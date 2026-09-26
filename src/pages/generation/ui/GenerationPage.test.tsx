@@ -109,7 +109,9 @@ describe('GenerationPage', () => {
       expect(screen.getByRole('article', { name: `${name}: В работе` })).toBeInTheDocument()
     }
     expect(screen.getByText('Конвейер в работе')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Отменить' })).not.toBeInTheDocument()
+    const cancel = screen.getByRole('button', { name: 'Отменить' })
+    expect(cancel).toBeDisabled()
+    expect(cancel).toHaveAccessibleDescription(/когда сервис примет запуск/)
     expect(screen.queryByText(/%/)).not.toBeInTheDocument()
   })
 
@@ -172,6 +174,33 @@ describe('GenerationPage', () => {
     expect(retryMutate).toHaveBeenCalledWith(RUN, expect.anything())
     expect(screen.getByTestId('location')).toHaveTextContent(routes.run(PROJECT, 'local-retry-2'))
     expect(screen.getByRole('heading', { level: 1, name: 'Собираем три варианта' })).toBeInTheDocument()
+  })
+
+  it('keeps the timer and shows a calm banner while the connection is lost', async () => {
+    const refetch = vi.fn()
+    const error = new ApiError({ code: 'internal_error', message: 'HTTP 502', status: 502 })
+    useTracker(makeTracker({ generationId: RUN, generation: running, phase: 'running', canCancel: true, error, reconnecting: true, refetch }))
+    renderPage(RUN)
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Нет связи с сервисом — повторяем…' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Собираем три варианта' })).toBeInTheDocument()
+    expect(screen.getByRole('timer')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Проверить сейчас' }))
+    expect(refetch).toHaveBeenCalledTimes(1)
+    expect(retryMutate).not.toHaveBeenCalled()
+  })
+
+  it('refetches the status instead of starting a new run when only the status request failed', async () => {
+    const refetch = vi.fn()
+    const error = new ApiError({ code: 'not_found', message: 'Прогон не найден', status: 404 })
+    useTracker(makeTracker({ generationId: RUN, phase: 'failed', error, refetch }))
+    renderPage(RUN)
+
+    await userEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: 'Повторить' }))
+    expect(refetch).toHaveBeenCalledTimes(1)
+    expect(retryMutate).not.toHaveBeenCalled()
   })
 
   it('offers only the way back when a rejected request produced no run', () => {

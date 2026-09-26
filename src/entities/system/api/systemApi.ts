@@ -14,10 +14,19 @@ export const systemKeys = {
   health: () => ['system', 'health'] as const,
 }
 
+export function fetchCapabilities(): Promise<Capabilities> {
+  return unwrap(api.GET('/api/v1/capabilities'))
+}
+
+export async function supportsFeature(paths: readonly string[]): Promise<boolean> {
+  const capabilities = await fetchCapabilities()
+  return paths.some((path) => isCapabilityAvailable(capabilities, path))
+}
+
 export function useCapabilities() {
   return useQuery({
     queryKey: systemKeys.capabilities(),
-    queryFn: (): Promise<Capabilities> => unwrap(api.GET('/api/v1/capabilities')),
+    queryFn: fetchCapabilities,
     staleTime: STATIC_STALE_TIME_MS,
   })
 }

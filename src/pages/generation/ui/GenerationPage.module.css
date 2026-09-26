@@ -13,6 +13,7 @@
   flex: none;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   height: 40px;
   padding: 0 16px;
   border: 1px solid transparent;

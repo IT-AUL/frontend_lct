@@ -15,7 +15,8 @@ export function GenerationProgress({ tracker }: GenerationProgressProps) {
   const { phase, startedAt, finishedAt, generation, job, jobError } = tracker
   const cards = variantCards(phase, generation?.variants)
   const failure = phase === 'failed' ? describeFailure(tracker) : null
-  const pipeline = pipelineView({ phase, stage: job?.stage, failedStage: jobError?.stage })
+  const runningStage = generation?.variants.find((variant) => variant.status === 'running' && variant.stage)?.stage
+  const pipeline = pipelineView({ phase, stage: job?.stage ?? runningStage, failedStage: jobError?.stage })
   const ticking = phase === 'submitting' || phase === 'running'
 
   return (
