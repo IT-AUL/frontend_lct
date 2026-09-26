@@ -1,6 +1,7 @@
 import { ruleMeta, type RuleCategory } from '../model/rules'
-import type { AuditIssue } from '../model/types'
-import { canAutoFix, checkKind, groupByCategory, groupBySlide, isCriticalIssue, issueSignature, type IssueFilter } from './issues'
+import { SEVERITY } from '../model/severity'
+import type { AuditIssue, Severity } from '../model/types'
+import { canAutoFix, checkKind, formatMeasurement, groupByCategory, groupBySlide, isCriticalIssue, issueSignature, type IssueFilter } from './issues'
 import type { JournalEntry } from './journal'
 
 export type DisplayStatus = 'open' | 'selected' | 'fixed' | 'unresolved' | 'dismissed'
@@ -100,15 +101,38 @@ export interface IssueViewGroup {
   key: string
   label: string
   views: IssueView[]
+  severity?: Severity
 }
 
-export type IssueGrouping = 'slide' | 'category'
+export type IssueGrouping = 'rule' | 'slide' | 'category'
+
+function worstSeverity(views: readonly IssueView[]): Severity {
+  return views.reduce<Severity>((worst, view) => (SEVERITY[view.issue.severity].order < SEVERITY[worst].order ? view.issue.severity : worst), 'info')
+}
+
+function groupByRule(views: readonly IssueView[]): IssueViewGroup[] {
+  const byRule = new Map<string, IssueView[]>()
+  const ordered = [...views].sort(
+    (a, b) => SEVERITY[a.issue.severity].order - SEVERITY[b.issue.severity].order || (a.issue.slide_index ?? -1) - (b.issue.slide_index ?? -1),
+  )
+  for (const view of ordered) byRule.set(view.issue.rule_code, [...(byRule.get(view.issue.rule_code) ?? []), view])
+  return [...byRule.entries()]
+    .map(([ruleCode, items]) => ({ key: issueGroupKey(items[0]?.issue as AuditIssue, 'rule'), label: ruleMeta(ruleCode).name, views: items, severity: worstSeverity(items) }))
+    .sort((a, b) => SEVERITY[a.severity].order - SEVERITY[b.severity].order || b.views.length - a.views.length || a.label.localeCompare(b.label, 'ru'))
+}
+
+export function issueGroupKey(issue: AuditIssue, grouping: IssueGrouping): string {
+  if (grouping === 'rule') return `rule:${issue.rule_code}`
+  if (grouping === 'slide') return `slide-${issue.slide_index === null || issue.slide_index === undefined ? 0 : issue.slide_index + 1}`
+  return ruleMeta(issue.rule_code).category
+}
 
 export function groupIssueViews(
   views: readonly IssueView[],
   grouping: IssueGrouping,
   titleOf: (slideNumber: number) => string | undefined = () => undefined,
 ): IssueViewGroup[] {
+  if (grouping === 'rule') return groupByRule(views)
   const byIssue = new Map(views.map((view) => [view.issue, view]))
   const issues = views.map((view) => view.issue)
   const groups = grouping === 'slide' ? groupBySlide(issues, titleOf) : groupByCategory(issues)
@@ -119,8 +143,56 @@ export function groupIssueViews(
   }))
 }
 
+export interface IssueCluster {
+  key: string
+  primary: IssueView
+  views: IssueView[]
+}
+
+function clusterSignature(view: IssueView): string {
+  const { issue } = view
+  return [
+    issue.rule_code,
+    issue.slide_index ?? '-',
+    formatMeasurement(issue.measured_value),
+    formatMeasurement(issue.threshold),
+    issue.severity,
+    isPendingStatus(view.status) ? 'pending' : view.status,
+    view.selectable ? 'auto' : 'manual',
+  ].join('|')
+}
+
+export function clusterIssueViews(views: readonly IssueView[]): IssueCluster[] {
+  const clusters = new Map<string, IssueView[]>()
+  for (const view of views) {
+    const signature = clusterSignature(view)
+    const bucket = clusters.get(signature)
+    if (bucket) bucket.push(view)
+    else clusters.set(signature, [view])
+  }
+  return [...clusters.values()].map((items) => {
+    const primary = items[0] as IssueView
+    return { key: primary.key, primary, views: items }
+  })
+}
+
+export type SelectionState = 'none' | 'some' | 'all'
+
+export function selectionState(views: readonly IssueView[], selectedIds: ReadonlySet<string>): SelectionState {
+  const selectable = views.filter((view) => view.selectable)
+  const selected = selectable.filter((view) => selectedIds.has(view.issue.id)).length
+  if (selected === 0) return 'none'
+  return selected === selectable.length ? 'all' : 'some'
+}
+
 export function countOpenCritical(views: readonly IssueView[]): number {
   return views.filter((view) => isPendingStatus(view.status) && isCriticalIssue(view.issue)).length
+}
+
+export function countOpenBySeverity(views: readonly IssueView[]): Record<Severity, number> {
+  const counts: Record<Severity, number> = { blocker: 0, error: 0, warning: 0, info: 0 }
+  for (const view of views) if (isPendingStatus(view.status)) counts[view.issue.severity] += 1
+  return counts
 }
 
 export function countByCategory(views: readonly IssueView[]): Record<RuleCategory, number> {

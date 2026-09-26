@@ -1,17 +1,20 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useEffectEvent, useState, type ReactNode } from 'react'
+import { useEffect, useEffectEvent, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import {
   auditIssuesQuery,
   buildIssueViews,
   checkKind,
+  clusterIssueViews,
   countByCategory,
-  countOpenCritical,
+  countOpenBySeverity,
   DEFAULT_VIEW_FILTER,
   dismissalEntry,
   filterIssueViews,
   groupIssueViews,
   isPendingStatus,
+  issueGroupKey,
+  reportOpenCounts,
   ruleMeta,
   selectableIds,
   SEVERITY,
@@ -36,16 +39,20 @@ import { RepairBar, selectionKey, useRepairPreview, useRepairSelected } from '@/
 import { useIssueSelection } from '@/features/select-issues'
 import { useVariantFiles } from '@/features/variant-files'
 import { routes } from '@/shared/config'
+import { pluralize } from '@/shared/lib/format'
 import { Button, EmptyState, Skeleton, useToast } from '@/shared/ui'
+import { shouldIgnoreShortcut } from '../lib/keyboard'
+import { useStableCallback } from '../lib/useStableCallback'
 import { appendJournal, useVariantJournal } from '../model/journalStore'
 import { AuditSummary, PolicyStrip } from './AuditSummary'
 import { IssueFilters } from './IssueFilters'
-import { IssueList } from './IssueList'
+import { IssueList, type ClusteredGroup } from './IssueList'
 import { IssuePanel, type PanelTab } from './IssuePanel'
 import { JournalList } from './JournalList'
 import { ReauditBanner } from './ReauditBanner'
 import { SlideFilmstrip, type FilmstripSlide } from './SlideFilmstrip'
 import styles from './AuditWorkspace.module.css'
+import panelStyles from './IssuePanel.module.css'
 
 export type StageMode = 'slide' | 'compare'
 
@@ -61,6 +68,7 @@ export interface AuditStageProps {
   views: readonly IssueView[]
   journal: readonly JournalEntry[]
   activeKey: string | null
+  linkedKeys: readonly string[]
   hoverKey: string | null
   mode: StageMode
   onModeChange: (mode: StageMode) => void
@@ -78,6 +86,12 @@ interface AuditWorkspaceProps {
   renderStage: (stage: AuditStageProps) => ReactNode
 }
 
+interface ReauditSnapshot {
+  errorsBefore: number
+}
+
+const EMPTY_ISSUES: AuditIssue[] = []
+
 const errorText = (error: unknown) => (error instanceof Error ? error.message : 'неизвестная ошибка')
 
 const onSlide = (view: IssueView, number: number) => view.issue.slide_index === number - 1
@@ -88,6 +102,8 @@ function worstSeverity(views: readonly IssueView[]): Severity | null {
     return worst
   }, null)
 }
+
+const expandedByDefault = (grouping: IssueGrouping) => grouping !== 'rule'
 
 export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChange, renderStage }: AuditWorkspaceProps) {
   const navigate = useNavigate()
@@ -105,24 +121,25 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
   const stored = useVariantJournal(variantId)
 
   const [filter, setFilter] = useState<IssueViewFilter>(DEFAULT_VIEW_FILTER)
-  const [grouping, setGrouping] = useState<IssueGrouping>('slide')
+  const [grouping, setGrouping] = useState<IssueGrouping>('rule')
+  const [groupOverrides, setGroupOverrides] = useState<ReadonlyMap<string, boolean>>(new Map())
   const [tab, setTab] = useState<PanelTab>('issues')
   const [mode, setMode] = useState<StageMode>('slide')
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const [hoverKey, setHoverKey] = useState<string | null>(null)
-  const [reaudited, setReaudited] = useState(false)
+  const [reaudit, setReaudit] = useState<ReauditSnapshot | null>(null)
   const [bannerOpen, setBannerOpen] = useState(true)
   const [reauditPending, setReauditPending] = useState(false)
 
   const revision = audit?.deck_revision ?? 1
-  const journal = stored.entries.filter((entry) => entry.revision <= revision)
+  const journal = useMemo(() => stored.entries.filter((entry) => entry.revision <= revision), [stored.entries, revision])
   const batches = stored.batches.filter((batch) => batch.revision <= revision)
-  const issues = issuesQuery.data ?? []
-  const baseViews = buildIssueViews(issues, journal)
+  const issues = issuesQuery.data ?? EMPTY_ISSUES
+  const baseViews = useMemo(() => buildIssueViews(issues, journal), [issues, journal])
   const selection = useIssueSelection(selectableIds(baseViews))
   const dryRunAvailable = useCapabilityFlag(FEATURE_PATHS.repairDryRun)
   const repairPreview = useRepairPreview(audit?.id)
-  const views = withSelection(baseViews, selection.selectedIds)
+  const views = useMemo(() => withSelection(baseViews, selection.selectedIds), [baseViews, selection.selectedIds])
   const selectedIssues = views.filter((view) => view.status === 'selected').map((view) => view.issue)
 
   const repair = useRepairSelected({
@@ -143,23 +160,33 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
   const currentSlide = Math.min(Math.max(slide ?? firstTroubled ?? 1, 1), slideCount)
 
   const filtered = filterIssueViews(views, filter)
-  const groups = groupIssueViews(filtered, grouping, titleOf)
-  const flat = groups.flatMap((group) => group.views)
+  const groups: ClusteredGroup[] = groupIssueViews(filtered, grouping, titleOf).map((group) => ({ ...group, clusters: clusterIssueViews(group.views) }))
+  const clusters = groups.flatMap((group) => group.clusters)
   const statusScoped = filterIssueViews(views, { ...DEFAULT_VIEW_FILTER, status: filter.status })
   const effectiveActive = views.some((view) => view.key === activeKey) ? activeKey : null
+  const activeCluster = effectiveActive ? clusters.find((cluster) => cluster.views.some((view) => view.key === effectiveActive)) : undefined
+  const linkedKeys = activeCluster ? activeCluster.views.map((view) => view.key) : []
+  const isExpanded = (groupKey: string) => groupOverrides.get(`${grouping}|${groupKey}`) ?? expandedByDefault(grouping)
+  const expanded = new Set(groups.filter((group) => isExpanded(group.key)).map((group) => group.key))
 
-  const severityCounts: Record<Severity, number> = { blocker: 0, error: 0, warning: 0, info: 0 }
-  for (const view of pending) severityCounts[view.issue.severity] += 1
+  const severityCounts = countOpenBySeverity(views)
   const kindCounts = {
     D: pending.filter((view) => checkKind(view.issue) === 'D').length,
     N: pending.filter((view) => checkKind(view.issue) === 'N').length,
   }
-  const openCritical = countOpenCritical(views)
+  const fixableCount = selectableIds(views).length
+  const ruleCount = new Set(pending.map((view) => view.issue.rule_code)).size
   const stats = {
     fixed: views.filter((view) => view.status === 'fixed').length,
     dismissed: views.filter((view) => view.status === 'dismissed').length,
     failed: views.filter((view) => view.status === 'unresolved').length,
   }
+  const hasProvider = Boolean(session) || modelAuto
+  const loaded = Boolean(audit) && issuesQuery.isSuccess
+
+  useEffect(() => {
+    if (loaded) reportOpenCounts(projectId, { blocker: severityCounts.blocker, error: severityCounts.error }, runId)
+  }, [loaded, projectId, runId, severityCounts.blocker, severityCounts.error])
 
   const filmstrip: FilmstripSlide[] = Array.from({ length: slideCount }, (_, index) => {
     const number = index + 1
@@ -171,37 +198,41 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
   const stageJournal = journal.filter((entry) => entry.issue.slide_index === currentSlide - 1)
   const exportHref = routes.export(projectId, runId, variantId)
 
+  const setGroupOpen = (groupKey: string, open: boolean) =>
+    setGroupOverrides((current) => new Map(current).set(`${grouping}|${groupKey}`, open))
+
   const activate = (key: string, toggle = false) => {
-    if (toggle && key === effectiveActive) {
+    if (toggle && activeCluster?.views.some((view) => view.key === key)) {
       setActiveKey(null)
       return
     }
     const view = views.find((candidate) => candidate.key === key)
     setActiveKey(key)
     setTab('issues')
-    if (view && !flat.includes(view)) setFilter((current) => ({ ...current, status: 'all' }))
-    const number = view ? slideNumber(view.issue) : null
+    if (!view) return
+    if (!filtered.includes(view)) setFilter((current) => ({ ...current, status: 'all' }))
+    const groupKey = issueGroupKey(view.issue, grouping)
+    if (!isExpanded(groupKey)) setGroupOpen(groupKey, true)
+    const number = slideNumber(view.issue)
     if (number && number !== currentSlide) onSlideChange(number)
   }
 
   const pickSlide = (number: number) => {
     const next = Math.min(Math.max(number, 1), slideCount)
     onSlideChange(next)
-    setActiveKey(flat.find((view) => onSlide(view, next))?.key ?? null)
+    setActiveKey(clusters.find((cluster) => onSlide(cluster.primary, next))?.key ?? null)
   }
 
   const stepIssue = (delta: 1 | -1) => {
-    if (flat.length === 0) return
-    const index = flat.findIndex((view) => view.key === effectiveActive)
-    const nextIndex = index === -1 ? (delta === 1 ? 0 : flat.length - 1) : Math.min(Math.max(index + delta, 0), flat.length - 1)
-    const next = flat[nextIndex]
+    if (clusters.length === 0) return
+    const index = clusters.findIndex((cluster) => cluster.views.some((view) => view.key === effectiveActive))
+    const nextIndex = index === -1 ? (delta === 1 ? 0 : clusters.length - 1) : Math.min(Math.max(index + delta, 0), clusters.length - 1)
+    const next = clusters[nextIndex]
     if (next) activate(next.key)
   }
 
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
-    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
-    const target = event.target instanceof Element ? event.target : null
-    if (target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return
+    if (shouldIgnoreShortcut(event)) return
     const actions: Record<string, () => void> = {
       j: () => stepIssue(1),
       ArrowDown: () => stepIssue(1),
@@ -210,8 +241,12 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
       ArrowRight: () => pickSlide(currentSlide + 1),
       ArrowLeft: () => pickSlide(currentSlide - 1),
       x: () => {
-        const view = views.find((candidate) => candidate.key === effectiveActive)
-        if (view?.selectable) selection.toggle(view.issue.id)
+        const cluster = clusters.find((candidate) => candidate.views.some((view) => view.key === effectiveActive))
+        if (!cluster?.primary.selectable) return
+        selection.setMany(
+          cluster.views.map((view) => view.issue.id),
+          cluster.primary.status !== 'selected',
+        )
       },
       Escape: () => setActiveKey(null),
     }
@@ -227,20 +262,22 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
     return () => window.removeEventListener('keydown', listener)
   }, [])
 
-  const settleReaudit = (fresh: readonly AuditIssue[], entries: readonly JournalEntry[]) => {
-    setReaudited(true)
+  const settleReaudit = (fresh: readonly AuditIssue[], entries: readonly JournalEntry[], freshRevision: number, errorsBefore: number) => {
+    setReaudit({ errorsBefore })
     setBannerOpen(true)
-    if (countOpenCritical(buildIssueViews(fresh, entries)) === 0) markEvidence(projectId, 'reaudited')
+    const counts = countOpenBySeverity(buildIssueViews(fresh, entries))
+    if (counts.blocker === 0 && freshRevision > 1) markEvidence(projectId, 'reaudited')
   }
 
   const runRepair = async (targets: readonly AuditIssue[]) => {
     if (targets.length === 0 || repair.isPending) return
+    const errorsBefore = severityCounts.error
     try {
       const result = await repair.run(targets)
       appendJournal(variantId, result.entries, result.batch)
       selection.clear()
       setTab('journal')
-      settleReaudit(result.reaudit, [...journal, ...result.entries])
+      settleReaudit(result.reaudit, [...journal, ...result.entries], result.batch.revision, errorsBefore)
       const { fixed, unresolved } = result.batch
       toast.show(`Ревизия r${result.batch.revision}: исправлено ${fixed}${unresolved > 0 ? `, не удалось ${unresolved}` : ''}`)
     } catch (error) {
@@ -250,10 +287,11 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
 
   const runReaudit = async () => {
     setReauditPending(true)
+    const errorsBefore = severityCounts.error
     try {
       const { data: fresh } = await auditQuery.refetch({ throwOnError: true })
       const freshIssues = fresh ? await queryClient.fetchQuery({ ...auditIssuesQuery(fresh.id), staleTime: 0 }) : []
-      settleReaudit(freshIssues, journal)
+      settleReaudit(freshIssues, journal, fresh?.deck_revision ?? revision, errorsBefore)
     } catch (error) {
       toast.show(`Повторный аудит не удался: ${errorText(error)}`)
     } finally {
@@ -262,10 +300,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
   }
 
   const runContextual = () => {
-    if (!session && !modelAuto) {
-      toast.show('Для смысловых проверок подключите модель — кнопка «Модели» в шапке.')
-      return
-    }
+    if (!hasProvider) return
     if (audit?.contextual_status === 'completed') {
       toast.show('Контекстные проверки для этой ревизии уже выполнены')
       return
@@ -277,10 +312,18 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
     })
   }
 
-  const onDismissed = (issue: AuditIssue, reason: string) => {
-    appendJournal(variantId, [dismissalEntry(issue, reason, revision)])
-    toast.show(`Отклонено: ${ruleMeta(issue.rule_code).name}`)
-  }
+  const onActivateCard = useStableCallback((key: string) => activate(key, true))
+  const onRepairCard = useStableCallback((targets: readonly AuditIssue[]) => void runRepair(targets))
+  const onDismissed = useStableCallback((dismissed: readonly AuditIssue[], reason: string) => {
+    if (dismissed.length === 0) return
+    appendJournal(
+      variantId,
+      dismissed.map((issue) => dismissalEntry(issue, reason, revision)),
+    )
+    const name = ruleMeta((dismissed[0] as AuditIssue).rule_code).name
+    toast.show(`Отклонено: ${name}${dismissed.length > 1 ? ` ×${dismissed.length}` : ''}`)
+  })
+  const onToggleGroup = useStableCallback((groupKey: string) => setGroupOpen(groupKey, !isExpanded(groupKey)))
 
   const toggleCategory = (category: RuleCategory) => {
     setFilter((current) => ({ ...current, category: current.category === category ? 'all' : category }))
@@ -314,8 +357,8 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
         audit={audit}
         severityCounts={severityCounts}
         kindCounts={kindCounts}
-        fixableCount={selectableIds(views).length}
-        hasProvider={Boolean(session) || modelAuto}
+        fixableCount={fixableCount}
+        hasProvider={hasProvider}
         contextualPending={contextual.isPending}
         onRunContextual={runContextual}
         reauditPending={reauditPending}
@@ -323,8 +366,15 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
         exportHref={exportHref}
       />
       <PolicyStrip counts={countByCategory(views)} audit={audit} active={filter.category} onToggle={toggleCategory} />
-      {reaudited && bannerOpen && (
-        <ReauditBanner revision={revision} openCritical={openCritical} stats={stats} exportHref={exportHref} onClose={() => setBannerOpen(false)} />
+      {reaudit && bannerOpen && (
+        <ReauditBanner
+          revision={revision}
+          blockers={severityCounts.blocker}
+          errors={{ before: reaudit.errorsBefore, after: severityCounts.error }}
+          stats={stats}
+          exportHref={exportHref}
+          onClose={() => setBannerOpen(false)}
+        />
       )}
       <div className={styles.grid}>
         <SlideFilmstrip slides={filmstrip} current={currentSlide} pdfUrl={files.pdfUrl} onPick={pickSlide} />
@@ -341,6 +391,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
             views: stageViews,
             journal: stageJournal,
             activeKey: effectiveActive,
+            linkedKeys,
             hoverKey,
             mode,
             onModeChange: setMode,
@@ -356,6 +407,15 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
           journalCount={journal.length}
           issues={
             <>
+              <p className={panelStyles.headline} aria-live="polite">
+                <b>
+                  {pending.length} {pluralize(pending.length, ['находка', 'находки', 'находок'])}
+                </b>
+                <span>
+                  · {ruleCount} {pluralize(ruleCount, ['правило', 'правила', 'правил'])}
+                </span>
+                <span>· {fixableCount} исправимо</span>
+              </p>
               <IssueFilters
                 filter={filter}
                 onFilterChange={setFilter}
@@ -369,19 +429,23 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
               />
               <IssueList
                 groups={groups}
+                grouping={grouping}
+                expanded={expanded}
+                onToggleGroup={onToggleGroup}
+                selectedIds={selection.selectedIds}
                 activeKey={effectiveActive}
                 hoverKey={hoverKey}
                 auditId={audit.id}
                 repairPending={repair.isPending}
-                onActivate={(key) => activate(key, true)}
+                onActivate={onActivateCard}
                 onHover={setHoverKey}
-                onToggleSelect={selection.toggle}
-                onRepairOne={(issue) => void runRepair([issue])}
+                onSelect={selection.setMany}
+                onRepair={onRepairCard}
                 onDismissed={onDismissed}
               />
               <RepairBar
                 selectedCount={selection.count}
-                fixableCount={selectableIds(views).length}
+                fixableCount={fixableCount}
                 pending={repair.isPending}
                 onSelectAll={selection.selectAll}
                 onClear={selection.clear}

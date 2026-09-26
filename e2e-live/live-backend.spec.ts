@@ -71,6 +71,7 @@ test('live backend: template, brief, three variants, audit repair, export', asyn
     await page.getByRole('region', { name: 'Сбалансированный' }).getByRole('link', { name: 'Открыть и проверить' }).click()
     await expect(page.getByRole('region', { name: 'Сводка аудита' })).toBeVisible()
     const panel = page.getByRole('complementary', { name: 'Проблемы' })
+    await panel.getByRole('radio', { name: 'По слайдам' }).click()
     const selectable = panel.getByRole('checkbox', { name: /^Выбрать для исправления/ })
     await expect(selectable.first()).toBeVisible()
     await selectable.nth(0).check()

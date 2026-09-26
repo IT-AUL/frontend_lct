@@ -38,6 +38,11 @@ describe('buildProofChain', () => {
     expect(chain).toHaveLength(8)
     expect(chain.filter((link) => link.done).map((link) => link.label)).toEqual(['Неизвестный PPTX', 'Извлечённые правила'])
   })
+
+  it('closes the chain with a re-audit without blockers', () => {
+    const chain = buildProofChain({ ...base, hasTemplate: true, reaudited: true })
+    expect(chain.at(-1)).toEqual({ label: 'Повторный аудит: 0 блокеров', done: true })
+  })
 })
 
 describe('stepFromPath', () => {

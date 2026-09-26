@@ -109,7 +109,7 @@ export function buildProofChain(progress: ProjectProgress): ProofLink[] {
     { label: 'Подсвеченные нарушения', done: progress.generated },
     { label: 'Выбранные исправления', done: progress.repaired },
     { label: 'Нативный PPTX', done: progress.exported },
-    { label: 'Повторный аудит: 0 критичных', done: progress.reaudited },
+    { label: 'Повторный аудит: 0 блокеров', done: progress.reaudited },
   ]
 }
 

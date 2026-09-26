@@ -1,6 +1,6 @@
 import { clsx } from 'clsx'
 import { CATEGORY_LABEL, SEVERITY, SEVERITY_ORDER, type IssueGrouping, type IssueViewFilter } from '@/entities/audit'
-import { Checkbox, Icon, X } from '@/shared/ui'
+import { Check, Icon, X } from '@/shared/ui'
 import styles from './IssuePanel.module.css'
 
 interface Option<T extends string> {
@@ -41,6 +41,7 @@ const SEVERITY_OPTIONS: readonly Option<IssueViewFilter['severity']>[] = [
 ]
 
 const GROUPING_OPTIONS: readonly Option<IssueGrouping>[] = [
+  { value: 'rule', label: 'По правилам' },
   { value: 'slide', label: 'По слайдам' },
   { value: 'category', label: 'По категориям' },
 ]
@@ -81,7 +82,18 @@ export function IssueFilters({ filter, onFilterChange, grouping, onGroupingChang
         <ChipGroup label="Группировка" variant="chip" options={GROUPING_OPTIONS} value={grouping} onChange={onGroupingChange} />
         <span className={styles.divider} aria-hidden />
         <ChipGroup label="Статус" variant="chip" options={STATUS_OPTIONS} value={filter.status} onChange={(status) => update({ status })} />
-        <Checkbox size="sm" visibleLabel label="только исправимые" checked={filter.fixableOnly} onChange={(fixableOnly) => update({ fixableOnly })} />
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={filter.fixableOnly}
+          className={styles.toggleChip}
+          onClick={() => update({ fixableOnly: !filter.fixableOnly })}
+        >
+          <span className={styles.toggleBox} aria-hidden>
+            {filter.fixableOnly && <Icon as={Check} size={10} strokeWidth={3} />}
+          </span>
+          только исправимые
+        </button>
       </div>
       {filter.category !== 'all' && (
         <div className={styles.filterRow}>

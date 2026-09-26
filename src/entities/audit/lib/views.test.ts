@@ -2,9 +2,14 @@ import { variantFixtures as fixtures } from '@/shared/api/mocks'
 import type { AuditIssue } from '../model/types'
 import { canAutoFix, issueSignature } from './issues'
 import { diffRepair, dismissalEntry } from './journal'
-import { describeMeasurement } from './measurement'
+import { describeMeasurement, measurementSentence } from './measurement'
 import {
   buildIssueViews,
+  clusterIssueViews,
+  countOpenBySeverity,
+  issueGroupKey,
+  selectionState,
+  type IssueView,
   countByCategory,
   countOpenCritical,
   DEFAULT_VIEW_FILTER,
@@ -107,10 +112,68 @@ describe('describeMeasurement', () => {
 
   it('keeps raw values for other rules', () => {
     expect(describeMeasurement({ rule_code: 'image.aspect_ratio', measured_value: 0.381, threshold: '0.334 ±3%' })).toEqual({
-      measured: '0.38',
+      quantity: 'Пропорции картинки',
+      measured: '0.381',
       threshold: '0.334 ±3%',
       hasValue: true,
     })
     expect(describeMeasurement({ rule_code: 'content.spelling', measured_value: null, threshold: null }).hasValue).toBe(false)
+    expect(describeMeasurement({ rule_code: 'vendor.unknown', measured_value: 2.5, threshold: 3 })).toMatchObject({ quantity: null, measured: '2.5', threshold: '3' })
+  })
+
+  it('describes text overflow in points', () => {
+    expect(measurementSentence({ rule_code: 'text.overflow', measured_value: 73.2, threshold: 13 })).toBe('Текст занимает 73.2 pt, норма ≤ 13 pt')
+    expect(measurementSentence({ rule_code: 'accessibility.contrast', measured_value: 3.23, threshold: 4.5 })).toBe('Контраст 3.23:1, норма ≥ 4.5:1')
+    expect(measurementSentence({ rule_code: 'content.spelling', measured_value: null, threshold: null })).toBeNull()
+  })
+})
+
+describe('rule grouping', () => {
+  const views = buildIssueViews(issues, [])
+
+  it('groups by rule, most severe and most frequent first', () => {
+    const groups = groupIssueViews(views, 'rule')
+    expect(groups.map((group) => [group.key, group.views.length])).toEqual([
+      ['rule:text.overflow', 23],
+      ['rule:accessibility.contrast', 18],
+      ['rule:image.aspect_ratio', 10],
+      ['rule:text.font_floor', 3],
+      ['rule:template.font_scale', 51],
+      ['rule:template.color_palette', 3],
+    ])
+    expect(groups[0]).toMatchObject({ label: 'Текст не помещается в рамку', severity: 'error' })
+    expect(groups.reduce((sum, group) => sum + group.views.length, 0)).toBe(views.length)
+    for (const group of groups) for (const view of group.views) expect(issueGroupKey(view.issue, 'rule')).toBe(group.key)
+  })
+
+  it('collapses identical findings on the same slide into one cluster', () => {
+    const aspect = views.filter((view) => view.issue.rule_code === 'image.aspect_ratio' && view.issue.slide_index === 2)
+    expect(aspect).toHaveLength(5)
+    const clusters = clusterIssueViews(aspect)
+    expect(clusters).toHaveLength(1)
+    expect(clusters[0]?.views).toHaveLength(5)
+    expect(clusters[0]?.key).toBe(aspect[0]?.key)
+    const all = clusterIssueViews(views)
+    expect(all.length).toBeLessThan(views.length)
+    expect(all.reduce((sum, cluster) => sum + cluster.views.length, 0)).toBe(views.length)
+  })
+
+  it('keeps selected and fixed findings apart from open duplicates', () => {
+    const aspect = views.filter((view) => view.issue.rule_code === 'image.aspect_ratio' && view.issue.slide_index === 2)
+    const [first] = aspect as [IssueView]
+    const mixed = withSelection(aspect, new Set([first.issue.id]))
+    expect(clusterIssueViews(mixed.map((view) => (view.key === first.key ? { ...view, status: 'fixed' as const, selectable: false } : view)))).toHaveLength(2)
+  })
+
+  it('reports group selection as none, some or all', () => {
+    const contrast = views.filter((view) => view.issue.rule_code === 'accessibility.contrast')
+    const ids = contrast.map((view) => view.issue.id)
+    expect(selectionState(contrast, new Set())).toBe('none')
+    expect(selectionState(contrast, new Set(ids.slice(0, 2)))).toBe('some')
+    expect(selectionState(contrast, new Set(ids))).toBe('all')
+  })
+
+  it('counts open findings by severity', () => {
+    expect(countOpenBySeverity(views)).toEqual({ blocker: 0, error: 54, warning: 54, info: 0 })
   })
 })

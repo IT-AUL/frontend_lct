@@ -5,27 +5,37 @@ import { DISMISS_REASONS } from '../model/reasons'
 import styles from './DismissIssueForm.module.css'
 
 interface DismissIssueFormProps {
-  issue: AuditIssue
+  issues: readonly AuditIssue[]
   auditId: string
   initialReason?: string
-  onDismissed: (issue: AuditIssue, reason: string) => void
+  onDismissed: (issues: AuditIssue[], reason: string) => void
   onCancel: () => void
 }
 
-export function DismissIssueForm({ issue, auditId, initialReason = '', onDismissed, onCancel }: DismissIssueFormProps) {
+export function DismissIssueForm({ issues, auditId, initialReason = '', onDismissed, onCancel }: DismissIssueFormProps) {
   const [reason, setReason] = useState(initialReason)
+  const [busy, setBusy] = useState(false)
   const dismiss = useDismissIssue(auditId)
   const titleId = useId()
   const trimmed = reason.trim()
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault()
-    if (!trimmed || dismiss.isPending) return
-    dismiss.mutate({ issueId: issue.id, reason: trimmed }, { onSuccess: (updated) => onDismissed(updated, trimmed) })
+    if (!trimmed || busy) return
+    setBusy(true)
+    const updated: AuditIssue[] = []
+    try {
+      for (const issue of issues) updated.push(await dismiss.mutateAsync({ issueId: issue.id, reason: trimmed }))
+    } catch {
+      setBusy(false)
+      return
+    }
+    setBusy(false)
+    onDismissed(updated, trimmed)
   }
 
   return (
-    <form className={styles.form} onSubmit={submit} aria-labelledby={titleId}>
+    <form className={styles.form} onSubmit={(event) => void submit(event)} aria-labelledby={titleId}>
       <div id={titleId} className={styles.title}>
         Причина отклонения — обязательно
       </div>
@@ -56,8 +66,8 @@ export function DismissIssueForm({ issue, auditId, initialReason = '', onDismiss
         </div>
       )}
       <div className={styles.actions}>
-        <button type="submit" className={styles.confirm} disabled={!trimmed || dismiss.isPending}>
-          {dismiss.isPending ? 'Отклоняю…' : 'Отклонить'}
+        <button type="submit" className={styles.confirm} disabled={!trimmed || busy}>
+          {busy ? 'Отклоняю…' : issues.length > 1 ? `Отклонить все (${issues.length})` : 'Отклонить'}
         </button>
         <button type="button" className={styles.cancel} onClick={onCancel}>
           Отмена

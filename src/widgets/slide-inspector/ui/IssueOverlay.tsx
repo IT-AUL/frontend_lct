@@ -11,7 +11,10 @@ export interface OverlayItem {
 interface IssueOverlayProps {
   items: readonly OverlayItem[]
   activeKey?: string | null
+  linkedKeys?: readonly string[]
   hoverKey?: string | null
+  stale?: boolean
+  showAll?: boolean
   onPick?: (key: string) => void
   onHover?: (key: string | null) => void
 }
@@ -24,18 +27,20 @@ function tagPlacement(y: number, h: number): 'above' | 'below' | 'inside' {
   return 'inside'
 }
 
-export function IssueOverlay({ items, activeKey, hoverKey, onPick, onHover }: IssueOverlayProps) {
+export function IssueOverlay({ items, activeKey, linkedKeys = [], hoverKey, stale = false, showAll = true, onPick, onHover }: IssueOverlayProps) {
+  const isHighlighted = (key: string) => key === activeKey || key === hoverKey || linkedKeys.includes(key)
   const placed = items
     .map((item) => ({ ...item, box: clampBox(item.issue.clipped_bbox ?? item.issue.bbox) }))
-    .filter((item) => item.box !== null)
+    .filter((item) => item.box !== null && (showAll || isHighlighted(item.key)))
     .sort((a, b) => Number(a.key === activeKey) - Number(b.key === activeKey))
+  const focused = placed.some((item) => isHighlighted(item.key))
 
   return (
-    <div className={styles.layer}>
+    <div className={styles.layer} data-focused={focused || undefined} data-stale={stale || undefined}>
       {placed.map(({ key, issue, status, box }) => {
         if (!box) return null
         const active = key === activeKey
-        const highlighted = active || key === hoverKey
+        const highlighted = isHighlighted(key)
         const name = ruleMeta(issue.rule_code).name
         const label = `${checkKind(issue)} · ${name}${box.clipped ? ' · за краем слайда' : ''}`
         const className = clsx(styles.box, highlighted && styles.highlighted, active && styles.active)
@@ -45,7 +50,7 @@ export function IssueOverlay({ items, activeKey, hoverKey, onPick, onHover }: Is
           'data-severity': issue.severity,
           'data-status': status,
         }
-        const tag = highlighted && (
+        const tag = (active || key === hoverKey) && (
           <span className={styles.tag} data-placement={tagPlacement(box.y, box.h)}>
             {label}
           </span>

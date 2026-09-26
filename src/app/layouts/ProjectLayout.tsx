@@ -1,4 +1,5 @@
 import { Outlet, useLocation, useMatch, useParams } from 'react-router'
+import { useOpenCounts } from '@/entities/audit'
 import { isTrackingId, useGenerationTracker } from '@/entities/generation'
 import { projectRunId, useProject, useProjectEvidence } from '@/entities/project'
 import { readPlanRequest } from '@/features/edit-deck-plan'
@@ -20,6 +21,7 @@ export function ProjectLayout() {
   const runId = runMatch?.params.runId ?? projectRunId(project, projectId)
   const tracker = useGenerationTracker(runId)
   const planFirst = useCapabilityFlag(FEATURE_PATHS.planOnly)
+  const openCounts = useOpenCounts(projectId, runId)
 
   const progress: ProjectProgress = {
     projectId,
@@ -39,7 +41,7 @@ export function ProjectLayout() {
   return (
     <AppFrame
       projectName={project?.name ?? '…'}
-      status={runStatus(step, progress, tracker)}
+      status={runStatus(step, progress, tracker, openCounts)}
       rail={<ProjectRail progress={progress} current={step} compact={COMPACT_STEPS.includes(step)} />}
     >
       <Outlet />

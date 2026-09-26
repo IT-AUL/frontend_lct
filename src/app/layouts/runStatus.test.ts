@@ -38,4 +38,22 @@ describe('runStatus', () => {
   it('shows a running generation while the service works', () => {
     expect(runStatus('run', progress, { phase: 'submitting', generation: undefined, error: null })?.label).toBe('Идёт генерация')
   })
+
+  it('asks for a decision on the audit while critical issues stay open', () => {
+    const done = { phase: 'completed', generation: completed, error: null } as const
+    expect(runStatus('audit', progress, done, { blocker: 1, error: 53 })).toEqual({ label: 'Ждёт решения: 54 критич.', tone: 'warn' })
+    expect(runStatus('export', { ...progress, reaudited: true }, done, { blocker: 0, error: 2 })?.label).toBe('Ждёт решения: 2 критич.')
+  })
+
+  it('turns ok on the audit and export once nothing critical is open', () => {
+    const done = { phase: 'completed', generation: completed, error: null } as const
+    expect(runStatus('audit', { ...progress, reaudited: true }, done, { blocker: 0, error: 0 })).toEqual({ label: 'Повторный аудит пройден', tone: 'ok' })
+    expect(runStatus('export', progress, done, { blocker: 0, error: 0 })).toEqual({ label: 'Готово к экспорту', tone: 'ok' })
+  })
+
+  it('ignores open counts outside the audit and export steps', () => {
+    const done = { phase: 'completed', generation: completed, error: null } as const
+    expect(runStatus('variants', progress, done, { blocker: 3, error: 3 })?.label).toBe('Готово · 3 варианта')
+    expect(runStatus('audit', progress, done, null)?.label).toBe('Готово · 3 варианта')
+  })
 })

@@ -41,6 +41,23 @@ span.box {
   border-style: dashed;
 }
 
+.layer[data-focused] .box:not(.highlighted) {
+  opacity: 0.35;
+}
+
+.layer[data-stale] .box {
+  border-style: dashed;
+  opacity: 0.55;
+}
+
+.layer[data-stale][data-focused] .box:not(.highlighted) {
+  opacity: 0.25;
+}
+
+.layer[data-stale] .highlighted {
+  opacity: 0.85;
+}
+
 .highlighted {
   z-index: 3;
   border-width: 3px;
