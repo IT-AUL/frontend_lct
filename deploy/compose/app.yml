@@ -41,8 +41,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
-    mem_limit: ${API_MEM_LIMIT:-3072m}
-    cpus: ${API_CPUS:-3}
+    mem_limit: ${API_MEM_LIMIT:-5120m}
+    cpus: ${API_CPUS:-4}
     pids_limit: 512
     security_opt:
       - no-new-privileges:true
