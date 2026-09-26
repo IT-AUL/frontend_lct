@@ -110,12 +110,12 @@ describe('ExportFileCard', () => {
     expect(evidence().prj_download_test?.exported).toBe(true)
   })
 
-  it('shows HTML as coming soon without an action when capabilities do not offer it', () => {
+  it('shows HTML honestly as not implemented by the service, without an action', () => {
     renderCard({ format: 'html', file: null, supported: false, fileName: 'deckdna_balanced.html', note: 'Слайды разметкой' })
 
     expect(card()).toHaveAttribute('data-status', 'unavailable')
-    expect(screen.getByText('Скоро')).toBeInTheDocument()
-    expect(screen.getByText('HTML-экспорт недоступен')).toBeInTheDocument()
+    expect(screen.getByText('Не реализовано сервисом')).toBeInTheDocument()
+    expect(screen.getByText('Слайды разметкой')).toBeInTheDocument()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })

@@ -75,3 +75,34 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+.openIssues {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  background: var(--error-bg);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.openIssuesIcon {
+  flex: none;
+  color: var(--error);
+}
+
+.openIssuesText {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+}
+
+.openIssuesLink {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
+  align-items: center;
+  color: var(--ink);
+  font-weight: 500;
+}

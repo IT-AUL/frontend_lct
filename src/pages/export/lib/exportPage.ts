@@ -1,6 +1,8 @@
+import { isCriticalIssue, isOpenIssue, type AuditIssue, type AuditRun } from '@/entities/audit'
 import type { ExportFormat, QualityPassport } from '@/entities/passport'
 import { isCapabilityAvailable, type Capabilities } from '@/entities/system'
 import { DEFAULT_STRATEGY, orderVariants, type DeckFile, type VariantSummary } from '@/entities/variant'
+import { formatNumber, pluralize } from '@/shared/lib/format'
 
 const HTML_CAPABILITY_PATHS = ['features.html_export', 'exporters.html', 'exports.html', 'exports.formats.html', 'export_formats.html', 'formats.html', 'export.html', 'html_export'] as const
 
@@ -51,4 +53,36 @@ export function withPassportMeta(file: DeckFile | null, passport: QualityPasspor
 export function currentRevisionOf(auditRevision: number | null | undefined, files: readonly (DeckFile | null)[]): number | null {
   const revisions = [auditRevision, ...files.map((file) => file?.deckRevision)].filter((value): value is number => typeof value === 'number')
   return revisions.length > 0 ? Math.max(...revisions) : null
+}
+
+export interface OpenCritical {
+  blockers: number
+  errors: number
+}
+
+export function openCriticalCounts(issues: readonly AuditIssue[] | undefined, audit: Pick<AuditRun, 'summary_by_severity'> | undefined): OpenCritical | null {
+  if (issues) {
+    const open = issues.filter((issue) => isOpenIssue(issue) && isCriticalIssue(issue))
+    return {
+      blockers: open.filter((issue) => issue.severity === 'blocker').length,
+      errors: open.filter((issue) => issue.severity === 'error').length,
+    }
+  }
+  if (!audit) return null
+  return { blockers: audit.summary_by_severity.blocker, errors: audit.summary_by_severity.error }
+}
+
+function openVerb(count: number, feminine: boolean): string {
+  if (count % 10 === 1 && count % 100 !== 11) return feminine ? 'Открыта' : 'Открыт'
+  return 'Открыто'
+}
+
+export function openCriticalText({ blockers, errors }: OpenCritical): string | null {
+  const parts = [
+    blockers > 0 && `${formatNumber(blockers)} ${pluralize(blockers, ['блокер', 'блокера', 'блокеров'])}`,
+    errors > 0 && `${formatNumber(errors)} ${pluralize(errors, ['ошибка', 'ошибки', 'ошибок'])}`,
+  ].filter(Boolean)
+  if (parts.length === 0) return null
+  const verb = blockers > 0 ? openVerb(blockers, false) : openVerb(errors, true)
+  return `${verb} ${parts.join(' и ')}`
 }

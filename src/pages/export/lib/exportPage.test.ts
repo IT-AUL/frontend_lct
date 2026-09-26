@@ -1,7 +1,7 @@
 import { parsePassport } from '@/entities/passport'
 import { resolveDeckFiles } from '@/entities/variant'
 import { FIXTURE_STRATEGIES, passportFixture, variantFixtures } from '@/shared/api/mocks'
-import { currentRevisionOf, exportFileName, htmlExportSupported, pickVariantId, serverSkillVersion, withPassportMeta } from './exportPage'
+import { currentRevisionOf, exportFileName, htmlExportSupported, openCriticalCounts, openCriticalText, pickVariantId, serverSkillVersion, withPassportMeta } from './exportPage'
 
 const variants = FIXTURE_STRATEGIES.map((strategy) => variantFixtures[strategy].variant)
 
@@ -52,5 +52,25 @@ describe('export page helpers', () => {
     expect(currentRevisionOf(2, [files.pdf, files.quality_passport])).toBe(2)
     expect(currentRevisionOf(undefined, [files.pdf, null])).toBe(1)
     expect(currentRevisionOf(null, [])).toBeNull()
+  })
+
+  it('counts open blockers and errors from the audit issues, ignoring fixed and dismissed ones', () => {
+    const issues = variantFixtures.balanced.issues.map((issue, index) => (index < 4 && issue.severity === 'error' ? { ...issue, status: 'fixed' as const } : issue))
+    const fixedErrors = variantFixtures.balanced.issues.slice(0, 4).filter((issue) => issue.severity === 'error').length
+    expect(openCriticalCounts(issues, variantFixtures.balanced.audit)).toEqual({ blockers: 0, errors: 54 - fixedErrors })
+    expect(openCriticalCounts([{ ...(variantFixtures.balanced.issues[0] as (typeof variantFixtures.balanced.issues)[number]), severity: 'blocker', status: 'dismissed' }], undefined)).toEqual({ blockers: 0, errors: 0 })
+  })
+
+  it('falls back to the audit summary while issues are loading', () => {
+    expect(openCriticalCounts(undefined, variantFixtures.balanced.audit)).toEqual({ blockers: 0, errors: 54 })
+    expect(openCriticalCounts(undefined, undefined)).toBeNull()
+  })
+
+  it('words the export warning and stays silent when nothing critical is open', () => {
+    expect(openCriticalText({ blockers: 0, errors: 54 })).toBe('Открыто 54 ошибки')
+    expect(openCriticalText({ blockers: 0, errors: 1 })).toBe('Открыта 1 ошибка')
+    expect(openCriticalText({ blockers: 2, errors: 5 })).toBe('Открыто 2 блокера и 5 ошибок')
+    expect(openCriticalText({ blockers: 1, errors: 0 })).toBe('Открыт 1 блокер')
+    expect(openCriticalText({ blockers: 0, errors: 0 })).toBeNull()
   })
 })

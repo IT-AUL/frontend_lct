@@ -90,7 +90,7 @@ test('demo path: template DNA, brief, three variants, audit repair, export', asy
     await expect(entries.locator('[data-outcome="fixed"]')).toHaveCount(2)
   })
 
-  await test.step('export: PPTX downloads, HTML is hidden until the service builds it', async () => {
+  await test.step('export: PPTX downloads, open errors are flagged, HTML is honestly not implemented', async () => {
     await auditSummary(page).getByRole('link', { name: /Экспорт/ }).click()
     await expect(page.getByRole('heading', { level: 1, name: 'Редактируемый PPTX в стиле шаблона' })).toBeVisible()
     const files = page.getByRole('region', { name: 'Файлы' })
@@ -101,6 +101,10 @@ test('demo path: template DNA, brief, three variants, audit repair, export', asy
     expect(deck.name).toMatch(/\.pptx$/)
     expect(deck.bytes.subarray(0, 2).toString('latin1')).toBe('PK')
     expect(deck.bytes.length).toBeGreaterThan(1024)
-    await expect(files.getByRole('article', { name: /_html\.zip$/ })).toHaveCount(0)
+    const html = files.getByRole('article', { name: /_html\.zip$/ })
+    await expect(html).toContainText('Не реализовано сервисом')
+    await expect(html.getByRole('button')).toHaveCount(0)
+    await expect(files.getByRole('status').filter({ hasText: /^Открыт/ })).toBeVisible()
+    await expect(files.getByRole('link', { name: 'К аудиту' })).toBeVisible()
   })
 })

@@ -100,12 +100,32 @@ describe('PlanPage', () => {
     expect(screen.queryByRole('button', { name: /Убрать слайд/ })).not.toBeInTheDocument()
   })
 
-  it('rebuilds with the same inputs', async () => {
+  it('leads to the variants and keeps the rebuild secondary', () => {
+    vi.mocked(useGenerationTracker).mockReturnValue(makeTracker({}))
+    renderPage()
+
+    expect(screen.getByRole('link', { name: 'К вариантам' })).toHaveAttribute('href', routes.variants(PROJECT, RUN))
+    expect(screen.getByRole('button', { name: 'Пересобрать с теми же данными' })).toBeEnabled()
+  })
+
+  it('asks before rebuilding and does nothing when cancelled', async () => {
+    vi.mocked(useGenerationTracker).mockReturnValue(makeTracker({}))
+    renderPage()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Пересобрать с теми же данными' }))
+    const dialog = screen.getByRole('dialog', { name: 'Пересобрать три варианта?' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Отмена' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(retryMutate).not.toHaveBeenCalled()
+  })
+
+  it('rebuilds with the same inputs after confirmation', async () => {
     retryMutate.mockImplementation((_id: string, options: { onSuccess: (trackingId: string) => void }) => options.onSuccess('local-rebuild-1'))
     vi.mocked(useGenerationTracker).mockReturnValue(makeTracker({}))
     renderPage()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Пересобрать' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Пересобрать с теми же данными' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Пересобрать' }))
     expect(retryMutate).toHaveBeenCalledWith(RUN, expect.anything())
     expect(screen.getByTestId('location')).toHaveTextContent(routes.run(PROJECT, 'local-rebuild-1'))
   })

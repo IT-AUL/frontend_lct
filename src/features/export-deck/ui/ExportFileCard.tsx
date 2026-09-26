@@ -36,7 +36,7 @@ export function ExportFileCard({ projectId, variantId, format, file, currentRevi
   const { state, create, markDownloaded } = useDeckExport({ projectId, variantId, format, file, currentRevision, supported })
   const label = FORMAT_LABEL[format]
   const soon = state.status === 'unavailable' && !state.file
-  const tagText = soon ? 'Скоро' : tag
+  const tagText = soon ? (state.message ?? 'Недоступно') : tag
   const stale = state.stale && state.file
   const titleId = `export-${format}-title`
 
@@ -66,7 +66,7 @@ export function ExportFileCard({ projectId, variantId, format, file, currentRevi
           </h3>
           {tagText && <span className={clsx(styles.tag, soon ? styles.tagSoon : styles.tagOk)}>{tagText}</span>}
         </div>
-        <div className={styles.note}>{soon && state.message ? state.message : note}</div>
+        <div className={styles.note}>{note}</div>
         {!soon && <div className={styles.meta}>{metaLine(state.file)}</div>}
         {stale && state.status !== 'unavailable' && (
           <div className={styles.warn}>
@@ -95,8 +95,7 @@ export function ExportFileCard({ projectId, variantId, format, file, currentRevi
             {stale && downloadLink('secondary', `Скачать${revisionLabel(state.file?.deckRevision ?? null)}`)}
           </>
         )}
-        {state.status === 'unavailable' &&
-          (state.file ? downloadLink('secondary', `Скачать${revisionLabel(state.file.deckRevision)}`) : <span className={styles.soonText}>недоступно</span>)}
+        {state.status === 'unavailable' && state.file && downloadLink('secondary', `Скачать${revisionLabel(state.file.deckRevision)}`)}
         {state.status === 'error' && (
           <>
             <Button variant="secondary" size="md" onClick={create}>

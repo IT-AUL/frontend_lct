@@ -230,3 +230,12 @@
   border-radius: 50%;
   background: var(--ok);
 }
+
+.form input::placeholder {
+  color: var(--ink-3);
+  opacity: 1;
+}
+
+.codeInput::placeholder {
+  font-family: var(--font-sans);
+}

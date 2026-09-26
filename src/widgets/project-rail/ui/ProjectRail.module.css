@@ -101,6 +101,10 @@ a.step[data-state='current']:hover {
   text-overflow: ellipsis;
 }
 
+.step[data-state='current'] .meta {
+  color: var(--ink-2);
+}
+
 .proof {
   display: flex;
   flex-direction: column;

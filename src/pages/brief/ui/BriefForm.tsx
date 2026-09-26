@@ -16,15 +16,17 @@ export interface BriefFormProps {
   parseError: string | null
   onParseText: () => void
   errors: BriefErrors
+  focusSignal?: number
 }
 
-export function BriefForm({ form, onChange, files, onFilesChange, plan, parsing, parseError, onParseText, errors }: BriefFormProps) {
+export function BriefForm({ form, onChange, files, onFilesChange, plan, parsing, parseError, onParseText, errors, focusSignal }: BriefFormProps) {
   return (
     <div className={styles.form}>
       <PurposeSection
         value={form.purpose}
         customPurpose={form.customPurpose}
         error={errors.purpose}
+        focusSignal={focusSignal}
         onChange={(purpose) => onChange({ purpose })}
         onCustomPurposeChange={(customPurpose) => onChange({ customPurpose })}
       />

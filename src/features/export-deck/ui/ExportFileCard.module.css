@@ -14,7 +14,8 @@
 }
 
 .soon {
-  opacity: 0.7;
+  border-style: dashed;
+  background: var(--surface-2);
 }
 
 .icon {
@@ -133,9 +134,4 @@
 
 .linkSecondary:hover {
   color: var(--ink);
-}
-
-.soonText {
-  color: var(--ink-3);
-  font-size: 12px;
 }

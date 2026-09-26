@@ -33,6 +33,7 @@ function BriefScreen({ project }: { project: Project }) {
   })
   const [files, setFiles] = useState<File[]>([])
   const [showErrors, setShowErrors] = useState(false)
+  const [attempts, setAttempts] = useState(0)
   const upload = useContentUpload(project.id)
   const submit = useSubmitBrief(project.id)
   const planFirst = usePlanFirst(project.id)
@@ -56,6 +57,7 @@ function BriefScreen({ project }: { project: Project }) {
 
   const start = () => {
     setShowErrors(true)
+    setAttempts((count) => count + 1)
     if (hasErrors || !templateId) return
     submit.mutate(
       { form, files, templateId, providerSessionId: session?.id ?? null, onParsed: (parsed) => update({ parsed }) },
@@ -65,6 +67,7 @@ function BriefScreen({ project }: { project: Project }) {
 
   const startWithPlan = () => {
     setShowErrors(true)
+    setAttempts((count) => count + 1)
     if (hasErrors || !templateId) return
     planFirst.mutate(
       { form, files, templateId, providerSessionId: session?.id ?? null, onParsed: (parsed) => update({ parsed }) },
@@ -97,6 +100,7 @@ function BriefScreen({ project }: { project: Project }) {
             if (plan.kind === 'upload') parse(plan)
           }}
           errors={showErrors ? errors : {}}
+          focusSignal={attempts}
         />
         <aside className={styles.aside}>
           <ContentPreview

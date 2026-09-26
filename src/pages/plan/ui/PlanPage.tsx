@@ -8,11 +8,23 @@ import { useActiveProviderSession } from '@/entities/provider-session'
 import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
 import { STRATEGY_ORDER, strategyInfo, type CatalogStrategy } from '@/entities/variant'
 import { routes } from '@/shared/config'
-import { Button, EmptyState, PageHeader, Skeleton } from '@/shared/ui'
+import { ArrowRight, EmptyState, Icon, PageHeader, Skeleton } from '@/shared/ui'
 import { EditablePlan } from './EditablePlan'
 import styles from './PlanPage.module.css'
+import { RebuildDialog } from './RebuildDialog'
 
 const EMPTY_HEADINGS: ReadonlyMap<string, string> = new Map()
+
+const REBUILD_DESCRIPTION = 'Сервис заново соберёт и проверит все варианты по тому же брифу и контенту — это до 5 минут. Текущие варианты останутся в истории проекта.'
+
+function VariantsLink({ to }: { to: string }) {
+  return (
+    <Link className={styles.primaryLink} to={to}>
+      К вариантам
+      <Icon as={ArrowRight} />
+    </Link>
+  )
+}
 
 function planOwner(generation: GenerationDetail): string | null {
   const planId = generation.deck_plan?.id ?? generation.deck_plan_id
@@ -74,9 +86,16 @@ export function PlanPage() {
       actions={
         plan ? (
           <>
-            <Button variant="primary" size="lg" disabled={!canRebuild} onClick={() => generationId && rerun(generationId)}>
-              {isPending ? 'Запускаем…' : 'Пересобрать'}
-            </Button>
+            <RebuildDialog
+              label="Пересобрать с теми же данными"
+              title="Пересобрать три варианта?"
+              description={REBUILD_DESCRIPTION}
+              confirmLabel="Пересобрать"
+              disabled={!canRebuild}
+              pending={isPending}
+              onConfirm={() => generationId && rerun(generationId)}
+            />
+            {settled && generationId && <VariantsLink to={routes.variants(projectId, generationId)} />}
           </>
         ) : undefined
       }
@@ -132,6 +151,8 @@ export function PlanPage() {
         eyebrow="Шаг 3 · План"
         buildLabel="Пересобрать по этому плану"
         buildBody={rebuildBody(generation, plan, session?.id ?? null)}
+        next={<VariantsLink to={routes.variants(projectId, generation.id)} />}
+        confirmDescription={REBUILD_DESCRIPTION}
         notice={owner ? <>План варианта «{owner}».</> : null}
       />
     )

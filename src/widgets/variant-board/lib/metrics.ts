@@ -1,4 +1,4 @@
-import { SEVERITY_ORDER, type Severity } from '@/entities/audit'
+import { CRITICAL_SEVERITIES, SEVERITY_ORDER, type Severity } from '@/entities/audit'
 import type { PassportIssues, PassportScore } from '@/entities/passport'
 import { PEI_MAX } from '@/entities/variant'
 import { formatNumber, pluralize } from '@/shared/lib/format'
@@ -53,4 +53,22 @@ export function styleFidelityScore(direct: number | null, passportScores: readon
   if (!passportScores || passportScores.length === 0) return null
   const mean = passportScores.reduce((sum, { value }) => sum + value, 0) / passportScores.length
   return Math.min(1, Math.max(0, mean))
+}
+
+export function criticalCount(breakdown: readonly SeverityCount[] | null): number | null {
+  if (!breakdown) return null
+  return breakdown.filter(({ severity }) => CRITICAL_SEVERITIES.includes(severity)).reduce((sum, { count }) => sum + count, 0)
+}
+
+const SEVERITY_FORMS: Record<Severity, readonly [string, string, string]> = {
+  blocker: ['блокер', 'блокера', 'блокеров'],
+  error: ['ошибка', 'ошибки', 'ошибок'],
+  warning: ['предупреждение', 'предупреждения', 'предупреждений'],
+  info: ['замечание', 'замечания', 'замечаний'],
+}
+
+export function breakdownText(breakdown: readonly SeverityCount[] | null): string | null {
+  if (!breakdown) return null
+  const parts = breakdown.filter(({ count }) => count > 0).map(({ severity, count }) => `${formatNumber(count)} ${pluralize(count, SEVERITY_FORMS[severity])}`)
+  return parts.length > 0 ? parts.join(', ') : null
 }

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { useVariantAudit } from '@/entities/audit'
+import { useAuditIssues, useVariantAudit } from '@/entities/audit'
 import { useGeneration } from '@/entities/generation'
 import { usePassport, type QualityPassport } from '@/entities/passport'
 import { useProject } from '@/entities/project'
@@ -13,8 +13,8 @@ import { useVariantFiles } from '@/features/variant-files'
 import { buildPassportView, EditabilityProof, QualityPassport as PassportPanel } from '@/widgets/quality-passport'
 import { artifactUrl } from '@/shared/api'
 import { GENERATION_BUDGET_SECONDS, routes } from '@/shared/config'
-import { ArrowLeft, Button, Download, EmptyState, Icon, PageHeader, Segmented, Skeleton } from '@/shared/ui'
-import { currentRevisionOf, exportFileName, htmlExportSupported, pickVariantId, serverSkillVersion, withPassportMeta } from '../lib/exportPage'
+import { AlertTriangle, ArrowLeft, ArrowRight, Button, Download, EmptyState, Icon, PageHeader, Segmented, Skeleton } from '@/shared/ui'
+import { currentRevisionOf, exportFileName, htmlExportSupported, openCriticalCounts, openCriticalText, pickVariantId, serverSkillVersion, withPassportMeta } from '../lib/exportPage'
 import styles from './ExportPage.module.css'
 
 function revisionText(revision: number | null): string | null {
@@ -43,6 +43,7 @@ function ExportContent({ projectId, runId, variant, variants }: ExportContentPro
   const navigate = useNavigate()
   const variantFiles = useVariantFiles(variant.id)
   const audit = useVariantAudit(variant.id)
+  const auditIssues = useAuditIssues(audit.data?.id)
   const generation = useGeneration(runId)
   const project = useProject(projectId)
   const template = useTemplate(generation.data?.template_id)
@@ -58,6 +59,8 @@ function ExportContent({ projectId, runId, variant, variants }: ExportContentPro
   const passportRevision = files?.quality_passport?.deckRevision ?? null
   const info = strategyInfo(variant.strategy)
   const htmlSupported = htmlExportSupported(capabilities.data)
+  const openCritical = openCriticalCounts(auditIssues.data, audit.data)
+  const openCriticalLabel = openCritical ? openCriticalText(openCritical) : null
 
   const view = useMemo(
     () =>
@@ -97,9 +100,7 @@ function ExportContent({ projectId, runId, variant, variants }: ExportContentPro
       primary: true,
     },
     { format: 'pdf' as const, file: files?.pdf ?? null, note: 'Для рассылки и печати' },
-    ...(htmlSupported || files?.html
-      ? [{ format: 'html' as const, file: files?.html ?? null, note: 'Архив: index.html и слайды — открывается в браузере', supported: htmlSupported }]
-      : []),
+    { format: 'html' as const, file: files?.html ?? null, note: 'Слайды разметкой, не картинками — открывается в браузере', supported: htmlSupported },
     { format: 'quality_passport' as const, file: files?.quality_passport ?? null, note: 'Паспорт качества целиком' },
   ]
 
@@ -138,6 +139,16 @@ function ExportContent({ projectId, runId, variant, variants }: ExportContentPro
           <h2 id="export-files-title" className={styles.sectionTitle}>
             Файлы
           </h2>
+          {openCriticalLabel && (
+            <div className={styles.openIssues} role="status">
+              <Icon as={AlertTriangle} size={16} className={styles.openIssuesIcon} />
+              <span className={styles.openIssuesText}>{openCriticalLabel}</span>
+              <Link className={styles.openIssuesLink} to={routes.audit(projectId, runId, variant.id)}>
+                К аудиту
+                <Icon as={ArrowRight} size={14} />
+              </Link>
+            </div>
+          )}
           {variantFiles.isPending ? (
             [0, 1, 2, 3].map((index) => <Skeleton key={index} style={{ height: 78, borderRadius: 12 }} delay={index * 0.08} />)
           ) : (

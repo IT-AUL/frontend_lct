@@ -25,7 +25,7 @@ describe('buildPassportView', () => {
     expect(byKey('ooxml')).toMatchObject({ value: '0', tone: 'neutral' })
     expect(byKey('nativeText').value).toBe('48%')
     expect(byKey('rasterSlides')).toMatchObject({ value: '0', hint: 'графики и таблицы — объекты' })
-    expect(byKey('pei')).toMatchObject({ value: '3/5', hint: 'уровень по шкале 0–5' })
+    expect(byKey('pei')).toMatchObject({ value: '3/5', hint: 'шкала 0–5; 3 — правится всё, нативных таблиц и графиков нет' })
   })
 
   it('never invents style fidelity or usage when the backend does not compute them', () => {
@@ -125,6 +125,6 @@ describe('buildPassportView', () => {
 
     expect(byKey('roundTrip')).toMatchObject({ value: '—', tone: 'unknown' })
     expect(byKey('nativeText')).toMatchObject({ value: '—', tone: 'unknown' })
-    expect(byKey('pei')).toMatchObject({ value: '5/5', hint: 'всё нативное' })
+    expect(byKey('pei')).toMatchObject({ value: '5/5', hint: 'шкала 0–5; 5 — всё нативное и привязано к макетам' })
   })
 })

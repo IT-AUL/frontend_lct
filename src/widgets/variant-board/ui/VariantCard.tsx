@@ -1,14 +1,14 @@
 import { clsx } from 'clsx'
-import { useId } from 'react'
+import { useEffect, useId } from 'react'
 import { Link } from 'react-router'
-import { SEVERITY } from '@/entities/audit'
 import { JOB_STATE_LABEL } from '@/entities/generation'
 import { usePassport } from '@/entities/passport'
-import { DEFAULT_STRATEGY, strategyInfo, useVariantSlides, variantAxes, variantMetrics, variantRationale, type VariantSummary } from '@/entities/variant'
+import { strategyInfo, useVariantSlides, variantAxes, variantMetrics, variantRationale, type VariantSummary } from '@/entities/variant'
 import { useVariantFiles } from '@/features/variant-files'
 import { formatPercent } from '@/shared/lib/format'
 import { Badge, Check, Download, FileText, Icon, Meter, X } from '@/shared/ui'
-import { formatPei, issuesHeadline, peiNote, severityBreakdown, styleFidelityScore, validityView } from '../lib/metrics'
+import { breakdownText, criticalCount, formatPei, issuesHeadline, peiNote, severityBreakdown, styleFidelityScore, validityView } from '../lib/metrics'
+import type { Recommendation } from '../lib/recommend'
 import styles from './VariantCard.module.css'
 import { VariantThumbnails } from './VariantThumbnails'
 
@@ -16,9 +16,11 @@ interface VariantCardProps {
   variant: VariantSummary
   showThumbnails: boolean
   auditHref: (variantId: string, slideNumber?: number) => string
+  recommendation: Recommendation | null
+  onCriticalCount: (variantId: string, count: number | null) => void
 }
 
-export function VariantCard({ variant: listed, showThumbnails, auditHref }: VariantCardProps) {
+export function VariantCard({ variant: listed, showThumbnails, auditHref, recommendation, onCriticalCount }: VariantCardProps) {
   const headingId = useId()
   const files = useVariantFiles(listed.id)
   const variant = files.variant ?? listed
@@ -27,23 +29,31 @@ export function VariantCard({ variant: listed, showThumbnails, auditHref }: Vari
   const passport = usePassport(files.passportArtifactId)
 
   const info = strategyInfo(variant.strategy)
-  const isDefault = variant.strategy === DEFAULT_STRATEGY
+  const highlighted = recommendation?.variantId === variant.id ? recommendation : null
   const metrics = variantMetrics(variant)
   const validity = validityView(metrics.opensCleanly)
   const note = peiNote(metrics.editabilityLevel, passport.data?.editability.rasterOnlySlides ?? null)
   const breakdown = severityBreakdown(metrics.issuesTotal, passport.data?.issues)
   const axes = variantAxes(variant)
   const fidelity = styleFidelityScore(metrics.styleFidelity, passport.data?.styleFidelity)
+  const critical = criticalCount(breakdown)
+  const details = [issuesHeadline(metrics.issuesTotal), breakdownText(breakdown)].filter(Boolean).join(': ')
+  const contextual = metrics.contextualIssues
+
+  useEffect(() => {
+    onCriticalCount(variant.id, ready ? critical : null)
+  }, [onCriticalCount, variant.id, ready, critical])
 
   return (
-    <section className={clsx(styles.card, isDefault && styles.recommended)} aria-labelledby={headingId}>
+    <section className={clsx(styles.card, highlighted && styles.recommended)} aria-labelledby={headingId}>
       <header className={styles.head}>
         <h2 id={headingId} className={styles.name}>
           {info.name}
         </h2>
-        {isDefault && <span className={styles.defaultBadge}>по умолчанию</span>}
+        {highlighted && <span className={styles.defaultBadge}>{highlighted.kind === 'quality' ? 'рекомендуем' : 'по умолчанию'}</span>}
         <span className={styles.spacer} />
       </header>
+      {highlighted?.reason && <p className={styles.reason}>{highlighted.reason}</p>}
 
       <p className={styles.rationale}>{variantRationale(variant)}</p>
 
@@ -92,16 +102,18 @@ export function VariantCard({ variant: listed, showThumbnails, auditHref }: Vari
       </dl>
 
       <div className={styles.issues}>
-        <span className={styles.issuesTotal}>{issuesHeadline(metrics.issuesTotal)}</span>
-        {breakdown?.map(({ severity, count }) => (
-          <Badge key={severity} tone={count === 0 ? 'muted' : SEVERITY[severity].tone} shape="tag" title={`${SEVERITY[severity].label}: ${count}`}>
-            <span className={styles.mono}>{count}</span> {SEVERITY[severity].shortLabel}
-          </Badge>
-        ))}
-        {metrics.contextualIssues !== null && (
-          <Badge tone="neutral" shape="tag">
-            <span className={styles.mono}>{metrics.contextualIssues}</span> контекстуальных
-          </Badge>
+        {critical !== null ? (
+          <div className={clsx(styles.critical, critical > 0 ? styles.criticalOpen : styles.criticalNone)}>
+            Критичных: <span className={styles.mono}>{critical}</span>
+          </div>
+        ) : (
+          <div className={styles.critical}>{issuesHeadline(metrics.issuesTotal)}</div>
+        )}
+        {critical !== null && <p className={styles.issuesDetails}>{details}</p>}
+        {contextual !== null && (
+          <p className={styles.issuesDetails}>
+            Контекстуальных: <span className={styles.mono}>{contextual}</span>
+          </p>
         )}
       </div>
 
