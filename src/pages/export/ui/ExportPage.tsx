@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { useAuditIssues, useVariantAudit } from '@/entities/audit'
+import { reportOpenCounts, useAuditIssues, useVariantAudit } from '@/entities/audit'
 import { useGeneration } from '@/entities/generation'
 import { usePassport, type QualityPassport } from '@/entities/passport'
 import { useProject } from '@/entities/project'
@@ -61,6 +61,12 @@ function ExportContent({ projectId, runId, variant, variants }: ExportContentPro
   const htmlSupported = htmlExportSupported(capabilities.data)
   const openCritical = openCriticalCounts(auditIssues.data, audit.data)
   const openCriticalLabel = openCritical ? openCriticalText(openCritical) : null
+  const openBlockers = openCritical?.blockers ?? null
+  const openErrors = openCritical?.errors ?? null
+
+  useEffect(() => {
+    if (openBlockers !== null && openErrors !== null) reportOpenCounts(projectId, { blocker: openBlockers, error: openErrors }, runId)
+  }, [openBlockers, openErrors, projectId, runId])
 
   const view = useMemo(
     () =>
