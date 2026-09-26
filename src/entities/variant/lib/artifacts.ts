@@ -1,3 +1,4 @@
+import { API_BASE } from '@/shared/config'
 import { artifactUrl } from '@/shared/api'
 import type { ExportArtifact, ExportRecord, SlideInfo, VariantSummary } from '../model/types'
 
@@ -62,7 +63,8 @@ export function resolveDeckFiles(variant: Pick<VariantSummary, 'id' | 'deck_arti
   }
 }
 
-export function slidePreviewUrl(slide: Pick<SlideInfo, 'preview_artifact_id'> | null | undefined): string | null {
-  const id = slide?.preview_artifact_id
-  return id ? artifactUrl(id) : null
+export function slidePreviewUrl(slide: Pick<SlideInfo, 'id' | 'revision' | 'preview_artifact_id'> | null | undefined, renderOnDemand = false): string | null {
+  if (!slide) return null
+  if (slide.preview_artifact_id) return artifactUrl(slide.preview_artifact_id)
+  return renderOnDemand ? `${API_BASE}/slides/${encodeURIComponent(slide.id)}/preview?revision=${slide.revision}` : null
 }

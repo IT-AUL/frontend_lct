@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router'
 import { slidePurposeLabel } from '@/entities/generation'
+import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
 import { slidePreviewUrl, type SlideInfo, type VariantSummary } from '@/entities/variant'
 import { RequestPdfExport } from '@/features/request-pdf-export'
 import { formatIndex, pluralize } from '@/shared/lib/format'
@@ -126,6 +127,7 @@ interface CompareCellProps {
 }
 
 function CompareCell({ column, slide, showNumber, auditHref }: CompareCellProps) {
+  const renderPreviews = useCapabilityFlag(FEATURE_PATHS.pngPreviews)
   if (!column) return null
   if (!slide) {
     if (column.isPending) {
@@ -148,8 +150,8 @@ function CompareCell({ column, slide, showNumber, auditHref }: CompareCellProps)
   return (
     <div role="cell">
       <Link className={styles.thumb} to={href} aria-label={`${label}. Открыть в аудите`} title={slideTitle(slide) ?? undefined}>
-        {column.pdfUrl || slidePreviewUrl(slide) ? (
-          <PdfPage url={column.pdfUrl} imageUrl={slidePreviewUrl(slide)} pageNumber={slide.index + 1} label={label} />
+        {column.pdfUrl || slidePreviewUrl(slide, renderPreviews) ? (
+          <PdfPage url={column.pdfUrl} imageUrl={slidePreviewUrl(slide, renderPreviews)} pageNumber={slide.index + 1} label={label} />
         ) : (
           <span className={styles.textThumb}>
             <span className={styles.textThumbTitle}>{slideTitle(slide) ?? `Слайд ${slide.index + 1}`}</span>

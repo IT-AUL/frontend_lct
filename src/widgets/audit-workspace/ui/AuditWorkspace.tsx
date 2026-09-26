@@ -111,6 +111,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
   const toast = useToast()
   const session = useActiveProviderSession()
   const modelAuto = useCapabilityFlag(FEATURE_PATHS.modelAuto)
+  const renderPreviews = useCapabilityFlag(FEATURE_PATHS.pngPreviews)
   const files = useVariantFiles(variantId)
   const variantsQuery = useVariants(runId)
   const auditQuery = useVariantAudit(variantId)
@@ -191,7 +192,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
   const filmstrip: FilmstripSlide[] = Array.from({ length: slideCount }, (_, index) => {
     const number = index + 1
     const open = pending.filter((view) => onSlide(view, number))
-    return { number, title: titleOf(number), imageUrl: slidePreviewUrl(slideAt(number)), openCount: open.length, worst: worstSeverity(open) }
+    return { number, title: titleOf(number), imageUrl: slidePreviewUrl(slideAt(number), renderPreviews), openCount: open.length, worst: worstSeverity(open) }
   })
 
   const stageViews = filterIssueViews(views, { ...filter, status: 'all' }).filter((view) => onSlide(view, currentSlide))
@@ -382,7 +383,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
           {renderStage({
             pdfUrl: files.pdfUrl,
             pdfRevision: files.files?.pdf?.deckRevision ?? null,
-            imageUrl: slidePreviewUrl(slideAt(currentSlide)),
+            imageUrl: slidePreviewUrl(slideAt(currentSlide), renderPreviews),
             imageRevision: slideAt(currentSlide)?.revision ?? null,
             revision,
             slideNumber: currentSlide,
