@@ -33,6 +33,7 @@ function ModelInput({ label, role, value, error, optional, onChange }: ModelInpu
           <TextInput
             id={id}
             mono
+            className={styles.codeInput}
             value={value}
             placeholder={suggestion.id}
             autoComplete="off"
@@ -88,6 +89,7 @@ export function ProviderFormView({ initial, submitting, error, replacing, onSubm
             <TextInput
               id={id}
               mono
+              className={styles.codeInput}
               type="url"
               value={form.baseUrl}
               placeholder="https://inference.example/v1"

@@ -291,6 +291,10 @@
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
+.usageBar > * {
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
 .usageLegend {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

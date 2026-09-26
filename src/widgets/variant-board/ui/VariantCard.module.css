@@ -37,6 +37,12 @@
   flex: 1;
 }
 
+.reason {
+  margin-top: -6px;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
 .code {
   color: var(--ink-3);
   font-size: 11px;
@@ -128,15 +134,26 @@
 
 .issues {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.issuesTotal {
-  margin-right: 4px;
-  font-size: 13px;
+.critical {
+  font-size: 15px;
   font-weight: 600;
+}
+
+.criticalOpen {
+  color: var(--error);
+}
+
+.criticalNone {
+  color: var(--ok);
+}
+
+.issuesDetails {
+  color: var(--ink-2);
+  font-size: 12px;
 }
 
 .error {

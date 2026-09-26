@@ -55,10 +55,10 @@ describe('deriveExportState', () => {
     expect(state.file?.deckRevision).toBe(1)
   })
 
-  it('treats HTML as coming soon when capabilities do not list it', () => {
+  it('marks HTML as not implemented by the service when capabilities do not list it', () => {
     expect(deriveExportState(input({ format: 'html', file: null, supported: false }))).toMatchObject({
       status: 'unavailable',
-      message: 'HTML-экспорт недоступен',
+      message: 'Не реализовано сервисом',
     })
   })
 

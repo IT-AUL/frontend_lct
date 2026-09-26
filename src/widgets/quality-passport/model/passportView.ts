@@ -127,6 +127,20 @@ const USAGE_LABEL: Record<string, string> = {
 
 const PROMPT_LIMIT = 6
 
+const PEI_MEANING: Record<number, string> = {
+  0: 'не открывается или слайды-картинки',
+  1: 'правится только часть текста',
+  2: 'правятся текст и фигуры',
+  3: 'правится всё, нативных таблиц и графиков нет',
+  4: 'правится всё, таблицы и графики нативные',
+  5: 'всё нативное и привязано к макетам',
+}
+
+export function peiHint(level: number | null): string {
+  const meaning = level === null ? undefined : PEI_MEANING[level]
+  return meaning ? `шкала 0–5; ${level} — ${meaning}` : 'шкала 0–5: чем выше, тем больше правится в PowerPoint'
+}
+
 function humanize(key: string): string {
   const text = key.replace(/[_.:/-]+/g, ' ').trim()
   return text.charAt(0).toUpperCase() + text.slice(1)
@@ -163,7 +177,7 @@ function proofCells(passport: QualityPassport, fallbackPei: number | null): Proo
       key: 'nativeText',
       value: ratio === null ? '—' : formatPercent(ratio),
       label: 'нативного текста',
-      hint: 'доля текста в редактируемых фигурах',
+      hint: 'текстовые фигуры среди всех объектов слайдов',
       tone: ratio === null ? 'unknown' : 'neutral',
     },
     {
@@ -177,7 +191,7 @@ function proofCells(passport: QualityPassport, fallbackPei: number | null): Proo
       key: 'pei',
       value: pei === null ? '—' : `${pei}/${PEI_MAX}`,
       label: 'редактируемость PEI',
-      hint: pei === PEI_MAX ? 'всё нативное' : 'уровень по шкале 0–5',
+      hint: peiHint(pei),
       tone: pei === null ? 'unknown' : 'neutral',
     },
   ]

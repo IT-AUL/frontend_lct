@@ -118,7 +118,7 @@ function TimingTitle({ view }: { view: PassportView }) {
   const { timing, usage } = view
   return (
     <span className={styles.titleRow}>
-      Быстро
+      Время сборки
       {timing.total !== null && (
         <span className={styles.timingValue}>
           {timing.total} из {timing.budget}
@@ -212,13 +212,13 @@ function ProvenanceBody({ view }: { view: PassportView }) {
 
 export function QualityPassport({ view, revisionLabel, notice, actions }: QualityPassportProps) {
   const sections: Section[] = [
-    ...(view.style.status === 'ready' ? [{ key: 'style', title: 'В стиле шаблона', body: <StyleBody view={view} /> }] : []),
-    ...(view.sources ? [{ key: 'sources', title: 'По источникам', body: <SourcesBody view={view} /> }] : []),
-    { key: 'readability', title: 'Читаемо', body: <ReadabilityBody view={view} /> },
+    ...(view.style.status === 'ready' ? [{ key: 'style', title: 'Соответствие шаблону', body: <StyleBody view={view} /> }] : []),
+    ...(view.sources ? [{ key: 'sources', title: 'Опора на контент', body: <SourcesBody view={view} /> }] : []),
+    { key: 'readability', title: 'Читаемость', body: <ReadabilityBody view={view} /> },
     { key: 'issues', title: 'Итоги аудита', body: <IssuesBody view={view} /> },
     { key: 'timing', title: <TimingTitle view={view} />, body: <TimingBody view={view} /> },
     ...(view.autoFixes.length > 0 ? [{ key: 'autoFixes', title: 'Исправлено до показа', body: <AutoFixesBody view={view} /> }] : []),
-    ...(view.fallbacks.length > 0 ? [{ key: 'fallbacks', title: 'Где система упростила', body: <FallbacksBody view={view} /> }] : []),
+    ...(view.fallbacks.length > 0 ? [{ key: 'fallbacks', title: 'Упрощения', body: <FallbacksBody view={view} /> }] : []),
     { key: 'provenance', title: 'Происхождение', body: <ProvenanceBody view={view} /> },
   ]
 

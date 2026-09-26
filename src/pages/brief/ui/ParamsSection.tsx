@@ -32,12 +32,12 @@ export function ParamsSection({ form, onChange }: ParamsSectionProps) {
       </div>
       <Field label="Обязательные разделы" className={styles.wide}>
         {(id) => (
-          <TagInput id={id} values={form.mandatorySections} placeholder="Добавить и Enter" onChange={(mandatorySections) => onChange({ mandatorySections })} />
+          <TagInput id={id} values={form.mandatorySections} placeholder="Введите раздел и нажмите Enter" onChange={(mandatorySections) => onChange({ mandatorySections })} />
         )}
       </Field>
       <Field label="Запрещённые утверждения" hint="необязательно" className={styles.wide}>
         {(id) => (
-          <TagInput id={id} values={form.forbiddenClaims} placeholder="Что нельзя утверждать, и Enter" onChange={(forbiddenClaims) => onChange({ forbiddenClaims })} />
+          <TagInput id={id} values={form.forbiddenClaims} placeholder="Введите утверждение и нажмите Enter" onChange={(forbiddenClaims) => onChange({ forbiddenClaims })} />
         )}
       </Field>
     </section>

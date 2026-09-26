@@ -65,6 +65,10 @@
   border-color: var(--ink-3);
 }
 
+.purposes[aria-invalid='true'] .purpose {
+  border-color: var(--error);
+}
+
 .purpose[aria-checked='true'] {
   border-color: var(--ink);
   background: var(--ink);
@@ -234,6 +238,10 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-xl);
   background: var(--surface);
+}
+
+.params input {
+  font-size: 14px;
 }
 
 .wide {

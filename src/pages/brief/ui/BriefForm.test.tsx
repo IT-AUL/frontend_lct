@@ -62,4 +62,31 @@ describe('BriefForm', () => {
     expect(seen.form.text).toBe('Контент')
     expect(screen.getByRole('button', { name: 'Разобрать текст' })).toBeEnabled()
   })
+
+  it('marks the purpose group invalid and focuses its first option after a failed submit', () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const form = createBriefForm({ targetSlideCount: 12 })
+    const plan = resolveContent({ mode: form.contentMode, files: [], text: form.text, parsed: form.parsed })
+    render(
+      <QueryClientProvider client={client}>
+        <BriefForm
+          form={form}
+          onChange={() => undefined}
+          files={[]}
+          onFilesChange={() => undefined}
+          plan={plan}
+          parsing={false}
+          parseError={null}
+          onParseText={() => undefined}
+          errors={{ purpose: 'Выберите назначение' }}
+          focusSignal={1}
+        />
+      </QueryClientProvider>,
+    )
+
+    const purposes = screen.getByRole('radiogroup', { name: 'Назначение' })
+    expect(purposes).toHaveAttribute('aria-invalid', 'true')
+    expect(purposes).toHaveAccessibleDescription('Выберите назначение')
+    expect(within(purposes).getAllByRole('radio')[0]).toHaveFocus()
+  })
 })

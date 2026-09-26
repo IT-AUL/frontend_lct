@@ -5,6 +5,7 @@ import type { DeckPlan, GenerationCreate } from '@/entities/generation'
 import { pluralize } from '@/shared/lib/format'
 import { Button, PageHeader } from '@/shared/ui'
 import styles from './PlanPage.module.css'
+import { RebuildDialog } from './RebuildDialog'
 
 interface EditablePlanProps {
   projectId: string
@@ -16,6 +17,8 @@ interface EditablePlanProps {
   buildBody: Omit<GenerationCreate, 'deck_plan' | 'deck_plan_id'>
   notice: ReactNode
   toolbar?: ReactNode
+  next?: ReactNode
+  confirmDescription?: string
 }
 
 function describeEdits(base: DeckPlan, plan: DeckPlan): string {
@@ -29,10 +32,13 @@ function describeEdits(base: DeckPlan, plan: DeckPlan): string {
   return parts.length > 0 ? `Ваши правки: ${parts.join(', ')}.` : ''
 }
 
-export function EditablePlan({ projectId, draftKey, basePlan, headings, eyebrow, buildLabel, buildBody, notice, toolbar }: EditablePlanProps) {
+export function EditablePlan({ projectId, draftKey, basePlan, headings, eyebrow, buildLabel, buildBody, notice, toolbar, next, confirmDescription }: EditablePlanProps) {
   const draft = usePlanDraft(draftKey, basePlan)
   const { build, isPending } = useBuildFromPlan(projectId, draftKey)
   const untitled = draft.plan.slides.some((slide) => slide.title_intent.trim() === '')
+  const buildDisabled = isPending || untitled
+  const runBuild = () => build(buildBody, draft.plan)
+  const quietRebuild = Boolean(next) && !draft.edited
 
   return (
     <div className={styles.page}>
@@ -45,9 +51,24 @@ export function EditablePlan({ projectId, draftKey, basePlan, headings, eyebrow,
             <Button variant="secondary" size="lg" disabled={!draft.edited || isPending} onClick={draft.reset}>
               Сбросить правки
             </Button>
-            <Button variant="primary" size="lg" disabled={isPending || untitled} onClick={() => build(buildBody, draft.plan)}>
-              {isPending ? 'Запускаем…' : buildLabel}
-            </Button>
+            {quietRebuild ? (
+              <>
+                <RebuildDialog
+                  label="Пересобрать с теми же данными"
+                  title="Пересобрать три варианта?"
+                  description={confirmDescription ?? ''}
+                  confirmLabel="Пересобрать"
+                  disabled={buildDisabled}
+                  pending={isPending}
+                  onConfirm={runBuild}
+                />
+                {next}
+              </>
+            ) : (
+              <Button variant="primary" size="lg" disabled={buildDisabled} onClick={runBuild}>
+                {isPending ? 'Запускаем…' : buildLabel}
+              </Button>
+            )}
           </>
         }
       />
