@@ -58,7 +58,7 @@ docker compose --profile backend up --build
 # фронтенд против уже запущенного бэкенда
 WEB_BACKEND_URL=http://host.docker.internal:8000 docker compose up --build web
 
-# демо-образ без бэкенда
+# образ на записанных ответах API — для тестов без бэкенда
 docker build --build-arg VITE_API_MODE=mock -t deckdna-web:mock .
 ```
 
