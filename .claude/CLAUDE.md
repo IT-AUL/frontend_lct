@@ -84,6 +84,7 @@ https://github.com/Ranel435/LCT-prezi-2026. Мы делаем отдельный
 | `.claude/docs/12-dev-environment.md` | пути, скиллы, плагины, хуки, MCP — окружение агента |
 | `.claude/docs/13-design-brief.md` | бриф на UI/UX для дизайна: экраны, данные, принципы, ограничения |
 | `.claude/docs/14-competitive-landscape.md` | рынок и конкуренты: позиционирование, что берём у кого по экранам |
+| `.claude/docs/18-ux-audit-2026-09-26.md` | **аудит 5 ролями (26.09)**: сквозные проблемы, приоритезированный план фронта и демо |
 | `.claude/docs/15-design-v1-review.md` | **дизайн v1**: токены, экраны, расхождения макета с бэком. Сам макет — `.claude/design/claude-design-v1/DeckDNA.dc.html` |
 
 Агент `tz-compliance-reviewer` (`.claude/agents/`) и команда `/tz-check` — сверка изменений с ТЗ.
