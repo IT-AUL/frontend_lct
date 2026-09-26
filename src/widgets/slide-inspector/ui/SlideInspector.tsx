@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { journalActionText, type IssueView, type JournalEntry } from '@/entities/audit'
-import { Check, ChevronLeft, ChevronRight, Icon, type IconComponent, Minus, Mono, PdfPage, Segmented, X } from '@/shared/ui'
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Icon, type IconComponent, Minus, Mono, PdfPage, Segmented, X } from '@/shared/ui'
 import { IssueOverlay, type OverlayItem } from './IssueOverlay'
 import styles from './SlideInspector.module.css'
 
@@ -18,6 +18,7 @@ export interface SlideInspectorProps {
   views: readonly IssueView[]
   journal: readonly JournalEntry[]
   activeKey: string | null
+  linkedKeys?: readonly string[]
   hoverKey: string | null
   mode: InspectorMode
   onModeChange: (mode: InspectorMode) => void
@@ -68,6 +69,7 @@ function SlideFrame({ pdfUrl, imageUrl, slideNumber, children }: SlideFrameProps
 
 export function SlideInspector(props: SlideInspectorProps) {
   const { pdfUrl, pdfRevision, imageUrl, imageRevision, revision, slideNumber, slideCount, title, views, journal, activeKey, hoverKey, mode } = props
+  const [showAll, setShowAll] = useState(true)
   const renderRevision = imageUrl ? imageRevision : pdfRevision
   const staleRender = renderRevision !== null && renderRevision < revision
 
@@ -105,10 +107,31 @@ export function SlideInspector(props: SlideInspectorProps) {
         <>
           <div className={styles.stage}>
             <SlideFrame pdfUrl={pdfUrl} imageUrl={imageUrl} slideNumber={slideNumber}>
-              <IssueOverlay items={views} activeKey={activeKey} hoverKey={hoverKey} onPick={props.onPick} onHover={props.onHover} />
+              <IssueOverlay
+                items={views}
+                activeKey={activeKey}
+                linkedKeys={props.linkedKeys}
+                hoverKey={hoverKey}
+                stale={staleRender}
+                showAll={showAll}
+                onPick={props.onPick}
+                onHover={props.onHover}
+              />
             </SlideFrame>
+            {staleRender && (
+              <p className={styles.staleChip} role="note">
+                <Icon as={AlertTriangle} size={14} />
+                Превью устарело: картинка r{renderRevision}, проблемы r{revision}
+              </p>
+            )}
           </div>
           <div className={styles.legend}>
+            <button type="button" className={styles.frameToggle} aria-pressed={showAll} onClick={() => setShowAll((current) => !current)}>
+              <span className={styles.frameToggleBox} aria-hidden>
+                {showAll && <Icon as={Check} size={10} strokeWidth={3} />}
+              </span>
+              Все рамки
+            </button>
             {LEGEND.map((item) => (
               <span key={item.key} className={styles.legendItem}>
                 <span className={styles.swatch} data-kind={item.key} aria-hidden />
@@ -119,7 +142,7 @@ export function SlideInspector(props: SlideInspectorProps) {
           </div>
           {staleRender && (
             <p className={styles.stale}>
-              Картинка — ревизия r{renderRevision}, проблемы — ревизия r{revision}.
+              Сервис ещё не перерисовал превью после правок: рамки показывают проблемы ревизии r{revision} поверх картинки r{renderRevision}.
             </p>
           )}
         </>

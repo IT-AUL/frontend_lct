@@ -64,6 +64,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
+  align-items: center;
   color: var(--ink-2);
   font-size: 12px;
 }
@@ -98,6 +99,65 @@
 
 .legendHint {
   margin-left: auto;
+}
+
+.staleChip {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 5;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin: 0;
+  padding: 4px 10px;
+  border: 1px solid var(--warn);
+  border-radius: var(--radius-sm);
+  background: var(--warn-bg);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.15);
+  pointer-events: none;
+}
+
+.staleChip svg {
+  color: var(--warn);
+}
+
+.frameToggle {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px 0 4px;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: none;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.frameToggle:hover {
+  background: var(--surface);
+}
+
+.frameToggleBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--ink-2);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--inv);
+}
+
+.frameToggle[aria-pressed='true'] .frameToggleBox {
+  border-color: var(--ink);
+  background: var(--ink);
 }
 
 .stale {

@@ -22,22 +22,28 @@ export { boxStyle, clampBox, MIN_BOX_SIZE } from './lib/bbox'
 export type { OverlayBox } from './lib/bbox'
 export { diffRepair, dismissalEntry, journalActionText, plannedFix, summarizeJournal } from './lib/journal'
 export type { JournalEntry, JournalOutcome, RepairBatch } from './lib/journal'
-export { actionLabel, describeMeasurement } from './lib/measurement'
+export { actionLabel, describeMeasurement, measurementSentence } from './lib/measurement'
 export type { MeasurementView } from './lib/measurement'
+export { clearOpenCounts, readOpenCounts, reportOpenCounts, useOpenCounts } from './lib/openCounts'
+export type { OpenCounts } from './lib/openCounts'
 export {
   buildIssueViews,
+  clusterIssueViews,
   countByCategory,
+  countOpenBySeverity,
   countOpenCritical,
   DEFAULT_VIEW_FILTER,
   filterIssueViews,
   groupIssueViews,
   isPendingStatus,
+  issueGroupKey,
   pruneSelection,
   selectableIds,
+  selectionState,
   toggleSelection,
   withSelection,
 } from './lib/views'
-export type { DisplayStatus, IssueGrouping, IssueView, IssueViewFilter, IssueViewGroup } from './lib/views'
+export type { DisplayStatus, IssueCluster, IssueGrouping, IssueView, IssueViewFilter, IssueViewGroup, SelectionState } from './lib/views'
 export { applyRuleCatalog, CATEGORY_LABEL, CATEGORY_ORDER, hasRuleCatalog, isAutoFixable, listRules, parseRuleCatalog, ruleMeta, RULES } from './model/rules'
 export type { RuleCatalogEntry, RuleCategory, RuleMeta } from './model/rules'
 export { CRITICAL_SEVERITIES, SEVERITY, SEVERITY_ORDER } from './model/severity'

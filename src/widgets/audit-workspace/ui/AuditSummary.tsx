@@ -35,6 +35,7 @@ interface AuditSummaryProps {
 export function AuditSummary(props: AuditSummaryProps) {
   const { variants, variantId, audit, severityCounts, kindCounts, fixableCount, hasProvider, contextualPending, reauditPending } = props
   const selectId = useId()
+  const reasonId = useId()
   const current = variants.find((variant) => variant.id === variantId)
   const contextualDone = audit.contextual_status === 'completed'
   const contextualNote = contextualDone ? CHECK_STATUS_LABEL.completed : hasProvider ? CHECK_STATUS_LABEL[audit.contextual_status] : 'не запускалась'
@@ -97,29 +98,42 @@ export function AuditSummary(props: AuditSummaryProps) {
         <Mono className={styles.value}>{fixableCount}</Mono>
       </div>
 
-      <div className={styles.spacer} />
-
-      <button
-        type="button"
-        className={styles.action}
-        onClick={props.onRunContextual}
-        disabled={contextualPending}
-        aria-busy={contextualPending}
-        title={hasProvider ? 'Проверить смысл слайдов моделью' : 'Подключите модель в разделе «Модели»'}
-      >
-        <span className={styles.nMark} aria-hidden>
-          N
-        </span>
-        {contextualPending ? 'Модель проверяет…' : 'Смысл моделью'}
-      </button>
-      <button type="button" className={styles.action} onClick={props.onReaudit} disabled={reauditPending} aria-busy={reauditPending}>
-        <Icon as={RefreshCw} size={14} className={reauditPending ? styles.spin : undefined} />
-        {reauditPending ? 'Идёт повторный аудит…' : 'Повторный аудит'}
-      </button>
-      <Link to={props.exportHref} className={styles.primary}>
-        Экспорт
-        <Icon as={ArrowRight} size={14} />
-      </Link>
+      <div className={styles.actions}>
+        <button
+          type="button"
+          className={styles.action}
+          onClick={props.onRunContextual}
+          disabled={contextualPending || !hasProvider}
+          aria-busy={contextualPending}
+          aria-describedby={hasProvider ? undefined : reasonId}
+          title={hasProvider ? 'Проверить смысл слайдов моделью' : 'Подключите модель в разделе «Модели» в шапке'}
+        >
+          <span className={styles.nMark} aria-hidden>
+            N
+          </span>
+          <span className={styles.actionLabel}>{contextualPending ? 'Модель проверяет…' : 'Смысл моделью'}</span>
+        </button>
+        {!hasProvider && (
+          <span id={reasonId} className={styles.reason}>
+            нужна модель
+          </span>
+        )}
+        <button
+          type="button"
+          className={styles.action}
+          onClick={props.onReaudit}
+          disabled={reauditPending}
+          aria-busy={reauditPending}
+          title="Повторный аудит"
+        >
+          <Icon as={RefreshCw} size={14} className={reauditPending ? styles.spin : undefined} />
+          <span className={styles.actionLabel}>{reauditPending ? 'Идёт повторный аудит…' : 'Повторный аудит'}</span>
+        </button>
+        <Link to={props.exportHref} className={styles.primary}>
+          Экспорт
+          <Icon as={ArrowRight} size={14} />
+        </Link>
+      </div>
     </section>
   )
 }

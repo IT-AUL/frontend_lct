@@ -2,6 +2,7 @@
   display: flex;
   flex: none;
   gap: 14px;
+  min-width: 0;
   align-items: center;
   padding: 10px 16px;
   border-bottom: 1px solid var(--line);
@@ -10,9 +11,10 @@
 
 .block {
   display: flex;
-  flex: none;
+  flex: 0 1 auto;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .bordered {
@@ -35,10 +37,12 @@
 .selectWrap {
   position: relative;
   display: inline-flex;
+  min-width: 0;
   align-items: center;
 }
 
 .select {
+  min-width: 0;
   max-width: 220px;
   padding: 0 16px 0 0;
   border: none;
@@ -71,6 +75,7 @@
 }
 
 .severities {
+  flex: none;
   flex-direction: row;
   gap: 4px;
 }
@@ -121,6 +126,8 @@
   display: flex;
   gap: 6px;
   align-items: center;
+  min-width: 0;
+  overflow: hidden;
   font-size: 12px;
   white-space: nowrap;
 }
@@ -130,7 +137,10 @@
 }
 
 .checkStatus {
+  min-width: 0;
+  overflow: hidden;
   color: var(--ink-3);
+  text-overflow: ellipsis;
 }
 
 .value {
@@ -138,8 +148,19 @@
   font-weight: 500;
 }
 
-.spacer {
-  flex: 1;
+.actions {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.reason {
+  margin: 0 4px 0 -2px;
+  color: var(--ink-3);
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .action,
@@ -156,12 +177,40 @@
 }
 
 .action {
+  position: relative;
   border: 1px solid var(--line-2);
   background: var(--surface);
 }
 
 .action:disabled {
   opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1439px) {
+  .summary {
+    gap: 12px;
+    padding: 10px 14px;
+  }
+
+  .bordered {
+    padding-left: 12px;
+  }
+
+  .action {
+    justify-content: center;
+    width: 36px;
+    padding: 0;
+  }
+
+  .actionLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 .primary {

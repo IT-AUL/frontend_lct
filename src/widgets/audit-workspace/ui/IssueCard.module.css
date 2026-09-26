@@ -26,8 +26,10 @@
 .check {
   display: flex;
   flex: none;
-  height: 20px;
   align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 20px;
 }
 
 .toggle {
@@ -58,6 +60,25 @@
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.headline {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.times {
+  flex: none;
+  padding: 0 5px;
+  border-radius: var(--radius-xs);
+  background: var(--sunken);
+  color: var(--ink-2);
+  font-size: 11px;
 }
 
 .slide {
@@ -101,10 +122,16 @@
   gap: 10px;
 }
 
-.text {
+.lead {
   margin: 0;
-  font-size: 13px;
-  overflow-wrap: anywhere;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+.note {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12px;
 }
 
 .measure {
@@ -162,15 +189,36 @@
   font-size: 11px;
 }
 
-.evidence {
+.tech {
+  color: var(--ink-3);
+  font-size: 11px;
+}
+
+.tech summary {
+  width: fit-content;
+  min-height: 24px;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.techBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.raw {
   display: flex;
   flex-direction: column;
   gap: 2px;
   margin: 0;
   padding: 0;
-  color: var(--ink-3);
-  font-size: 11px;
   list-style: none;
+  overflow-wrap: anywhere;
+}
+
+.shapes {
   overflow-wrap: anywhere;
 }
 
@@ -212,12 +260,6 @@
 .planTitle {
   color: var(--ink-3);
   font-size: 11px;
-}
-
-.planNote {
-  margin-top: 4px;
-  color: var(--ink-3);
-  font-size: 12px;
 }
 
 .failed,
