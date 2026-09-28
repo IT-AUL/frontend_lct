@@ -55,7 +55,7 @@ function stepMeta(step: ProjectStep, progress: ProjectProgress): string {
     case 'plan':
       return progress.planFirst ? 'до вёрстки, можно править' : 'структура колоды'
     case 'run':
-      return 'бюджет 5:00'
+      return 'три раскладки'
     case 'variants':
       return 'три стратегии'
     case 'audit':

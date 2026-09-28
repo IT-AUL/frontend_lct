@@ -55,15 +55,18 @@ test('live backend: template, brief, three variants, audit repair, export', asyn
 
   await test.step('generation finishes with three variants', async () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Три варианта готовы' })).toBeVisible({ timeout: 240_000 })
-    await expect(page.getByRole('article').filter({ hasText: 'Готово' })).toHaveCount(3)
+    await expect(page.getByRole('group', { name: 'Варианты колоды' }).getByRole('button', { name: /: Готово/ })).toHaveCount(3)
+    await expect(page.getByRole('timer')).toHaveCount(0)
   })
 
   await test.step('variants render real PDF thumbnails', async () => {
     await page.getByRole('link', { name: /Сравнить варианты/ }).click()
     for (const strategy of ['Близко к шаблону', 'Сбалансированный', 'Визуальный']) {
       const first = page.getByRole('list', { name: `Слайды варианта «${strategy}»` }).getByRole('img').first()
-      await first.scrollIntoViewIfNeeded()
-      await expect(first).toHaveAttribute('data-state', 'ready', { timeout: 40_000 })
+      await expect(async () => {
+        await first.scrollIntoViewIfNeeded()
+        await expect(first).toHaveAttribute('data-state', 'ready', { timeout: 5_000 })
+      }).toPass({ timeout: 40_000 })
     }
   })
 

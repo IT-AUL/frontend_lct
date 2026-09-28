@@ -10,15 +10,6 @@ export interface VariantCard {
   variant: VariantSummary | null
 }
 
-export const VARIANT_STATE_LABEL: Record<VariantCardState, string> = {
-  pending: 'В работе',
-  queued: 'В очереди',
-  running: 'Идёт',
-  done: 'Готово',
-  error: 'Ошибка',
-  canceled: 'Отменён',
-}
-
 function stateOf(variant: VariantSummary): VariantCardState {
   switch (variant.status) {
     case 'queued':

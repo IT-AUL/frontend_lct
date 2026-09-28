@@ -1,60 +1,47 @@
-import { budgetStatus } from '@/entities/generation'
 import { ApiError } from '@/shared/api'
 import { generationFixture } from '@/shared/api/mocks'
 import { describeFailure, failureMeta, isTrackingLost } from './failure'
-import { pipelineView } from './pipeline'
-import { budgetTicks, budgetTone, budgetVerdict } from './timer'
+import { autoSelectedKey, resultSummary, sceneProgress } from './scene'
 import { variantCards } from './variants'
 
-describe('budget timer', () => {
-  it('lays out minute ticks up to the TZ limit', () => {
-    expect(budgetTicks(300).map((tick) => tick.label)).toEqual(['0:00', '1:00', '2:00', '3:00', '4:00', 'лимит 5:00'])
-    expect(budgetTicks(90, 30).map((tick) => tick.seconds)).toEqual([0, 30, 60, 90])
-  })
+describe('stage scene', () => {
+  const [faithful, balanced, visual] = generationFixture.variants
+  if (!faithful || !balanced || !visual) throw new Error('fixture must contain three variants')
 
-  it('turns amber near the budget and red past it', () => {
-    expect(budgetTone(budgetStatus(8.2, 300))).toBe('normal')
-    expect(budgetTone(budgetStatus(250, 300))).toBe('warn')
-    expect(budgetTone(budgetStatus(301, 300))).toBe('exceeded')
-  })
-
-  it('states the verdict against the budget', () => {
-    expect(budgetVerdict(8.2, budgetStatus(8.2, 300), true)).toBe('В пределах бюджета 5:00: запас 4:51')
-    expect(budgetVerdict(62, budgetStatus(62, 300), false)).toBe('До лимита 5:00 осталось 3:58')
-    expect(budgetVerdict(330, budgetStatus(330, 300), false)).toBe('Бюджет 5:00 превышен на 0:30')
-  })
-})
-
-describe('pipeline view', () => {
-  it('shows the whole pipeline as in progress while the stage is unknown', () => {
-    const view = pipelineView({ phase: 'submitting', stage: null, failedStage: null })
-    expect(view.mode).toBe('opaque')
-    expect(view.steps.every((step) => step.state === 'idle')).toBe(true)
-    expect(view.steps.map((step) => step.label)).toEqual(['Разбор контента', 'План структуры', 'Вёрстка', 'Аудит', 'Рендер', 'Паспорт качества'])
-  })
-
-  it('marks earlier stages done and the reported stage active', () => {
-    const view = pipelineView({ phase: 'running', stage: 'compose_layout', failedStage: null })
-    expect(view.mode).toBe('tracked')
+  it('explains the current stage in plain words and marks earlier stages done', () => {
+    const [card] = variantCards('running', [{ ...balanced, status: 'running', stage: 'compose' }])
+    if (!card) throw new Error('card is missing')
+    const view = sceneProgress(card)
+    expect(view.phrase).toBe('Раскладываем слайды по макетам шаблона')
     expect(view.steps.map((step) => step.state)).toEqual(['done', 'done', 'active', 'pending', 'pending', 'pending'])
-    expect(view.currentLabel).toBe('Вёрстка')
+    expect(view.steps.map((step) => step.label)).toEqual(['контент', 'план', 'вёрстка', 'аудит', 'рендер', 'паспорт'])
   })
 
-  it('keeps an unmapped stage readable without guessing its position', () => {
-    const view = pipelineView({ phase: 'running', stage: 'model_warmup', failedStage: null })
-    expect(view.mode).toBe('opaque')
-    expect(view.currentLabel).toBe('Model warmup')
+  it('stays calm while the service has not named a stage yet', () => {
+    const [card] = variantCards('running', [{ ...balanced, status: 'running', stage: null }])
+    if (!card) throw new Error('card is missing')
+    expect(sceneProgress(card).phrase).toBe('Собираем колоду')
   })
 
-  it('marks the failing stage', () => {
-    const view = pipelineView({ phase: 'failed', stage: 'render', failedStage: 'deck_plan' })
-    expect(view.mode).toBe('stopped')
-    expect(view.steps.map((step) => step.state)).toEqual(['done', 'error', 'pending', 'pending', 'pending', 'pending'])
+  it('follows the variant being built, then settles on the recommended one', () => {
+    const building = variantCards('running', [
+      { ...faithful, status: 'completed' },
+      { ...balanced, status: 'running', stage: 'audit' },
+      { ...visual, status: 'queued' },
+    ])
+    expect(autoSelectedKey(building)).toBe(balanced.id)
+    const done = variantCards('completed', [faithful, balanced, visual])
+    expect(autoSelectedKey(done)).toBe(balanced.id)
   })
 
-  it('completes every stage when the run is done', () => {
-    const view = pipelineView({ phase: 'completed', stage: null, failedStage: null })
-    expect(view.steps.every((step) => step.state === 'done')).toBe(true)
+  it('summarises a finished variant from its real metrics', () => {
+    expect(resultSummary({ metrics: { validity: 1, editability_pei: 3, issues_total: 37, style_fidelity: 0.93, auto_fixed: 29 } })).toEqual({
+      styleFidelity: 0.93,
+      autoFixed: 29,
+      openIssues: 37,
+      opensCleanly: true,
+    })
+    expect(resultSummary({ metrics: null })).toEqual({ styleFidelity: null, autoFixed: null, openIssues: null, opensCleanly: null })
   })
 })
 

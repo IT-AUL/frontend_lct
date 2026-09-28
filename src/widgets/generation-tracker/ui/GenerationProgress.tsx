@@ -1,35 +1,32 @@
+import { useState } from 'react'
 import type { GenerationTracker } from '@/entities/generation'
 import { describeFailure } from '../lib/failure'
-import { pipelineView } from '../lib/pipeline'
+import { autoSelectedKey } from '../lib/scene'
 import { variantCards } from '../lib/variants'
-import { BudgetTimer } from './BudgetTimer'
 import styles from './GenerationProgress.module.css'
-import { PipelineStages } from './PipelineStages'
-import { VariantCard } from './VariantCard'
+import { StageScene } from './StageScene'
+import { VariantTabs } from './VariantTabs'
 
 interface GenerationProgressProps {
   tracker: GenerationTracker
+  auditHref?: (variantId: string) => string
 }
 
-export function GenerationProgress({ tracker }: GenerationProgressProps) {
-  const { phase, startedAt, finishedAt, generation, job, jobError } = tracker
+export function GenerationProgress({ tracker, auditHref }: GenerationProgressProps) {
+  const { phase, generation } = tracker
   const cards = variantCards(phase, generation?.variants)
+  const [pickedKey, setPickedKey] = useState<string | null>(null)
   const failure = phase === 'failed' ? describeFailure(tracker) : null
-  const runningStage = generation?.variants.find((variant) => variant.status === 'running' && variant.stage)?.stage
-  const pipeline = pipelineView({ phase, stage: job?.stage ?? runningStage, failedStage: jobError?.stage })
-  const ticking = phase === 'submitting' || phase === 'running'
+
+  if (cards.length === 0) return null
+
+  const selectedKey = cards.some((card) => card.key === pickedKey) ? pickedKey : autoSelectedKey(cards)
+  const selected = cards.find((card) => card.key === selectedKey) ?? cards[0]
 
   return (
     <div className={styles.root}>
-      {startedAt !== null && <BudgetTimer startedAt={startedAt} finishedAt={finishedAt} ticking={ticking} />}
-      {cards.length > 0 && (
-        <div className={styles.cards}>
-          {cards.map((card) => (
-            <VariantCard key={card.key} card={card} failureMessage={failure?.message ?? null} />
-          ))}
-        </div>
-      )}
-      <PipelineStages view={pipeline} />
+      {selected && <StageScene card={selected} failureMessage={failure?.message ?? null} auditHref={auditHref ?? null} />}
+      <VariantTabs cards={cards} selectedKey={selected?.key ?? null} onSelect={setPickedKey} />
     </div>
   )
 }

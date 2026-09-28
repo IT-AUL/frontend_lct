@@ -5,6 +5,7 @@ import { useRerunGeneration } from '@/features/rerun-generation'
 import { describeFailure, failureMeta, GenerationProgress, isTrackingLost, RunNotice } from '@/widgets/generation-tracker'
 import { isTrackingId, useGenerationTracker, type GenerationPhase, type GenerationTracker } from '@/entities/generation'
 import { markEvidence, projectRunId, rememberRun, useProject } from '@/entities/project'
+import { useTemplate } from '@/entities/template'
 import { routes } from '@/shared/config'
 import { ArrowRight, Button, Icon, PageHeader } from '@/shared/ui'
 import styles from './GenerationPage.module.css'
@@ -29,14 +30,14 @@ function headline(phase: GenerationPhase, count: number): string {
   }
 }
 
-function lead(phase: GenerationPhase): string {
+function lead(phase: GenerationPhase, templateName: string | null): string {
+  const source = templateName ? `Один план, правила шаблона «${templateName}», три раскладки.` : 'Один план, правила шаблона, три раскладки.'
   switch (phase) {
     case 'submitting':
-      return 'Можно перейти на другой экран — сборка продолжится.'
     case 'running':
-      return 'Можно перейти на другой экран — сборка продолжится.'
+      return `${source} Можно перейти на другой экран — сборка продолжится.`
     case 'completed':
-      return 'Варианты собраны по правилам шаблона и проверены.'
+      return `${source} Каждый вариант уже проверен по правилам шаблона.`
     case 'failed':
       return 'Бриф и файлы сохранены.'
     case 'canceled':
@@ -137,6 +138,7 @@ export function GenerationPage() {
   const tracking = isTrackingId(runId)
   const variantCount = tracker.generation?.variants.length || tracker.variantIds.length || 3
   const lost = isTrackingLost(tracker.error)
+  const { data: template } = useTemplate(tracker.generation?.template_id)
 
   useEffect(() => {
     if (!tracking || !generationId) return
@@ -170,11 +172,11 @@ export function GenerationPage() {
       <PageHeader
         eyebrow="Шаг 4 · Генерация"
         title={lost ? 'Статус запуска неизвестен' : headline(phase, variantCount)}
-        description={lost ? 'Бриф и загруженные файлы сохранены.' : lead(phase)}
+        description={lost ? 'Бриф и загруженные файлы сохранены.' : lead(phase, template?.filename ?? null)}
         actions={actions}
       />
       <RecoveryNotice projectId={projectId} runId={runId} tracker={tracker} />
-      {!lost && <GenerationProgress tracker={tracker} />}
+      {!lost && <GenerationProgress tracker={tracker} auditHref={generationId ? (variantId) => routes.audit(projectId, generationId, variantId) : undefined} />}
     </div>
   )
 }

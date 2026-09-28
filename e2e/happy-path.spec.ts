@@ -45,13 +45,14 @@ test('demo path: template DNA, brief, three variants, audit repair, export', asy
     await page.getByRole('button', { name: /Собрать 3 варианта/ }).click()
   })
 
-  await test.step('generation page counts time against 5:00 and finishes with three variants', async () => {
-    const budget = page.getByRole('region', { name: 'Время генерации против бюджета' })
-    await expect(budget).toBeVisible()
-    await expect(budget).toContainText('5:00')
-    await expect(budget.getByRole('timer')).toHaveText(/^\d+:\d{2}$/)
+  await test.step('generation page shows the deck being built and finishes with three variants', async () => {
+    const tabs = page.getByRole('group', { name: 'Варианты колоды' })
+    await expect(tabs).toBeVisible()
+    await expect(page.getByRole('region', { name: /^Сборка варианта/ })).toBeVisible()
+    await expect(page.getByRole('timer')).toHaveCount(0)
     await expect(page.getByRole('heading', { level: 1, name: 'Три варианта готовы' })).toBeVisible({ timeout: 30_000 })
-    await expect(page.getByRole('article').filter({ hasText: 'Готово' })).toHaveCount(3)
+    await expect(tabs.getByRole('button', { name: /: Готово/ })).toHaveCount(3)
+    await expect(page.getByRole('link', { name: 'Открыть и проверить' })).toBeVisible()
   })
 
   await test.step('variants page renders PDF thumbnails', async () => {
