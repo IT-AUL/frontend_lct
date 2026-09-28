@@ -2,6 +2,7 @@ export { useVariant, useVariants, useVariantSlides, variantKeys } from './api/va
 export { resolveDeckFiles, slidePreviewUrl } from './lib/artifacts'
 export type { DeckFile, DeckFileFormat, DeckFiles } from './lib/artifacts'
 export { AUDIT_STATUS_LABEL, PEI_MAX, variantMetrics } from './lib/metrics'
+export { telltaleSlides } from './lib/slides'
 export type { VariantMetricsView } from './lib/metrics'
 export { isVariantSettled } from './model/status'
 export {

@@ -111,6 +111,7 @@ const STYLE_LABEL: Record<string, string> = {
   layout: 'Макеты',
   layouts: 'Макеты',
   layout_compliance: 'Макеты',
+  layout_origin_compliance: 'Макеты',
   anchor: 'Якоря',
   anchors: 'Якоря',
   anchor_compliance: 'Якоря',

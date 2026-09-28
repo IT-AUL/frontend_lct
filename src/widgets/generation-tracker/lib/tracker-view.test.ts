@@ -1,7 +1,7 @@
 import { ApiError } from '@/shared/api'
 import { generationFixture } from '@/shared/api/mocks'
 import { describeFailure, failureMeta, isTrackingLost } from './failure'
-import { autoSelectedKey, resultSummary, sceneProgress, telltaleSlides } from './scene'
+import { autoSelectedKey, resultSummary, sceneProgress } from './scene'
 import { variantCards } from './variants'
 
 describe('stage scene', () => {
@@ -42,15 +42,6 @@ describe('stage scene', () => {
       opensCleanly: true,
     })
     expect(resultSummary({ metrics: null })).toEqual({ styleFidelity: null, autoFixed: null, openIssues: null, opensCleanly: null })
-  })
-})
-
-describe('telltale slides', () => {
-  const slide = (index: number, purpose: string) => ({ id: `s${index}`, variant_id: 'v', index, slide_plan_id: null, purpose, title: null, revision: 1, preview_artifact_id: null })
-
-  it('shows content slides first so the variants look different', () => {
-    const slides = [slide(0, 'title'), slide(1, 'agenda'), slide(2, 'problem'), slide(3, 'data'), slide(4, 'thank_you')]
-    expect(telltaleSlides(slides, 3).map((item) => item.index)).toEqual([2, 3, 0])
   })
 })
 

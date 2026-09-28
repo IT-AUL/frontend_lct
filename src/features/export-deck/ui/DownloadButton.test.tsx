@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { resolveDeckFiles } from '@/entities/variant'
 import type * as SharedApiModule from '@/shared/api'
 import { variantFixtures } from '@/shared/api/mocks'
-import { ExportFileCard, type ExportFileCardProps } from './ExportFileCard'
+import { DownloadButton, type DownloadButtonProps } from './DownloadButton'
 
 type SharedApi = typeof SharedApiModule
 
@@ -28,11 +28,11 @@ const { variant, export: record } = variantFixtures.balanced
 const files = resolveDeckFiles(variant, [record])
 const projectId = 'prj_export_test'
 
-function renderCard(props: Partial<ExportFileCardProps>) {
+function renderButton(props: Partial<DownloadButtonProps>) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   render(
     <QueryClientProvider client={client}>
-      <ExportFileCard
+      <DownloadButton
         projectId={projectId}
         variantId={variant.id}
         format="pdf"
@@ -40,40 +40,42 @@ function renderCard(props: Partial<ExportFileCardProps>) {
         currentRevision={1}
         supported
         fileName="deckdna_balanced_r1.pdf"
-        note="Для рассылки и печати"
+        label="PDF"
         {...props}
       />
     </QueryClientProvider>,
   )
 }
 
-function card() {
-  return screen.getByRole('article')
+function root() {
+  return document.querySelector('[data-format]') as HTMLElement
 }
 
 function evidence(): Record<string, Record<string, boolean>> {
   return JSON.parse(localStorage.getItem('deckdna.evidence.v1') ?? '{}') as Record<string, Record<string, boolean>>
 }
 
-describe('ExportFileCard', () => {
+describe('DownloadButton', () => {
   afterEach(() => {
     getMock.mockReset()
     postMock.mockReset()
     localStorage.clear()
+    vi.restoreAllMocks()
   })
 
-  it('offers a download link with size and checksum when the file is ready', () => {
-    renderCard({})
+  it('downloads a ready file and shows its size and revision', () => {
+    renderButton({})
 
-    const link = screen.getByRole('link', { name: 'Скачать' })
-    expect(card()).toHaveAttribute('data-status', 'ready')
+    const link = screen.getByRole('link', { name: 'PDF' })
+    expect(root()).toHaveAttribute('data-status', 'ready')
     expect(link).toHaveAttribute('href', `/api/v1/artifacts/${files.pdf?.artifactId}/download`)
     expect(link).toHaveAttribute('download', 'deckdna_balanced_r1.pdf')
-    expect(screen.getByText('317 КБ · sha256 · ff7d…afa7')).toBeInTheDocument()
+    expect(screen.getByText('317 КБ · r1')).toBeInTheDocument()
   })
 
-  it('goes idle → creating → ready for a new PPTX export and records the evidence', async () => {
+  it('builds a missing PPTX, downloads it at once and records the evidence', async () => {
     const user = userEvent.setup()
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
     let release: () => void = () => undefined
     postMock.mockReturnValueOnce(new Promise((resolve) => (release = () => resolve(respond(202, { export_id: 'exp_new', job_id: 'job_new' })))))
     const pptxRecord = {
@@ -83,72 +85,72 @@ describe('ExportFileCard', () => {
     }
     getMock.mockReturnValueOnce(respond(200, pptxRecord))
 
-    renderCard({ format: 'pptx', file: null, fileName: 'deckdna_balanced_r1.pptx', note: 'Нативные объекты' })
-    expect(card()).toHaveAttribute('data-status', 'idle')
+    renderButton({ format: 'pptx', file: null, fileName: 'deckdna_balanced_r1.pptx', label: 'Скачать PPTX', primary: true })
+    expect(root()).toHaveAttribute('data-status', 'idle')
 
-    await user.click(screen.getByRole('button', { name: 'Собрать PPTX' }))
-    expect(card()).toHaveAttribute('data-status', 'creating')
-    expect(screen.getByRole('button', { name: 'Собираем…' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Скачать PPTX' }))
+    expect(root()).toHaveAttribute('data-status', 'creating')
+    expect(screen.getByRole('button', { name: 'Собираем PPTX…' })).toBeDisabled()
 
     release()
-    const link = await screen.findByRole('link', { name: 'Скачать' })
-    expect(card()).toHaveAttribute('data-status', 'ready')
+    const link = await screen.findByRole('link', { name: 'Скачать PPTX' })
     expect(link).toHaveAttribute('href', '/api/v1/artifacts/art_new_pptx/download')
-    expect(screen.getByText('3,8 МБ · sha256 · abcd…6789')).toBeInTheDocument()
+    expect(screen.getByText('3,8 МБ · r1')).toBeInTheDocument()
+    expect(click).toHaveBeenCalledTimes(1)
     expect(postMock).toHaveBeenCalledWith('/api/v1/variants/{variant_id}/exports', expect.objectContaining({ body: { formats: ['pptx'] } }))
     expect(evidence()[projectId]?.exported).toBe(true)
   })
 
   it('records the exported evidence when the PPTX is downloaded', async () => {
     const user = userEvent.setup()
-    renderCard({ projectId: 'prj_download_test', format: 'pptx', file: files.pptx, fileName: 'deckdna_balanced.pptx', note: 'Нативные объекты' })
+    renderButton({ projectId: 'prj_download_test', format: 'pptx', file: files.pptx, fileName: 'deckdna_balanced.pptx', label: 'Скачать PPTX' })
 
-    const link = screen.getByRole('link', { name: 'Скачать' })
+    const link = screen.getByRole('link', { name: 'Скачать PPTX' })
     link.addEventListener('click', (event) => event.preventDefault())
     await user.click(link)
 
     expect(evidence().prj_download_test?.exported).toBe(true)
   })
 
-  it('shows HTML honestly as not implemented by the service, without an action', () => {
-    renderCard({ format: 'html', file: null, supported: false, fileName: 'deckdna_balanced.html', note: 'Слайды разметкой' })
+  it('keeps an unsupported format visible but inactive', () => {
+    renderButton({ format: 'html', file: null, supported: false, fileName: 'deckdna_balanced.html', label: 'HTML' })
 
-    expect(card()).toHaveAttribute('data-status', 'unavailable')
-    expect(screen.getByText('Не реализовано сервисом')).toBeInTheDocument()
-    expect(screen.getByText('Слайды разметкой')).toBeInTheDocument()
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(root()).toHaveAttribute('data-status', 'unavailable')
+    expect(screen.getByRole('button', { name: 'HTML' })).toBeDisabled()
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 
-  it('turns a 501 for a stale PDF into an honest unavailable state and keeps the old file', async () => {
+  it('rebuilds a stale file for the current revision and keeps the previous one reachable', async () => {
     const user = userEvent.setup()
     postMock.mockReturnValueOnce(respond(501, notImplemented))
-    renderCard({ currentRevision: 2 })
+    renderButton({ currentRevision: 2 })
 
-    expect(card()).toHaveAttribute('data-status', 'idle')
-    expect(screen.getByText('Файл собран для ревизии r1, текущая — r2.')).toBeInTheDocument()
+    expect(root()).toHaveAttribute('data-status', 'idle')
+    expect(screen.getByText(/соберём для r2/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'прежний r1' })).toHaveAttribute('href', `/api/v1/artifacts/${files.pdf?.artifactId}/download`)
 
-    await user.click(screen.getByRole('button', { name: 'Пересобрать для r2' }))
+    await user.click(screen.getByRole('button', { name: 'PDF' }))
 
-    await waitFor(() => expect(card()).toHaveAttribute('data-status', 'unavailable'))
+    await waitFor(() => expect(root()).toHaveAttribute('data-status', 'unavailable'))
     expect(screen.getByText('PDF относится к прошлой ревизии')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Скачать r1' })).toHaveAttribute('href', `/api/v1/artifacts/${files.pdf?.artifactId}/download`)
+    expect(screen.getByRole('link', { name: 'PDF · r1' })).toHaveAttribute('href', `/api/v1/artifacts/${files.pdf?.artifactId}/download`)
   })
 
-  it('shows other failures with a retry', async () => {
+  it('shows other failures and lets the user try again', async () => {
     const user = userEvent.setup()
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
     const failure = { error: { code: 'internal_error', message: 'Рендер PDF упал', retryable: true, details: {} } }
     postMock.mockReturnValueOnce(respond(500, failure)).mockReturnValueOnce(respond(202, { export_id: record.id, job_id: record.job_id }))
     getMock.mockReturnValueOnce(respond(200, record))
-    renderCard({ file: null })
+    renderButton({ file: null })
 
-    await user.click(screen.getByRole('button', { name: 'Собрать PDF' }))
+    await user.click(screen.getByRole('button', { name: 'PDF' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Рендер PDF упал')
-    expect(card()).toHaveAttribute('data-status', 'error')
+    expect(root()).toHaveAttribute('data-status', 'error')
 
-    await user.click(screen.getByRole('button', { name: 'Повторить' }))
-    expect(await screen.findByRole('link', { name: 'Скачать' })).toBeInTheDocument()
-    expect(card()).toHaveAttribute('data-status', 'ready')
+    await user.click(screen.getByRole('button', { name: 'PDF' }))
+    expect(await screen.findByRole('link', { name: 'PDF' })).toBeInTheDocument()
+    expect(root()).toHaveAttribute('data-status', 'ready')
   })
 })

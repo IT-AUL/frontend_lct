@@ -2,7 +2,9 @@ import { useCallback } from 'react'
 import { useCreateExport, type ExportFormat } from '@/entities/passport'
 import { markEvidence } from '@/entities/project'
 import type { DeckFile } from '@/entities/variant'
-import { deriveExportState, type ExportState } from './exportState'
+import { artifactUrl } from '@/shared/api'
+import { downloadUrl } from '@/shared/lib/download'
+import { deriveExportState, fileFromResult, type ExportState } from './exportState'
 
 interface DeckExportOptions {
   projectId: string
@@ -15,7 +17,7 @@ interface DeckExportOptions {
 
 export interface DeckExport {
   state: ExportState
-  create: () => void
+  create: (downloadAs?: string) => void
   markDownloaded: () => void
 }
 
@@ -30,13 +32,19 @@ export function useDeckExport({ projectId, variantId, format, file, currentRevis
     mutation: { status: mutation.status, data: mutation.data, error: mutation.error },
   })
 
-  const create = useCallback(() => {
-    mutate([format], {
-      onSuccess: (result) => {
-        if (result.status === 'created' && format === 'pptx' && projectId) markEvidence(projectId, 'exported')
-      },
-    })
-  }, [format, mutate, projectId])
+  const create = useCallback(
+    (downloadAs?: string) => {
+      mutate([format], {
+        onSuccess: (result) => {
+          if (result.status !== 'created') return
+          if (format === 'pptx' && projectId) markEvidence(projectId, 'exported')
+          const created = fileFromResult(format, result)
+          if (downloadAs && created) downloadUrl(artifactUrl(created.artifactId), downloadAs)
+        },
+      })
+    },
+    [format, mutate, projectId],
+  )
 
   const markDownloaded = useCallback(() => {
     if (format === 'pptx' && projectId) markEvidence(projectId, 'exported')

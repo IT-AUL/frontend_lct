@@ -1,5 +1,5 @@
 export { deriveExportState, FORMAT_LABEL, isStaleFile, unavailableMessage } from './model/exportState'
 export type { ExportState, ExportStatus } from './model/exportState'
 export { useDeckExport } from './model/useDeckExport'
-export { ExportFileCard } from './ui/ExportFileCard'
-export type { ExportFileCardProps } from './ui/ExportFileCard'
+export { DownloadButton } from './ui/DownloadButton'
+export type { DownloadButtonProps } from './ui/DownloadButton'

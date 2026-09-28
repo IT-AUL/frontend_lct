@@ -1,5 +1,5 @@
 import { GENERATION_PIPELINE, pipelineStage, type PipelineStage } from '@/entities/generation'
-import { DEFAULT_STRATEGY, type SlideInfo, type VariantSummary } from '@/entities/variant'
+import { DEFAULT_STRATEGY, type VariantSummary } from '@/entities/variant'
 import type { VariantCard, VariantCardState } from './variants'
 
 const STAGE_PHRASE: Record<PipelineStage, string> = {
@@ -95,12 +95,4 @@ export function resultSummary(variant: Pick<VariantSummary, 'metrics'>): ResultS
     openIssues: finite(metrics?.issues_total),
     opensCleanly: validity === null ? null : validity >= 1,
   }
-}
-
-const SERVICE_PURPOSES = new Set(['title', 'agenda', 'section_divider', 'thank_you', 'qa', 'cta'])
-
-export function telltaleSlides(slides: readonly SlideInfo[], count: number): SlideInfo[] {
-  const content = slides.filter((slide) => !SERVICE_PURPOSES.has(slide.purpose ?? ''))
-  const rest = slides.filter((slide) => !content.includes(slide))
-  return [...content, ...rest].slice(0, count)
 }

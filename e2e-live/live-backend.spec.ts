@@ -87,8 +87,8 @@ test('live backend: template, brief, three variants, audit repair, export', asyn
 
   await test.step('export: PPTX downloads with a valid package', async () => {
     await page.getByRole('region', { name: 'Сводка аудита' }).getByRole('link', { name: /Экспорт/ }).click()
-    await expect(page.getByRole('heading', { level: 1, name: 'Редактируемый PPTX в стиле шаблона' })).toBeVisible()
-    const link = page.getByRole('region', { name: 'Файлы' }).getByRole('article', { name: /\.pptx$/ }).getByRole('link', { name: /^Скачать/ }).first()
+    await expect(page.getByRole('heading', { level: 1, name: 'Заберите колоду' })).toBeVisible()
+    const link = page.getByRole('complementary', { name: 'Скачать колоду' }).getByRole('link', { name: 'Скачать PPTX' })
     await expect(link).toBeVisible({ timeout: 60_000 })
     const [download] = await Promise.all([page.waitForEvent('download'), link.click()])
     const bytes = await readFile(await download.path())

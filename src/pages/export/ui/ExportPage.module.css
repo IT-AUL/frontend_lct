@@ -21,38 +21,9 @@
   background: var(--surface);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
-  gap: 20px;
-  align-items: start;
-}
-
-.files {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.sectionTitle {
-  font-size: 16px;
-  font-weight: 600;
-}
-
 .error {
   color: var(--error);
   font-size: 13px;
-}
-
-.jsonLink {
-  color: var(--ink-2);
-  font-size: 12px;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.jsonLink:hover {
-  color: var(--ink);
 }
 
 .notice {
@@ -76,33 +47,155 @@
   text-underline-offset: 2px;
 }
 
-.openIssues {
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.blockLabel {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.downloads {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.secondaryDownloads {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 10px;
+}
+
+.checks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.checkIcon {
+  margin-top: 2px;
+  color: var(--ok);
+}
+
+.check[data-tone='warn'] .checkIcon {
+  color: var(--warn);
+}
+
+.inlineLink {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.details {
+  border-top: 1px solid var(--line);
+}
+
+.summary {
   display: flex;
   gap: 10px;
   align-items: center;
-  padding: 10px 14px;
-  border-radius: var(--radius-lg);
-  background: var(--error-bg);
-  color: var(--ink);
+  padding: 18px 0;
+  list-style: none;
+  cursor: pointer;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.chevron {
+  color: var(--ink-3);
+  transition: transform 0.2s;
+}
+
+.details[open] .chevron {
+  transform: rotate(90deg);
+}
+
+.summaryTitle {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.summaryHint {
+  overflow: hidden;
+  color: var(--ink-3);
   font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.openIssuesIcon {
-  flex: none;
-  color: var(--error);
+.detailsBody {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 12px;
 }
 
-.openIssuesText {
-  flex: 1;
-  min-width: 0;
+.detailsTitle {
+  margin-bottom: 8px;
+  font-size: 14px;
   font-weight: 500;
 }
 
-.openIssuesLink {
-  display: inline-flex;
-  flex: none;
-  gap: 6px;
-  align-items: center;
-  color: var(--ink);
-  font-weight: 500;
+.sumList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
 }
+
+.sumRow {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.sumRow dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.passportDownload {
+  width: 120px;
+}
+
