@@ -35,7 +35,7 @@
 
 .cover {
   flex: none;
-  width: 56px;
+  width: 72px;
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border: 1px dashed var(--line-2);

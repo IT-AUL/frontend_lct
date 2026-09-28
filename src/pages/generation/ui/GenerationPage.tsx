@@ -31,18 +31,22 @@ function headline(phase: GenerationPhase, count: number): string {
 }
 
 function lead(phase: GenerationPhase, templateName: string | null): string {
-  const source = templateName ? `Один план, правила шаблона «${templateName}», три раскладки.` : 'Один план, правила шаблона, три раскладки.'
   switch (phase) {
     case 'submitting':
     case 'running':
-      return `${source} Можно перейти на другой экран — сборка продолжится.`
+      return templateName ? `Шаблон «${templateName}». Можно уйти с экрана — сборка продолжится.` : 'Можно уйти с экрана — сборка продолжится.'
     case 'completed':
-      return `${source} Каждый вариант уже проверен по правилам шаблона.`
+      return 'Выберите колоду, чтобы открыть её в аудите.'
     case 'failed':
       return 'Бриф и файлы сохранены.'
     case 'canceled':
       return 'Бриф и загруженные файлы сохранены.'
   }
+}
+
+function auditLink(projectId: string, runId: string, variantId: string, slideNumber?: number): string {
+  const path = routes.audit(projectId, runId, variantId)
+  return slideNumber ? `${path}?${new URLSearchParams({ slide: String(slideNumber) }).toString()}` : path
 }
 
 function RecoveryNotice({ projectId, runId, tracker }: { projectId: string; runId: string; tracker: GenerationTracker }) {
@@ -156,15 +160,10 @@ export function GenerationPage() {
     ) : phase === 'running' && canCancel && generationId ? (
       <CancelGenerationButton generationId={generationId} onCanceled={() => navigate(routes.brief(projectId))} />
     ) : phase === 'completed' && generationId ? (
-      <>
-        <Link className={styles.secondaryLink} to={routes.plan(projectId, generationId)}>
-          План колоды
-        </Link>
-        <Link className={styles.primaryLink} to={routes.variants(projectId, generationId)}>
-          Сравнить варианты
-          <Icon as={ArrowRight} />
-        </Link>
-      </>
+      <Link className={styles.secondaryLink} to={routes.variants(projectId, generationId)}>
+        Сравнить по слайдам
+        <Icon as={ArrowRight} />
+      </Link>
     ) : undefined
 
   return (
@@ -176,7 +175,7 @@ export function GenerationPage() {
         actions={actions}
       />
       <RecoveryNotice projectId={projectId} runId={runId} tracker={tracker} />
-      {!lost && <GenerationProgress tracker={tracker} auditHref={generationId ? (variantId) => routes.audit(projectId, generationId, variantId) : undefined} />}
+      {!lost && <GenerationProgress tracker={tracker} auditHref={generationId ? (variantId, slideNumber) => auditLink(projectId, generationId, variantId, slideNumber) : undefined} />}
     </div>
   )
 }

@@ -144,11 +144,17 @@ describe('GenerationPage', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Три варианта готовы' })).toBeInTheDocument()
     expect(screen.queryByRole('timer')).not.toBeInTheDocument()
-    expect(within(screen.getByRole('group', { name: 'Варианты колоды' })).getAllByRole('button', { name: /Готово/ })).toHaveLength(3)
-    const scene = within(screen.getByRole('region', { name: 'Сборка варианта «Сбалансированный»' }))
-    expect(scene.getByRole('link', { name: 'Открыть и проверить' })).toHaveAttribute('href', routes.audit(PROJECT, RUN, generationFixture.variants[1]?.id))
-    expect(screen.getByRole('link', { name: 'Сравнить варианты' })).toHaveAttribute('href', routes.variants(PROJECT, RUN))
-    expect(screen.getByRole('link', { name: 'План колоды' })).toHaveAttribute('href', routes.plan(PROJECT, RUN))
+    for (const name of ['Близко к шаблону', 'Сбалансированный', 'Визуальный']) {
+      expect(screen.getByRole('article', { name })).toBeInTheDocument()
+    }
+    const [, balanced] = generationFixture.variants
+    expect(within(screen.getByRole('article', { name: 'Сбалансированный' })).getByRole('link', { name: 'Сбалансированный' })).toHaveAttribute(
+      'href',
+      routes.audit(PROJECT, RUN, balanced?.id),
+    )
+    expect(screen.getByText('рекомендуем')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Варианты колоды' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Сравнить по слайдам' })).toHaveAttribute('href', routes.variants(PROJECT, RUN))
     expect(screen.queryByRole('button', { name: 'Отменить' })).not.toBeInTheDocument()
     expect(markEvidence).toHaveBeenCalledWith(PROJECT, 'generated')
   })

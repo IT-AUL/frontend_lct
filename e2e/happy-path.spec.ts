@@ -51,12 +51,13 @@ test('demo path: template DNA, brief, three variants, audit repair, export', asy
     await expect(page.getByRole('region', { name: /^Сборка варианта/ })).toBeVisible()
     await expect(page.getByRole('timer')).toHaveCount(0)
     await expect(page.getByRole('heading', { level: 1, name: 'Три варианта готовы' })).toBeVisible({ timeout: 30_000 })
-    await expect(tabs.getByRole('button', { name: /: Готово/ })).toHaveCount(3)
-    await expect(page.getByRole('link', { name: 'Открыть и проверить' })).toBeVisible()
+    for (const name of ['Близко к шаблону', 'Сбалансированный', 'Визуальный']) {
+      await expect(page.getByRole('article', { name, exact: true }).getByRole('link', { name, exact: true })).toBeVisible()
+    }
   })
 
   await test.step('variants page renders PDF thumbnails', async () => {
-    await page.getByRole('link', { name: /Сравнить варианты/ }).click()
+    await page.getByRole('link', { name: /Сравнить по слайдам/ }).click()
     await expect(page.getByRole('heading', { level: 1, name: 'Один контент, один шаблон, три стратегии' })).toBeVisible()
     for (const strategy of ['Близко к шаблону', 'Сбалансированный', 'Визуальный']) {
       const slides = page.getByRole('list', { name: `Слайды варианта «${strategy}»` })
