@@ -22,23 +22,9 @@
 }
 
 .logo {
-  display: grid;
-  grid-template-columns: 8px 8px;
-  gap: 2px;
-}
-
-.logoFill,
-.logoLine {
-  width: 8px;
-  height: 8px;
-}
-
-.logoFill {
-  background: var(--ink);
-}
-
-.logoLine {
-  border: 1.5px solid var(--ink);
+  display: flex;
+  flex: none;
+  align-items: center;
 }
 
 .wordmark {

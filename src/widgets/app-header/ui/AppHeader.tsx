@@ -4,7 +4,7 @@ import { Link } from 'react-router'
 import { routes } from '@/shared/config'
 import { useTheme } from '@/shared/lib/theme'
 import styles from './AppHeader.module.css'
-import { Icon, Moon, Sun } from '@/shared/ui'
+import { Icon, LogoMark, Moon, Sun } from '@/shared/ui'
 
 export type StatusTone = 'ok' | 'info' | 'warn' | 'error' | 'neutral'
 
@@ -27,11 +27,8 @@ export function AppHeader({ projectName, status, providerConnected, onOpenProvid
   return (
     <header className={styles.header}>
       <Link to={routes.projects()} className={styles.brand} aria-label="DeckDNA — к проектам">
-        <span className={styles.logo} aria-hidden="true">
-          <span className={styles.logoFill} />
-          <span className={styles.logoLine} />
-          <span className={styles.logoLine} />
-          <span className={styles.logoFill} />
+        <span className={styles.logo}>
+          <LogoMark size={20} />
         </span>
         <span className={styles.wordmark}>DeckDNA</span>
       </Link>

@@ -1,3 +1,5 @@
+<p align="center"><img src="public/logo-full.svg" alt="DeckDNA" width="320" /></p>
+
 # DeckDNA Web
 
 Веб-интерфейс DeckDNA — сервиса, который по произвольному PPTX-шаблону и брифу собирает
