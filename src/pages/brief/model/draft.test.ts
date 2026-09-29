@@ -5,7 +5,7 @@ describe('brief draft', () => {
 
   it('starts from project defaults and the project content pack', () => {
     const form = readBriefDraft('prj_1', { language: 'en', targetSlideCount: 15, contentPackId: 'pack_1' })
-    expect(form).toMatchObject({ purpose: null, language: 'en', slideCount: 15, contentMode: 'file', useLlm: true })
+    expect(form).toMatchObject({ purpose: null, language: 'en', slideCount: 15, contentMode: 'file', useLlm: true, variantCount: 3 })
     expect(form.parsed).toMatchObject({ packId: 'pack_1', sourceKey: 'project' })
   })
 

@@ -45,6 +45,7 @@ export interface BriefForm {
   contentMode: ContentMode
   text: string
   useLlm: boolean
+  variantCount: 1 | 3
   parsed: ParsedContent | null
 }
 
@@ -74,6 +75,7 @@ export function createBriefForm(defaults: BriefDefaults = {}): BriefForm {
     contentMode: 'file',
     text: '',
     useLlm: true,
+    variantCount: 3,
     parsed: defaults.contentPackId
       ? { packId: defaults.contentPackId, sourceKey: PROJECT_CONTENT_KEY, label: 'Контент проекта', sizeBytes: null }
       : null,

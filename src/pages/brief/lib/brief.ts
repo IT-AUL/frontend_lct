@@ -78,15 +78,16 @@ export interface GenerationBodyInput {
   templateId: string
   contentPackId: string
   useLlm: boolean
+  variantCount?: 1 | 3
   providerSessionId?: string | null
 }
 
-export function toGenerationBody({ brief, templateId, contentPackId, useLlm, providerSessionId }: GenerationBodyInput): GenerationCreate {
+export function toGenerationBody({ brief, templateId, contentPackId, useLlm, variantCount = 3, providerSessionId }: GenerationBodyInput): GenerationCreate {
   const body: GenerationCreate = {
     template_id: templateId,
     content_pack_id: contentPackId,
     brief,
-    variants: STRATEGY_ORDER.map((strategy) => ({ strategy })),
+    variants: (variantCount === 1 ? ['visual' as const] : STRATEGY_ORDER).map((strategy) => ({ strategy })),
     use_llm: useLlm,
   }
   if (useLlm && providerSessionId) body.provider_session_id = providerSessionId

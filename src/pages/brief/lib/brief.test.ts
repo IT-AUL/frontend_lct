@@ -89,6 +89,9 @@ describe('brief body mapping', () => {
     expect(toGenerationBody({ brief, templateId: 'tpl_1', contentPackId: 'pack_1', useLlm: false, providerSessionId: null })).not.toHaveProperty(
       'provider_session_id',
     )
+    expect(toGenerationBody({ brief, templateId: 'tpl_1', contentPackId: 'pack_1', useLlm: true, variantCount: 1 }).variants).toEqual([
+      { strategy: 'visual' },
+    ])
   })
 
   it('validates the required purpose and content', () => {

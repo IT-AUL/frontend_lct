@@ -45,7 +45,7 @@ export function BriefForm({ form, onChange, files, onFilesChange, plan, parsing,
         onParseText={onParseText}
       />
       <ParamsSection form={form} onChange={onChange} />
-      <ModeSection useLlm={form.useLlm} onUseLlmChange={(useLlm) => onChange({ useLlm })} />
+      <ModeSection useLlm={form.useLlm} onUseLlmChange={(useLlm) => onChange({ useLlm })} variantCount={form.variantCount} onVariantCountChange={(variantCount) => onChange({ variantCount })} />
     </div>
   )
 }

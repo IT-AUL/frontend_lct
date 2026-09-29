@@ -112,7 +112,7 @@ function BriefScreen({ project }: { project: Project }) {
           />
           <div className={styles.cta}>
             <Button variant="primary" size="xl" block disabled={busy || !templateId} onClick={start}>
-              {submit.isPending ? 'Отправляю…' : upload.isPending ? 'Разбираю контент…' : 'Собрать 3 варианта'}
+              {submit.isPending ? 'Отправляю…' : upload.isPending ? 'Разбираю контент…' : form.variantCount === 1 ? 'Собрать один вариант' : 'Собрать 3 варианта'}
               {!busy && <Icon as={ArrowRight} />}
             </Button>
             {planOnly && (

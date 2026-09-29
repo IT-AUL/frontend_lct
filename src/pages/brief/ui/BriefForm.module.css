@@ -302,6 +302,28 @@
   padding: 0 20px 18px;
 }
 
+.variantChoice {
+  display: flex;
+  gap: 8px;
+}
+
+.variantChoice button {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.variantChoice button[aria-pressed='true'] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--inv);
+}
+
 .provider {
   display: flex;
   align-items: flex-start;

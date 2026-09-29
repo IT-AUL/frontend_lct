@@ -45,6 +45,7 @@ export function restoreBriefForm(raw: unknown, defaults: BriefDefaults = {}): Br
     contentMode: raw.contentMode === 'text' ? 'text' : 'file',
     text: typeof raw.text === 'string' ? raw.text : base.text,
     useLlm: typeof raw.useLlm === 'boolean' ? raw.useLlm : base.useLlm,
+    variantCount: raw.variantCount === 1 ? 1 : 3,
     parsed: parsed ?? base.parsed,
   }
 }

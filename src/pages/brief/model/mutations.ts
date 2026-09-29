@@ -51,7 +51,7 @@ export function usePlanFirst(projectId: string) {
     mutationFn: async (request: SubmitBriefRequest): Promise<void> => {
       const { form, templateId, providerSessionId } = request
       const contentPackId = await prepareContent(projectId, request)
-      const { variants, ...body } = toGenerationBody({ brief: toBrief(form), templateId, contentPackId, useLlm: form.useLlm, providerSessionId })
+      const { variants, ...body } = toGenerationBody({ brief: toBrief(form), templateId, contentPackId, useLlm: form.useLlm, variantCount: form.variantCount, providerSessionId })
       await requestAndStorePlan(projectId, { ...body, strategies: variants.map((variant) => variant.strategy) })
       void invalidateProject(projectId)
     },
@@ -65,7 +65,7 @@ export function useSubmitBrief(projectId: string) {
       const { form, templateId, providerSessionId } = request
       const brief = toBrief(form)
       const contentPackId = await prepareContent(projectId, request)
-      const trackingId = startGeneration(projectId, toGenerationBody({ brief, templateId, contentPackId, useLlm: form.useLlm, providerSessionId }))
+      const trackingId = startGeneration(projectId, toGenerationBody({ brief, templateId, contentPackId, useLlm: form.useLlm, variantCount: form.variantCount, providerSessionId }))
       whenGenerationAccepted(trackingId)?.then(
         (accepted) => rememberRun(projectId, accepted.generation_id),
         () => undefined,
