@@ -73,7 +73,7 @@ export function createBriefForm(defaults: BriefDefaults = {}): BriefForm {
     forbiddenClaims: [],
     contentMode: 'file',
     text: '',
-    useLlm: false,
+    useLlm: true,
     parsed: defaults.contentPackId
       ? { packId: defaults.contentPackId, sourceKey: PROJECT_CONTENT_KEY, label: 'Контент проекта', sizeBytes: null }
       : null,

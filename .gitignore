@@ -36,3 +36,6 @@ Thumbs.db
 
 # Agent worktrees
 .claude/worktrees/
+
+# Local scratch scripts
+/demo/
