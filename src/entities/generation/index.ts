@@ -5,6 +5,8 @@ export { applyPlanEvent, EMPTY_PROGRESS, isUnitLocked, parseResearch, parseSse, 
 export type { PlanProgress, PlanResearch, PlanSufficiency, ResearchSource, SufficiencyStatus, UnitOrigin } from './lib/planExtras'
 export { budgetStatus, elapsedSeconds } from './lib/budget'
 export type { BudgetStatus, GenerationTiming } from './lib/budget'
+export { CONTENT_FILL_MODES, contentFillValue, isContentFillMode, suggestedContentFill } from './lib/contentFill'
+export type { ContentFillMode, ContentFillOption } from './lib/contentFill'
 export { EDITABLE_UNIT_KINDS, hasChartData, isEditableUnit } from './lib/units'
 export { SLIDE_PURPOSE_LABEL, slidePurposeLabel } from './lib/purpose'
 export { GENERATION_PIPELINE, jobStatusLabel, PIPELINE_STAGE_LABEL, pipelineStage, stageLabel } from './lib/stages'

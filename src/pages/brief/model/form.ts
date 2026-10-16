@@ -1,7 +1,10 @@
+import type { ContentFillMode } from '@/entities/generation'
+
+export { CONTENT_FILL_MODES } from '@/entities/generation'
+export type { ContentFillMode } from '@/entities/generation'
 export type PurposeKey = 'feature' | 'product' | 'project' | 'initiative' | 'other'
 export type ContentMode = 'file' | 'text'
 export type BriefLanguage = 'ru' | 'en'
-export type ContentFillMode = 'expand' | 'condense' | 'keep'
 
 export interface PurposeOption {
   value: PurposeKey
@@ -20,12 +23,6 @@ export const PURPOSES: readonly PurposeOption[] = [
 export const LANGUAGES: readonly { value: BriefLanguage; label: string }[] = [
   { value: 'ru', label: 'Русский' },
   { value: 'en', label: 'English' },
-]
-
-export const CONTENT_FILL_MODES: readonly { value: ContentFillMode; label: string; hint: string }[] = [
-  { value: 'expand', label: 'Дополнить', hint: 'недостающее найдём и предложим в плане' },
-  { value: 'condense', label: 'Ужать', hint: 'сократим до нужного числа слайдов' },
-  { value: 'keep', label: 'Сохранить как есть', hint: 'ваш текст не переписываем, только сокращаем' },
 ]
 
 export const SLIDE_COUNT_MIN = 3

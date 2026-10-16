@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
-import { requestPlans, type PlanDraftResult, type PlanRequest, type PlanRequestOptions, type VariantRequest } from '@/entities/generation'
+import { requestPlans, type ContentFillMode, type PlanDraftResult, type PlanRequest, type PlanRequestOptions, type VariantRequest } from '@/entities/generation'
 import { readJson, writeJson } from '@/shared/lib/storage'
 
 const STORAGE_PREFIX = 'deckdna.plan-request.v1:'
@@ -10,7 +10,13 @@ export interface StoredPlanRequest {
   request: StoredRequest
   result: PlanDraftResult
   variants?: VariantRequest[]
+  contentFill?: ContentFillMode | null
   createdAt: string
+}
+
+export interface PlanRequestExtras {
+  variants?: VariantRequest[]
+  contentFill?: ContentFillMode | null
 }
 
 function storageKey(projectId: string): string {
@@ -23,16 +29,16 @@ export function readPlanRequest(projectId: string): StoredPlanRequest | null {
   return { ...stored, result: { ...stored.result, sufficiency: stored.result.sufficiency ?? null, research: stored.result.research ?? null } }
 }
 
-export async function requestAndStorePlan(projectId: string, request: StoredRequest, variants?: VariantRequest[], options?: PlanRequestOptions): Promise<StoredPlanRequest> {
+export async function requestAndStorePlan(projectId: string, request: StoredRequest, extras: PlanRequestExtras = {}, options?: PlanRequestOptions): Promise<StoredPlanRequest> {
   const result = await requestPlans(projectId, request, options)
-  const stored: StoredPlanRequest = { request, result, variants, createdAt: new Date().toISOString() }
+  const stored: StoredPlanRequest = { request, result, ...extras, createdAt: new Date().toISOString() }
   writeJson(storageKey(projectId), stored)
   return stored
 }
 
 export function useRequestPlan(projectId: string) {
   return useMutation({
-    mutationFn: ({ request, variants, options }: { request: StoredRequest; variants?: VariantRequest[]; options?: PlanRequestOptions }) =>
-      requestAndStorePlan(projectId, request, variants, options),
+    mutationFn: ({ request, extras, options }: { request: StoredRequest; extras?: PlanRequestExtras; options?: PlanRequestOptions }) =>
+      requestAndStorePlan(projectId, request, extras, options),
   })
 }

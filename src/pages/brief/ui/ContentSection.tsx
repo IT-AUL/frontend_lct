@@ -69,7 +69,7 @@ export function ContentSection(props: ContentSectionProps) {
   const openPicker = () => inputRef.current?.click()
   const ready = plan.kind === 'ready'
   const status = parsedStatus(parsing, parseError, ready)
-  const fallback = !primary && parsed
+  const fallback = !primary && parsed && !parsed.sourceKey.startsWith('topic:') ? parsed : null
 
   return (
     <section className={styles.section} aria-labelledby={titleId}>
@@ -115,10 +115,10 @@ export function ContentSection(props: ContentSectionProps) {
           )}
           {fallback && (
             <div className={styles.fileCard}>
-              <FileIcon name={parsed.label} />
+              <FileIcon name={fallback.label} />
               <div className={styles.fileText}>
-                <span className={styles.fileName}>{parsed.label}</span>
-                <span className={styles.fileMeta}>{parsed.sizeBytes !== null ? `${formatBytes(parsed.sizeBytes)} · разобран` : 'разобран ранее'}</span>
+                <span className={styles.fileName}>{fallback.label}</span>
+                <span className={styles.fileMeta}>{fallback.sizeBytes !== null ? `${formatBytes(fallback.sizeBytes)} · разобран` : 'разобран ранее'}</span>
               </div>
               <Badge tone="ok">используется</Badge>
             </div>

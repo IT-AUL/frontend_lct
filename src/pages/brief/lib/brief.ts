@@ -1,15 +1,13 @@
 import type { Brief } from '@/entities/content-pack'
-import type { GenerationCreate } from '@/entities/generation'
 import { STRATEGY_ORDER } from '@/entities/variant'
 import { clampSlideCount, DEFAULT_AUDIENCE } from '../model/form'
-import type { BriefForm, ContentFillMode, ContentMode, ParsedContent } from '../model/form'
+import { contentFillValue, type GenerationCreate } from '@/entities/generation'
+import type { BriefForm, ContentMode, ParsedContent } from '../model/form'
 
 export const CONTENT_EXTENSIONS = ['.md', '.txt', '.json', '.docx', '.pdf', '.xlsx'] as const
 export const TEXT_CONTENT_FILENAME = 'brief.md'
 export const TOPIC_CONTENT_FILENAME = 'topic.md'
 export const TOPIC_MAX_LENGTH = 500
-
-const CONTENT_FILL: Record<ContentFillMode, string> = { expand: 'expand', condense: 'expand', keep: 'shrink' }
 
 export type BriefBody = Brief & { content_fill?: string }
 
@@ -67,7 +65,7 @@ export function toBrief(form: BriefForm): BriefBody {
     tone: form.tone.trim() || null,
     mandatory_sections: cleanList(form.mandatorySections),
     forbidden_claims: forbidden.length > 0 ? forbidden : null,
-    ...(form.contentFill ? { content_fill: CONTENT_FILL[form.contentFill] } : {}),
+    ...(form.contentFill ? { content_fill: contentFillValue(form.contentFill) } : {}),
   }
 }
 

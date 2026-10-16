@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { editSummary, useBuildFromPlan, usePlanDraft } from '@/features/edit-deck-plan'
 import { DeckPlanView } from '@/widgets/deck-plan'
-import type { DeckPlan, GenerationCreate } from '@/entities/generation'
+import type { DeckPlan, GenerationCreate, ResearchSource } from '@/entities/generation'
 import { pluralize } from '@/shared/lib/format'
 import { Button, PageHeader } from '@/shared/ui'
 import styles from './PlanPage.module.css'
@@ -19,6 +19,11 @@ interface EditablePlanProps {
   toolbar?: ReactNode
   next?: ReactNode
   confirmDescription?: string
+  intro?: ReactNode
+  asideTop?: ReactNode
+  sources?: readonly ResearchSource[]
+  lockAll?: boolean
+  description?: string
 }
 
 function describeEdits(base: DeckPlan, plan: DeckPlan): string {
@@ -32,12 +37,13 @@ function describeEdits(base: DeckPlan, plan: DeckPlan): string {
   return parts.length > 0 ? `Ваши правки: ${parts.join(', ')}.` : ''
 }
 
-export function EditablePlan({ projectId, draftKey, basePlan, headings, eyebrow, buildLabel, buildBody, notice, toolbar, next, confirmDescription }: EditablePlanProps) {
+export function EditablePlan(props: EditablePlanProps) {
+  const { projectId, draftKey, basePlan, headings, eyebrow, buildLabel, buildBody, notice, toolbar, next, confirmDescription, intro, asideTop, sources, lockAll = false, description } = props
   const draft = usePlanDraft(draftKey, basePlan)
   const { build, isPending } = useBuildFromPlan(projectId, draftKey)
   const untitled = draft.plan.slides.some((slide) => slide.title_intent.trim() === '')
   const buildDisabled = isPending || untitled
-  const runBuild = () => build(buildBody, draft.plan)
+  const runBuild = () => build(buildBody, draft.plan, { lockAll })
   const quietRebuild = Boolean(next) && !draft.edited
 
   return (
@@ -45,7 +51,7 @@ export function EditablePlan({ projectId, draftKey, basePlan, headings, eyebrow,
       <PageHeader
         eyebrow={eyebrow}
         title="План колоды"
-        description="Поправьте порядок, заголовки и мысли — варианты соберутся по вашему плану."
+        description={description ?? 'Поправьте порядок, заголовки, пункты и визуал — варианты соберутся по вашему плану.'}
         actions={
           <>
             <Button variant="secondary" size="lg" disabled={!draft.edited || isPending} onClick={draft.reset}>
@@ -80,11 +86,23 @@ export function EditablePlan({ projectId, draftKey, basePlan, headings, eyebrow,
           </div>
         </div>
       )}
+      {intro}
       {toolbar}
       <DeckPlanView
+        sources={sources}
+        asideTop={asideTop}
         plan={draft.plan}
         headings={headings}
-        editor={{ onMove: draft.move, onRemove: draft.remove, onUpdate: draft.update, onAdd: draft.add }}
+        editor={{
+          onMove: draft.move,
+          onRemove: draft.remove,
+          onUpdate: draft.update,
+          onAdd: draft.add,
+          onUnitChange: draft.updateUnit,
+          onUnitAdd: draft.addUnit,
+          onUnitRemove: draft.removeUnit,
+          onUnitMove: draft.moveUnit,
+        }}
       />
     </div>
   )

@@ -62,7 +62,7 @@ export function usePlanFirst(projectId: string) {
         options.signal?.throwIfAborted()
         build.enterPhase('plan')
         const { variants, ...body } = toGenerationBody({ brief: toBrief(form), templateId, contentPackId, useLlm: form.useLlm, variantCount: form.variantCount, providerSessionId })
-        await requestAndStorePlan(projectId, { ...body, strategies: [PLAN_STRATEGY] }, variants, options)
+        await requestAndStorePlan(projectId, { ...body, strategies: [PLAN_STRATEGY] }, { variants, contentFill: form.contentFill }, options)
       } finally {
         build.finish()
         void invalidateProject(projectId)

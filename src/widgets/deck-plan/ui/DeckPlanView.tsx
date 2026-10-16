@@ -1,28 +1,39 @@
 import { clsx } from 'clsx'
-import { Fragment, useMemo } from 'react'
-import type { DeckPlan } from '@/entities/generation'
+import { Fragment, useMemo, type ReactNode } from 'react'
+import type { DeckPlan, ResearchSource, SlidePlan } from '@/entities/generation'
 import { pluralize } from '@/shared/lib/format'
 import { buildPlanView, deckPurposeLabel, type PlanRow } from '../lib/plan'
 import styles from './DeckPlanView.module.css'
 import { ArrowDown, ArrowUp, CornerDownRight, Icon, Plus, X } from '@/shared/ui'
+import { SlideContentEditor } from './SlideContentEditor'
 
 export interface PlanEditor {
   onMove: (slideId: string, delta: -1 | 1) => void
   onRemove: (slideId: string) => void
-  onUpdate: (slideId: string, patch: { title_intent?: string; key_message?: string }) => void
+  onUpdate: (slideId: string, patch: { title_intent?: string; key_message?: string; desired_visual?: SlidePlan['desired_visual'] }) => void
   onAdd: () => void
+  onUnitChange: (slideId: string, position: number, text: string) => void
+  onUnitAdd: (slideId: string) => void
+  onUnitRemove: (slideId: string, position: number) => void
+  onUnitMove: (slideId: string, position: number, delta: -1 | 1) => void
 }
 
 interface DeckPlanViewProps {
   plan: DeckPlan
   headings: ReadonlyMap<string, string>
   editor?: PlanEditor
+  sources?: readonly ResearchSource[]
+  asideTop?: ReactNode
 }
+
+const NO_SOURCES: readonly ResearchSource[] = []
 
 const BAR_TONES = 5
 
 interface PlanRowItemProps {
   row: PlanRow
+  slide?: SlidePlan
+  sources: ReadonlyMap<string, ResearchSource>
   first: boolean
   last: boolean
   single: boolean
@@ -52,7 +63,7 @@ function RowActions({ row, first, last, single, editor }: PlanRowItemProps) {
   )
 }
 
-function RowMain({ row, editor }: Pick<PlanRowItemProps, 'row' | 'editor'>) {
+function RowMain({ row, slide, sources, editor }: Pick<PlanRowItemProps, 'row' | 'slide' | 'sources' | 'editor'>) {
   if (!editor) {
     return (
       <div className={styles.main}>
@@ -84,19 +95,19 @@ function RowMain({ row, editor }: Pick<PlanRowItemProps, 'row' | 'editor'>) {
         aria-label={`Мысль слайда ${row.number}`}
         onChange={(event) => editor.onUpdate(row.id, { key_message: event.target.value })}
       />
-      {row.visual && <span className={styles.visual}>{row.visual}</span>}
+      {slide ? <SlideContentEditor slide={slide} number={row.number} editor={editor} sources={sources} /> : row.visual && <span className={styles.visual}>{row.visual}</span>}
     </div>
   )
 }
 
-function PlanRowItem({ row, first, last, single, editor }: PlanRowItemProps) {
+function PlanRowItem({ row, slide, sources, first, last, single, editor }: PlanRowItemProps) {
   return (
     <li className={styles.row}>
       <div className={styles.number}>{row.number}</div>
       <div className={styles.purposeCell}>
         <span className={styles.purpose}>{row.purpose}</span>
       </div>
-      <RowMain row={row} editor={editor} />
+      <RowMain row={row} slide={slide} sources={sources} editor={editor} />
       <div className={styles.sources}>
         {row.sources.length > 0 ? (
           row.sources.map((source) => (
@@ -108,13 +119,15 @@ function PlanRowItem({ row, first, last, single, editor }: PlanRowItemProps) {
           <span className={styles.noSource}>служебный слайд</span>
         )}
       </div>
-      <RowActions row={row} first={first} last={last} single={single} editor={editor} />
+      <RowActions row={row} sources={sources} first={first} last={last} single={single} editor={editor} />
     </li>
   )
 }
 
-export function DeckPlanView({ plan, headings, editor }: DeckPlanViewProps) {
+export function DeckPlanView({ plan, headings, editor, sources = NO_SOURCES, asideTop }: DeckPlanViewProps) {
   const view = useMemo(() => buildPlanView(plan, headings), [plan, headings])
+  const slidesById = useMemo(() => new Map(plan.slides.map((slide) => [slide.id, slide])), [plan.slides])
+  const sourcesById = useMemo(() => new Map(sources.map((source) => [source.id, source])), [sources])
   const { rows, sections, stats } = view
   const { provenance, brief } = plan
   const namedSections = sections.filter((section) => section.id !== 'unassigned').length
@@ -140,7 +153,7 @@ export function DeckPlanView({ plan, headings, editor }: DeckPlanViewProps) {
                     Раздел · {row.sectionTitle}
                   </li>
                 )}
-                <PlanRowItem row={row} first={position === 0} last={position === rows.length - 1} single={rows.length === 1} editor={editor} />
+                <PlanRowItem row={row} slide={slidesById.get(row.id)} sources={sourcesById} first={position === 0} last={position === rows.length - 1} single={rows.length === 1} editor={editor} />
               </Fragment>
             )
           })}
@@ -153,6 +166,7 @@ export function DeckPlanView({ plan, headings, editor }: DeckPlanViewProps) {
       </div>
 
       <aside className={styles.aside} aria-label="Почему такая структура">
+        {asideTop}
         <h2 className={styles.asideTitle}>Почему такая структура</h2>
         <p className={styles.asideText}>
           Назначение «{deckPurposeLabel(brief.purpose || plan.objective)}», аудитория «{plan.audience || brief.audience}».{' '}

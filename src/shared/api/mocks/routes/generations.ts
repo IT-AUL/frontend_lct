@@ -2,7 +2,7 @@ import { HttpResponse } from 'msw'
 import type { RequestHandler } from 'msw'
 import { page } from '../context'
 import type { MockContext } from '../context'
-import { assertRetryable, cancelGeneration, completeGeneration, generationDetail, parseGenerationRequest, startGeneration } from '../generation'
+import { assertRetryable, cancelGeneration, completeGeneration, createPlanSet, generationDetail, parseGenerationRequest, startGeneration } from '../generation'
 import { json, MockApiError, wait } from '../http'
 import type { RunRecord } from '../store'
 import type { Job } from '../types'
@@ -42,6 +42,8 @@ export function generationRoutes(context: MockContext): RequestHandler[] {
       const input = parseGenerationRequest(store, projectId, await readJson(request))
       return accepted(await run(projectId, input, null))
     }),
+
+    route('post', '/projects/:projectId/plans', async ({ request, param }) => json(createPlanSet(store, param('projectId'), await readJson(request)))),
 
     route('get', '/generations/:runId', ({ param }) => json(generationDetail(store, store.run(param('runId'))))),
 

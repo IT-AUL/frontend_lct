@@ -36,13 +36,23 @@ test('demo path: template DNA, brief, three variants, audit repair, export', asy
     expect(parsed).toEqual(expect.objectContaining({ template_id: expect.any(String) }))
   })
 
-  await test.step('brief: purpose «Продукт» and start generation', async () => {
+  await test.step('brief: purpose «Продукт» and a plan as the main step', async () => {
     await page.getByRole('button', { name: /Дальше: бриф/ }).click()
-    await expect(page.getByRole('heading', { level: 1, name: 'О чём презентация' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Новая презентация' })).toBeVisible()
     const product = page.getByRole('radiogroup', { name: 'Назначение' }).getByRole('radio', { name: /^Продукт/ })
     await product.check()
     await expect(product).toBeChecked()
-    await page.getByRole('button', { name: /Собрать 3 варианта/ }).click()
+    await page.getByRole('button', { name: /Составить план/ }).click()
+  })
+
+  await test.step('plan: edit a point and a visual, then lay out three variants', async () => {
+    await expect(page.getByRole('heading', { level: 1, name: 'План колоды' })).toBeVisible({ timeout: 30_000 })
+    const point = page.getByRole('textbox', { name: /^Пункт 1 слайда/ }).first()
+    await point.fill('Своя формулировка пункта')
+    await expect(page.getByTitle('Ваша формулировка: вёрстка её только сократит').first()).toBeVisible()
+    await page.getByRole('group', { name: /^Визуал слайда/ }).first().getByRole('button', { name: 'Таблица' }).click()
+    await expect(page.getByRole('note').filter({ hasText: 'Ваши правки' })).toBeVisible()
+    await page.getByRole('button', { name: /Сверстать 3 варианта/ }).click()
   })
 
   await test.step('generation page shows the deck being built and finishes with three variants', async () => {

@@ -19,6 +19,12 @@ function trackApi(page: Page) {
   page.on('pageerror', (error) => apiFailures.push(`pageerror ${error.message}`))
 }
 
+async function disableModelWhenAsked(page: Page) {
+  if (process.env.E2E_LIVE_NO_LLM !== '1') return
+  await page.getByRole('button', { name: /Режим сборки/ }).click()
+  await page.getByRole('switch', { name: 'Использовать языковую модель' }).click()
+}
+
 test('live backend: template, brief, three variants, audit repair, export', async ({ page }) => {
   trackApi(page)
   const name = `Live ${Date.now()}`
@@ -45,12 +51,13 @@ test('live backend: template, brief, three variants, audit repair, export', asyn
 
   await test.step('brief: upload content and start generation', async () => {
     await page.getByRole('button', { name: /Дальше: бриф/ }).click()
-    await expect(page.getByRole('heading', { level: 1, name: 'О чём презентация' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Новая презентация' })).toBeVisible()
     await page.getByRole('radiogroup', { name: 'Назначение' }).getByRole('radio', { name: /^Продукт/ }).check()
     const fileInput = page.locator('input[type="file"]').first()
     await fileInput.setInputFiles(CONTENT)
     await expect(page.getByRole('main')).toContainText('deckdna_pitch_rich.md', { timeout: 30_000 })
-    await page.getByRole('button', { name: /Собрать 3 варианта/ }).click()
+    await disableModelWhenAsked(page)
+    await page.getByRole('button', { name: /Сразу собрать 3 варианта/ }).click()
   })
 
   await test.step('generation finishes with three variants', async () => {
@@ -99,6 +106,47 @@ test('live backend: template, brief, three variants, audit repair, export', asyn
   expect(apiFailures).toEqual([])
 })
 
+test('live backend: one-phrase brief, plan edits and a layout built from the plan', async ({ page }) => {
+  trackApi(page)
+  const rejected: string[] = []
+  page.on('response', (response) => {
+    if (response.url().includes('/api/v1/') && response.status() === 422) rejected.push(`${response.request().method()} ${response.url()}`)
+  })
+  await page.goto('/')
+
+  await test.step('create project and upload a real template', async () => {
+    await page.getByRole('button', { name: 'Новый проект' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Новый проект' })
+    await dialog.getByRole('textbox', { name: /^Название/ }).fill(`Live plan ${Date.now()}`)
+    await dialog.getByRole('button', { name: 'Создать и загрузить шаблон' }).click()
+    const dropzone = page.getByRole('button', { name: /Перетащите шаблон сюда/ })
+    const [chooser] = await Promise.all([page.waitForEvent('filechooser'), dropzone.click()])
+    await chooser.setFiles(TEMPLATE)
+    await expect(page.getByRole('region', { name: 'Что система поняла' })).toBeVisible({ timeout: 120_000 })
+  })
+
+  await test.step('brief with a topic only builds a plan', async () => {
+    await page.getByRole('button', { name: /Дальше: бриф/ }).click()
+    await page.getByRole('textbox', { name: 'О чём презентация' }).fill('Корпоративный мессенджер для банков: запуск в 2027 году')
+    await page.getByRole('radiogroup', { name: 'Назначение' }).getByRole('radio', { name: /^Продукт/ }).check()
+    await disableModelWhenAsked(page)
+    await page.getByRole('button', { name: /Составить план/ }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'План колоды' })).toBeVisible({ timeout: 120_000 })
+  })
+
+  await test.step('edit points, visual and add a slide, then lay out from the plan', async () => {
+    await page.getByRole('button', { name: 'Пункт' }).first().click()
+    await page.getByRole('textbox', { name: /^Пункт 1 слайда 01/ }).fill('Наш собственный пункт про безопасность')
+    await page.getByRole('button', { name: /Добавить слайд/ }).click()
+    await page.getByRole('group', { name: /^Визуал слайда/ }).last().getByRole('button', { name: 'Таблица' }).click()
+    await page.getByRole('button', { name: /Сверстать 3 варианта/ }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Три варианта готовы' })).toBeVisible({ timeout: 240_000 })
+  })
+
+  expect(rejected).toEqual([])
+  expect(apiFailures).toEqual([])
+})
+
 test('live backend: system panel reflects the real capabilities', async ({ page }) => {
   trackApi(page)
   await page.goto('/')
@@ -118,7 +166,7 @@ test('live backend: provider session is created, probed and revoked', async ({ p
   await page.getByRole('button', { name: 'Модели', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Провайдер моделей' })
   const form = dialog.getByRole('form', { name: 'Подключение провайдера моделей' })
-  await form.getByRole('textbox', { name: 'Адрес API' }).fill('http://127.0.0.1:9/v1')
+  await form.getByRole('textbox', { name: 'Адрес API' }).fill('https://example.com/v1')
   await form.getByRole('textbox', { name: /^Модель для текста/ }).fill('qwen3-32b')
   await form.getByRole('textbox', { name: /^Модель для картинок слайдов/ }).fill('qwen2.5-vl-32b')
   await form.getByLabel('Токен').fill('test-token-not-a-secret')

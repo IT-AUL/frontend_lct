@@ -1,4 +1,4 @@
-import { slidePurposeLabel, type DeckPlan, type SlidePlan } from '@/entities/generation'
+import { slidePurposeLabel, type DeckPlan, type SlidePlan, type UnitOrigin } from '@/entities/generation'
 import { formatIndex } from '@/shared/lib/format'
 
 export interface EvidenceRef {
@@ -58,6 +58,15 @@ export const VISUAL_LABEL: Record<string, string> = {
   diagram: 'Схема',
   screenshot: 'Скриншот',
   quote: 'Цитата',
+  icon: 'Иконки',
+}
+
+export const EDITOR_VISUALS = ['none', 'chart', 'table', 'diagram', 'image'] as const satisfies readonly NonNullable<SlidePlan['desired_visual']>[]
+
+export const ORIGIN_LABEL: Record<UnitOrigin, string> = {
+  user: 'ваш контент',
+  web: 'интернет',
+  model: 'знания модели',
 }
 
 const UNIT_VISUAL: Record<string, string> = {

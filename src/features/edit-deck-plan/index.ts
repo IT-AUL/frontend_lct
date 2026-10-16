@@ -1,7 +1,7 @@
 export { addSlide, addUnit, editSummary, isPlanEdited, moveSlide, moveUnit, prepareForBuild, removeSlide, removeUnit, updateSlide, updateUnit } from './lib/editPlan'
 export type { BuildOptions, EditableUnit, SlidePatch } from './lib/editPlan'
 export { readPlanRequest, requestAndStorePlan, useRequestPlan } from './model/planRequest'
-export type { StoredPlanRequest, StoredRequest } from './model/planRequest'
+export type { PlanRequestExtras, StoredPlanRequest, StoredRequest } from './model/planRequest'
 export { useBuildFromPlan } from './model/useBuildFromPlan'
 export type { BuildFromPlan } from './model/useBuildFromPlan'
 export { isAbortError, usePlanBuild } from './model/usePlanBuild'

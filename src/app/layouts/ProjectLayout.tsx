@@ -3,7 +3,6 @@ import { useOpenCounts } from '@/entities/audit'
 import { isTrackingId, useGenerationTracker } from '@/entities/generation'
 import { projectRunId, useProject, useProjectEvidence } from '@/entities/project'
 import { readPlanRequest } from '@/features/edit-deck-plan'
-import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
 import { ProjectRail, stepFromPath, type ProjectProgress } from '@/widgets/project-rail'
 import type { ProjectStep } from '@/shared/config'
 import { AppFrame } from './AppFrame'
@@ -20,7 +19,6 @@ export function ProjectLayout() {
   const step = stepFromPath(pathname)
   const runId = runMatch?.params.runId ?? projectRunId(project, projectId)
   const tracker = useGenerationTracker(runId)
-  const planFirst = useCapabilityFlag(FEATURE_PATHS.planOnly)
   const openCounts = useOpenCounts(projectId, runId)
 
   const progress: ProjectProgress = {
@@ -30,8 +28,8 @@ export function ProjectLayout() {
     hasTemplate: Boolean(project?.template_id),
     hasContent: Boolean(project?.content_pack_id),
     targetSlides: project?.target_slide_count ?? 12,
-    planFirst,
-    hasPlanDraft: planFirst && readPlanRequest(projectId) !== null,
+    planFirst: true,
+    hasPlanDraft: readPlanRequest(projectId) !== null,
     generated: Boolean(evidence.generated) || tracker.phase === 'completed',
     repaired: Boolean(evidence.repaired),
     exported: Boolean(evidence.exported),
