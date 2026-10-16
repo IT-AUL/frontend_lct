@@ -6,6 +6,8 @@ import {
   resolveContent,
   textContentKey,
   textToContentFile,
+  topicContentKey,
+  topicToContentFile,
   toBrief,
   toContentBrief,
   toGenerationBody,
@@ -94,13 +96,41 @@ describe('brief body mapping', () => {
     ])
   })
 
-  it('validates the required purpose and content', () => {
+  it('validates the required purpose and asks for a topic or materials', () => {
     expect(validateBrief(form({ purpose: null }), { kind: 'missing' })).toEqual({
       purpose: 'Выберите назначение презентации',
-      content: 'Загрузите файл с контентом',
+      content: 'Опишите тему одной фразой или добавьте материалы',
     })
-    expect(validateBrief(form({ contentMode: 'text' }), { kind: 'missing' }).content).toBe('Вставьте текст контента')
     expect(validateBrief(form(), { kind: 'ready', packId: 'p', label: 'x' })).toEqual({})
+  })
+
+  it('passes validation with a one-phrase topic and no materials', () => {
+    const topicOnly = form({ topic: 'Мессенджер для банков' })
+    const plan = resolveContent({ topic: topicOnly.topic, mode: 'file', files: [], text: '', parsed: null })
+    expect(plan).toMatchObject({ kind: 'upload', key: topicContentKey('Мессенджер для банков'), label: 'Описание темы' })
+    expect(validateBrief(topicOnly, plan)).toEqual({})
+  })
+
+  it('turns the topic into a markdown content file with a heading and a paragraph', async () => {
+    const file = topicToContentFile('  Мессенджер для банков ')
+    expect(file.name).toBe('topic.md')
+    expect(await readText(file)).toBe('# Мессенджер для банков\n\nМессенджер для банков\n')
+  })
+
+  it('prefers real materials over the topic and reuses a parsed topic only while it is unchanged', () => {
+    const doc = file('notes.md')
+    expect(resolveContent({ topic: 'Тема', mode: 'file', files: [doc], text: '', parsed: null })).toMatchObject({ kind: 'upload', file: doc })
+    const parsedTopic: ParsedContent = { packId: 'pack-topic', sourceKey: topicContentKey('Тема'), label: 'Описание темы', sizeBytes: 10 }
+    expect(resolveContent({ topic: 'Тема', mode: 'file', files: [], text: '', parsed: parsedTopic })).toEqual({ kind: 'ready', packId: 'pack-topic', label: 'Описание темы' })
+    expect(resolveContent({ topic: 'Другая тема', mode: 'file', files: [], text: '', parsed: parsedTopic })).toMatchObject({ kind: 'upload' })
+    expect(resolveContent({ topic: '', mode: 'file', files: [], text: '', parsed: parsedTopic })).toEqual({ kind: 'missing' })
+  })
+
+  it('sends the topic as a title hint and the text mode as content_fill', () => {
+    expect(toContentBrief(form({ topic: ' Мессенджер ' }))).toMatchObject({ title_hint: 'Мессенджер' })
+    expect(toBrief(form()).content_fill).toBeUndefined()
+    expect(toBrief(form({ contentFill: 'expand' })).content_fill).toBe('expand')
+    expect(toBrief(form({ contentFill: 'keep' })).content_fill).toBe('shrink')
   })
 })
 

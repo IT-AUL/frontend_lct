@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { readJson, writeJson } from '@/shared/lib/storage'
-import { clampSlideCount, createBriefForm, PURPOSES } from './form'
+import { clampSlideCount, CONTENT_FILL_MODES, createBriefForm, PURPOSES } from './form'
 import type { BriefDefaults, BriefForm, ParsedContent } from './form'
 
 const DRAFT_PREFIX = 'deckdna.brief-draft.v1:'
@@ -34,6 +34,7 @@ export function restoreBriefForm(raw: unknown, defaults: BriefDefaults = {}): Br
   const purpose = PURPOSES.find((option) => option.value === raw.purpose)?.value ?? null
   const parsed = parsedContent(raw.parsed)
   return {
+    topic: typeof raw.topic === 'string' ? raw.topic : base.topic,
     purpose,
     customPurpose: typeof raw.customPurpose === 'string' ? raw.customPurpose : base.customPurpose,
     audience: typeof raw.audience === 'string' ? raw.audience : base.audience,
@@ -44,6 +45,7 @@ export function restoreBriefForm(raw: unknown, defaults: BriefDefaults = {}): Br
     forbiddenClaims: stringList(raw.forbiddenClaims) ?? base.forbiddenClaims,
     contentMode: raw.contentMode === 'text' ? 'text' : 'file',
     text: typeof raw.text === 'string' ? raw.text : base.text,
+    contentFill: CONTENT_FILL_MODES.find((mode) => mode.value === raw.contentFill)?.value ?? base.contentFill,
     useLlm: typeof raw.useLlm === 'boolean' ? raw.useLlm : base.useLlm,
     variantCount: raw.variantCount === 1 ? 1 : 3,
     parsed: parsed ?? base.parsed,

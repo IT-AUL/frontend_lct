@@ -16,9 +16,9 @@ function catalogStrategies(strategies: readonly string[]): CatalogStrategy[] {
   return known.length > 0 ? known : [...STRATEGY_ORDER]
 }
 
-function buildBody({ request }: StoredPlanRequest): Omit<GenerationCreate, 'deck_plan' | 'deck_plan_id'> {
+function buildBody({ request, variants }: StoredPlanRequest): Omit<GenerationCreate, 'deck_plan' | 'deck_plan_id'> {
   const { strategies, ...body } = request
-  return { ...body, variants: catalogStrategies(strategies ?? []).map((strategy) => ({ strategy })) }
+  return { ...body, variants: variants && variants.length > 0 ? variants : catalogStrategies(strategies ?? []).map((strategy) => ({ strategy })) }
 }
 
 function proposalKey(proposal: PlanProposal, index: number): string {

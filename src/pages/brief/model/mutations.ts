@@ -1,10 +1,13 @@
 import { useMutation } from '@tanstack/react-query'
 import { uploadContentPack } from '@/entities/content-pack'
 import { startGeneration, whenGenerationAccepted } from '@/entities/generation'
-import { requestAndStorePlan } from '@/features/edit-deck-plan'
+import { requestAndStorePlan, type PlanBuild } from '@/features/edit-deck-plan'
 import { rememberRun, useInvalidateProject } from '@/entities/project'
-import { resolveContent, toBrief, toGenerationBody } from '../lib/brief'
+import { DEFAULT_STRATEGY } from '@/entities/variant'
+import { resolveContent, toBrief, toContentBrief, toGenerationBody } from '../lib/brief'
 import type { BriefForm, ParsedContent } from './form'
+
+const PLAN_STRATEGY = DEFAULT_STRATEGY
 
 export interface ContentUploadRequest {
   file: File
@@ -36,24 +39,34 @@ export interface SubmitBriefRequest {
 }
 
 async function prepareContent(projectId: string, { form, files, onParsed }: Pick<SubmitBriefRequest, 'form' | 'files' | 'onParsed'>): Promise<string> {
-  const brief = toBrief(form)
-  const plan = resolveContent({ mode: form.contentMode, files, text: form.text, parsed: form.parsed })
-  if (plan.kind === 'missing') throw new Error('Добавьте контент: файл или текст')
+  const plan = resolveContent({ topic: form.topic, mode: form.contentMode, files, text: form.text, parsed: form.parsed })
+  if (plan.kind === 'missing') throw new Error('Опишите тему или добавьте материалы')
   if (plan.kind !== 'upload') return plan.packId
-  const parsed = await uploadContent(projectId, { file: plan.file, key: plan.key, label: plan.label, brief })
+  const parsed = await uploadContent(projectId, { file: plan.file, key: plan.key, label: plan.label, brief: toContentBrief(form) })
   onParsed?.(parsed)
   return parsed.packId
+}
+
+export interface PlanFirstRequest extends SubmitBriefRequest {
+  build: PlanBuild
 }
 
 export function usePlanFirst(projectId: string) {
   const invalidateProject = useInvalidateProject()
   return useMutation({
-    mutationFn: async (request: SubmitBriefRequest): Promise<void> => {
+    mutationFn: async ({ build, ...request }: PlanFirstRequest): Promise<void> => {
       const { form, templateId, providerSessionId } = request
-      const contentPackId = await prepareContent(projectId, request)
-      const { variants, ...body } = toGenerationBody({ brief: toBrief(form), templateId, contentPackId, useLlm: form.useLlm, variantCount: form.variantCount, providerSessionId })
-      await requestAndStorePlan(projectId, { ...body, strategies: variants.map((variant) => variant.strategy) })
-      void invalidateProject(projectId)
+      const options = build.begin()
+      try {
+        const contentPackId = await prepareContent(projectId, request)
+        options.signal?.throwIfAborted()
+        build.enterPhase('plan')
+        const { variants, ...body } = toGenerationBody({ brief: toBrief(form), templateId, contentPackId, useLlm: form.useLlm, variantCount: form.variantCount, providerSessionId })
+        await requestAndStorePlan(projectId, { ...body, strategies: [PLAN_STRATEGY] }, variants, options)
+      } finally {
+        build.finish()
+        void invalidateProject(projectId)
+      }
     },
   })
 }

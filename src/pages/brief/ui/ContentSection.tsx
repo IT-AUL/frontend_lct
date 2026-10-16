@@ -22,7 +22,6 @@ export interface ContentSectionProps {
   plan: ContentPlan
   parsing: boolean
   parseError: string | null
-  error?: string
   onModeChange: (mode: ContentMode) => void
   onFilesChange: (files: File[]) => void
   onTextChange: (text: string) => void
@@ -44,9 +43,8 @@ function parsedStatus(parsing: boolean, parseError: string | null, ready: boolea
 }
 
 export function ContentSection(props: ContentSectionProps) {
-  const { mode, files, text, parsed, plan, parsing, parseError, error, onModeChange, onFilesChange, onTextChange, onParseText } = props
+  const { mode, files, text, parsed, plan, parsing, parseError, onModeChange, onFilesChange, onTextChange, onParseText } = props
   const titleId = useId()
-  const errorId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const { primary, ignored, unsupported } = partitionContentFiles(files)
@@ -77,9 +75,9 @@ export function ContentSection(props: ContentSectionProps) {
     <section className={styles.section} aria-labelledby={titleId}>
       <div className={styles.sectionHead}>
         <h2 id={titleId} className={styles.sectionTitle}>
-          Контент
+          Материалы
         </h2>
-        <span className={styles.required}>обязательно</span>
+        <span className={styles.fieldHint}>необязательно · документ, тезисы, цифры</span>
         <div className={styles.spacer} />
         <Segmented options={MODES} value={mode} onChange={onModeChange} label="Источник контента" size="sm" />
       </div>
@@ -153,7 +151,7 @@ export function ContentSection(props: ContentSectionProps) {
             <div className={styles.dropzone} data-active={dragging}>
               <span className={styles.dropTitle}>Перетащите файл с контентом</span>
               <span className={styles.fileMeta}>{EXTENSIONS_LABEL} · разбирается один файл</span>
-              <Button variant="secondary" size="md" onClick={openPicker} aria-describedby={error ? errorId : undefined}>
+              <Button variant="secondary" size="md" onClick={openPicker}>
                 Выбрать файл
               </Button>
             </div>
@@ -170,7 +168,6 @@ export function ContentSection(props: ContentSectionProps) {
         <div className={styles.contentBody}>
           <TextArea
             aria-label="Текст контента"
-            aria-describedby={error ? errorId : undefined}
             rows={7}
             className={styles.textarea}
             value={text}
@@ -185,11 +182,6 @@ export function ContentSection(props: ContentSectionProps) {
               {parseError ?? (ready && text.trim() ? 'Текст разобран' : null)}
             </span>
           </div>
-        </div>
-      )}
-      {error && (
-        <div id={errorId} className={styles.error} role="alert">
-          {error}
         </div>
       )}
     </section>

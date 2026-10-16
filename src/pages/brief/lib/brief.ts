@@ -2,10 +2,16 @@ import type { Brief } from '@/entities/content-pack'
 import type { GenerationCreate } from '@/entities/generation'
 import { STRATEGY_ORDER } from '@/entities/variant'
 import { clampSlideCount, DEFAULT_AUDIENCE } from '../model/form'
-import type { BriefForm, ContentMode, ParsedContent } from '../model/form'
+import type { BriefForm, ContentFillMode, ContentMode, ParsedContent } from '../model/form'
 
 export const CONTENT_EXTENSIONS = ['.md', '.txt', '.json', '.docx', '.pdf', '.xlsx'] as const
 export const TEXT_CONTENT_FILENAME = 'brief.md'
+export const TOPIC_CONTENT_FILENAME = 'topic.md'
+export const TOPIC_MAX_LENGTH = 500
+
+const CONTENT_FILL: Record<ContentFillMode, string> = { expand: 'expand', condense: 'expand', keep: 'shrink' }
+
+export type BriefBody = Brief & { content_fill?: string }
 
 export interface BriefErrors {
   purpose?: string
@@ -45,13 +51,11 @@ export function purposeValue(form: Pick<BriefForm, 'purpose' | 'customPurpose'>)
 export function validateBrief(form: BriefForm, content: ContentPlan): BriefErrors {
   const errors: BriefErrors = {}
   if (!form.purpose) errors.purpose = 'Выберите назначение презентации'
-  if (content.kind === 'missing') {
-    errors.content = form.contentMode === 'text' ? 'Вставьте текст контента' : 'Загрузите файл с контентом'
-  }
+  if (content.kind === 'missing') errors.content = 'Опишите тему одной фразой или добавьте материалы'
   return errors
 }
 
-export function toBrief(form: BriefForm): Brief {
+export function toBrief(form: BriefForm): BriefBody {
   const purpose = purposeValue(form)
   if (!purpose) throw new Error('Не выбрано назначение презентации')
   const forbidden = cleanList(form.forbiddenClaims)
@@ -63,18 +67,21 @@ export function toBrief(form: BriefForm): Brief {
     tone: form.tone.trim() || null,
     mandatory_sections: cleanList(form.mandatorySections),
     forbidden_claims: forbidden.length > 0 ? forbidden : null,
+    ...(form.contentFill ? { content_fill: CONTENT_FILL[form.contentFill] } : {}),
   }
 }
 
 export function toContentBrief(form: BriefForm): Record<string, unknown> {
-  if (purposeValue(form)) return { ...toBrief(form) }
-  const brief: Record<string, unknown> = { ...toBrief({ ...form, purpose: 'other' }) }
+  const topic = form.topic.trim()
+  const hint = topic ? { title_hint: topic } : {}
+  if (purposeValue(form)) return { ...toBrief(form), ...hint }
+  const brief: Record<string, unknown> = { ...toBrief({ ...form, purpose: 'other' }), ...hint }
   delete brief.purpose
   return brief
 }
 
 export interface GenerationBodyInput {
-  brief: Brief
+  brief: BriefBody
   templateId: string
   contentPackId: string
   useLlm: boolean
@@ -96,6 +103,11 @@ export function toGenerationBody({ brief, templateId, contentPackId, useLlm, var
 
 export function textToContentFile(text: string, name = TEXT_CONTENT_FILENAME): File {
   return new File([text], name, { type: 'text/markdown' })
+}
+
+export function topicToContentFile(topic: string): File {
+  const text = topic.trim()
+  return new File([`# ${text}\n\n${text}\n`], TOPIC_CONTENT_FILENAME, { type: 'text/markdown' })
 }
 
 export function isSupportedContentFile(file: Pick<File, 'name'>): boolean {
@@ -134,14 +146,19 @@ export function textContentKey(text: string): string {
   return `text:${hashText(text.trim())}`
 }
 
+export function topicContentKey(topic: string): string {
+  return `topic:${hashText(topic.trim())}`
+}
+
 interface ContentSource {
+  topic?: string
   mode: ContentMode
   files: readonly File[]
   text: string
   parsed: ParsedContent | null
 }
 
-export function resolveContent({ mode, files, text, parsed }: ContentSource): ContentPlan {
+export function resolveContent({ topic = '', mode, files, text, parsed }: ContentSource): ContentPlan {
   if (mode === 'file') {
     const { primary } = partitionContentFiles(files)
     if (primary) {
@@ -154,5 +171,13 @@ export function resolveContent({ mode, files, text, parsed }: ContentSource): Co
     if (parsed?.sourceKey === key) return { kind: 'ready', packId: parsed.packId, label: parsed.label }
     return { kind: 'upload', file: textToContentFile(text.trim()), key, label: 'Вставленный текст' }
   }
-  return parsed ? { kind: 'ready', packId: parsed.packId, label: parsed.label } : { kind: 'missing' }
+  const fromTopic = parsed?.sourceKey.startsWith('topic:') ?? false
+  if (parsed && !fromTopic) return { kind: 'ready', packId: parsed.packId, label: parsed.label }
+  const subject = topic.trim()
+  if (subject) {
+    const key = topicContentKey(subject)
+    if (parsed?.sourceKey === key) return { kind: 'ready', packId: parsed.packId, label: parsed.label }
+    return { kind: 'upload', file: topicToContentFile(subject), key, label: 'Описание темы' }
+  }
+  return { kind: 'missing' }
 }

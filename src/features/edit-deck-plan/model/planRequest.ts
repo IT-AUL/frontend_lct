@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
-import { requestPlans, type PlanDraftResult, type PlanRequest } from '@/entities/generation'
+import { requestPlans, type PlanDraftResult, type PlanRequest, type PlanRequestOptions, type VariantRequest } from '@/entities/generation'
 import { readJson, writeJson } from '@/shared/lib/storage'
 
 const STORAGE_PREFIX = 'deckdna.plan-request.v1:'
@@ -9,21 +9,30 @@ export type StoredRequest = PlanRequest & { template_id: string }
 export interface StoredPlanRequest {
   request: StoredRequest
   result: PlanDraftResult
+  variants?: VariantRequest[]
   createdAt: string
 }
 
-export function readPlanRequest(projectId: string): StoredPlanRequest | null {
-  const stored = readJson<StoredPlanRequest | null>(`${STORAGE_PREFIX}${projectId}`, null)
-  return stored && Array.isArray(stored.result?.proposals) && stored.result.proposals.length > 0 ? stored : null
+function storageKey(projectId: string): string {
+  return `${STORAGE_PREFIX}${projectId}`
 }
 
-export async function requestAndStorePlan(projectId: string, request: StoredRequest): Promise<StoredPlanRequest> {
-  const result = await requestPlans(projectId, request)
-  const stored: StoredPlanRequest = { request, result, createdAt: new Date().toISOString() }
-  writeJson(`${STORAGE_PREFIX}${projectId}`, stored)
+export function readPlanRequest(projectId: string): StoredPlanRequest | null {
+  const stored = readJson<StoredPlanRequest | null>(storageKey(projectId), null)
+  if (!stored || !Array.isArray(stored.result?.proposals) || stored.result.proposals.length === 0) return null
+  return { ...stored, result: { ...stored.result, sufficiency: stored.result.sufficiency ?? null, research: stored.result.research ?? null } }
+}
+
+export async function requestAndStorePlan(projectId: string, request: StoredRequest, variants?: VariantRequest[], options?: PlanRequestOptions): Promise<StoredPlanRequest> {
+  const result = await requestPlans(projectId, request, options)
+  const stored: StoredPlanRequest = { request, result, variants, createdAt: new Date().toISOString() }
+  writeJson(storageKey(projectId), stored)
   return stored
 }
 
 export function useRequestPlan(projectId: string) {
-  return useMutation({ mutationFn: (request: StoredRequest) => requestAndStorePlan(projectId, request) })
+  return useMutation({
+    mutationFn: ({ request, variants, options }: { request: StoredRequest; variants?: VariantRequest[]; options?: PlanRequestOptions }) =>
+      requestAndStorePlan(projectId, request, variants, options),
+  })
 }

@@ -1,6 +1,7 @@
 export type PurposeKey = 'feature' | 'product' | 'project' | 'initiative' | 'other'
 export type ContentMode = 'file' | 'text'
 export type BriefLanguage = 'ru' | 'en'
+export type ContentFillMode = 'expand' | 'condense' | 'keep'
 
 export interface PurposeOption {
   value: PurposeKey
@@ -21,6 +22,12 @@ export const LANGUAGES: readonly { value: BriefLanguage; label: string }[] = [
   { value: 'en', label: 'English' },
 ]
 
+export const CONTENT_FILL_MODES: readonly { value: ContentFillMode; label: string; hint: string }[] = [
+  { value: 'expand', label: 'Дополнить', hint: 'недостающее найдём и предложим в плане' },
+  { value: 'condense', label: 'Ужать', hint: 'сократим до нужного числа слайдов' },
+  { value: 'keep', label: 'Сохранить как есть', hint: 'ваш текст не переписываем, только сокращаем' },
+]
+
 export const SLIDE_COUNT_MIN = 3
 export const SLIDE_COUNT_MAX = 40
 export const DEFAULT_SLIDE_COUNT = 12
@@ -34,6 +41,7 @@ export interface ParsedContent {
 }
 
 export interface BriefForm {
+  topic: string
   purpose: PurposeKey | null
   customPurpose: string
   audience: string
@@ -44,6 +52,7 @@ export interface BriefForm {
   forbiddenClaims: string[]
   contentMode: ContentMode
   text: string
+  contentFill: ContentFillMode | null
   useLlm: boolean
   variantCount: 1 | 3
   parsed: ParsedContent | null
@@ -64,6 +73,7 @@ export function clampSlideCount(value: number): number {
 
 export function createBriefForm(defaults: BriefDefaults = {}): BriefForm {
   return {
+    topic: '',
     purpose: null,
     customPurpose: '',
     audience: DEFAULT_AUDIENCE,
@@ -74,6 +84,7 @@ export function createBriefForm(defaults: BriefDefaults = {}): BriefForm {
     forbiddenClaims: [],
     contentMode: 'file',
     text: '',
+    contentFill: null,
     useLlm: true,
     variantCount: 3,
     parsed: defaults.contentPackId

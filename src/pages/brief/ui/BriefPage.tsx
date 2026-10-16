@@ -5,6 +5,7 @@ import type { Project } from '@/entities/project'
 import { useActiveProviderSession } from '@/entities/provider-session'
 import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
 import { useTemplate } from '@/entities/template'
+import { isAbortError, PlanBuildProgress, usePlanBuild } from '@/features/edit-deck-plan'
 import { routes } from '@/shared/config'
 import { ArrowRight, Button, EmptyState, Icon, ListOrdered, PageHeader, Skeleton } from '@/shared/ui'
 import { resolveContent, toContentBrief, validateBrief } from '../lib/brief'
@@ -18,7 +19,7 @@ import { ContentPreview } from './ContentPreview'
 type UploadPlan = Extract<ContentPlan, { kind: 'upload' }>
 
 function errorMessage(error: unknown): string | null {
-  if (!error) return null
+  if (!error || isAbortError(error)) return null
   return error instanceof Error ? error.message : String(error)
 }
 
@@ -37,9 +38,10 @@ function BriefScreen({ project }: { project: Project }) {
   const upload = useContentUpload(project.id)
   const submit = useSubmitBrief(project.id)
   const planFirst = usePlanFirst(project.id)
-  const planOnly = useCapabilityFlag(FEATURE_PATHS.planOnly)
+  const contentFill = useCapabilityFlag(FEATURE_PATHS.contentFill)
+  const planBuild = usePlanBuild()
 
-  const plan = resolveContent({ mode: form.contentMode, files, text: form.text, parsed: form.parsed })
+  const plan = resolveContent({ topic: form.topic, mode: form.contentMode, files, text: form.text, parsed: form.parsed })
   const errors = validateBrief(form, plan)
   const hasErrors = Object.keys(errors).length > 0
   const templateId = project.template_id ?? null
@@ -70,7 +72,7 @@ function BriefScreen({ project }: { project: Project }) {
     setAttempts((count) => count + 1)
     if (hasErrors || !templateId) return
     planFirst.mutate(
-      { form, files, templateId, providerSessionId: session?.id ?? null, onParsed: (parsed) => update({ parsed }) },
+      { form, files, templateId, providerSessionId: session?.id ?? null, onParsed: (parsed) => update({ parsed }), build: planBuild },
       { onSuccess: () => navigate(routes.planDraft(project.id)) },
     )
   }
@@ -79,13 +81,23 @@ function BriefScreen({ project }: { project: Project }) {
   const actionError = errorMessage(submit.error ?? planFirst.error)
   const previewPackId = plan.kind === 'ready' ? plan.packId : (form.parsed?.packId ?? null)
   const previewLabel = plan.kind === 'ready' ? plan.label : (form.parsed?.label ?? null)
+  const variantsLabel = form.variantCount === 1 ? 'один вариант' : '3 варианта'
+
+  if (planFirst.isPending) {
+    return (
+      <div className={styles.page}>
+        <PageHeader eyebrow="Шаг 3 · План" title="Составляю план" description={form.topic.trim() || previewLabel || undefined} />
+        <PlanBuildProgress progress={planBuild.progress} phase={planBuild.phase} startedAt={planBuild.startedAt} onCancel={planBuild.cancel} />
+      </div>
+    )
+  }
 
   return (
     <div className={styles.page}>
       <PageHeader
         eyebrow="Шаг 2 · Бриф и контент"
-        title="О чём презентация"
-        description="Обязательны назначение и контент."
+        title="Новая презентация"
+        description="Достаточно темы и назначения. Сначала составим план — его можно поправить до вёрстки."
       />
       <div className={styles.grid}>
         <BriefForm
@@ -101,6 +113,7 @@ function BriefScreen({ project }: { project: Project }) {
           }}
           errors={showErrors ? errors : {}}
           focusSignal={attempts}
+          contentFill={contentFill}
         />
         <aside className={styles.aside}>
           <ContentPreview
@@ -111,16 +124,14 @@ function BriefScreen({ project }: { project: Project }) {
             error={plan.kind === 'upload' ? parseError : null}
           />
           <div className={styles.cta}>
-            <Button variant="primary" size="xl" block disabled={busy || !templateId} onClick={start}>
-              {submit.isPending ? 'Отправляю…' : upload.isPending ? 'Разбираю контент…' : form.variantCount === 1 ? 'Собрать один вариант' : 'Собрать 3 варианта'}
+            <Button variant="primary" size="xl" block disabled={busy || !templateId} onClick={startWithPlan}>
+              <Icon as={ListOrdered} />
+              {upload.isPending ? 'Разбираю материалы…' : 'Составить план'}
               {!busy && <Icon as={ArrowRight} />}
             </Button>
-            {planOnly && (
-              <Button variant="secondary" size="lg" block disabled={busy || !templateId} onClick={startWithPlan}>
-                <Icon as={ListOrdered} />
-                {planFirst.isPending ? 'Строю план…' : 'Сначала план'}
-              </Button>
-            )}
+            <Button variant="ghost" size="md" block disabled={busy || !templateId} onClick={start}>
+              {submit.isPending ? 'Отправляю…' : `Сразу собрать ${variantsLabel}`}
+            </Button>
             {actionError && (
               <p className={styles.ctaError} role="alert">
                 {actionError}

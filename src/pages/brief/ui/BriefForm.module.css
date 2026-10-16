@@ -230,6 +230,39 @@
   min-height: 176px;
 }
 
+.topic {
+  min-height: 64px;
+  font-size: 15px;
+}
+
+.fills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fills button {
+  padding: 6px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.fills button[aria-pressed='true'] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--inv);
+}
+
+.fills button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 .params {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -1,3 +1,4 @@
+import type { PlanResearch, PlanSufficiency } from '../lib/planExtras'
 import type { Schemas } from '@/shared/api'
 
 export type GenerationDetail = Schemas['GenerationDetail']
@@ -26,6 +27,8 @@ export interface PlanProposal {
 export interface PlanDraftResult {
   planId: string | null
   proposals: PlanProposal[]
+  sufficiency: PlanSufficiency | null
+  research: PlanResearch | null
 }
 
 export type PlanRequest = Schemas['PlanRequest']

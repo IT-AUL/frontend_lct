@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import type { DeckPlan } from '@/entities/generation'
 import { readJson, removeKey, writeJson } from '@/shared/lib/storage'
-import { addSlide, isPlanEdited, moveSlide, removeSlide, updateSlide, type SlidePatch } from '../lib/editPlan'
+import { addSlide, addUnit, isPlanEdited, moveSlide, moveUnit, removeSlide, removeUnit, updateSlide, updateUnit, type SlidePatch } from '../lib/editPlan'
 
 const STORAGE_PREFIX = 'deckdna.plan-draft.v1:'
 
@@ -17,6 +17,10 @@ export interface PlanDraft {
   remove: (slideId: string) => void
   update: (slideId: string, patch: SlidePatch) => void
   add: () => void
+  updateUnit: (slideId: string, position: number, text: string) => void
+  addUnit: (slideId: string) => void
+  removeUnit: (slideId: string, position: number) => void
+  moveUnit: (slideId: string, position: number, delta: -1 | 1) => void
   reset: () => void
 }
 
@@ -60,6 +64,10 @@ export function usePlanDraft(key: string, base: DeckPlan): PlanDraft {
     remove: (slideId) => commit((draft) => removeSlide(draft, slideId)),
     update: (slideId, patch) => commit((draft) => updateSlide(draft, slideId, patch)),
     add: () => commit((draft) => addSlide(draft)),
+    updateUnit: (slideId, position, text) => commit((draft) => updateUnit(draft, slideId, position, text)),
+    addUnit: (slideId) => commit((draft) => addUnit(draft, slideId)),
+    removeUnit: (slideId, position) => commit((draft) => removeUnit(draft, slideId, position)),
+    moveUnit: (slideId, position, delta) => commit((draft) => moveUnit(draft, slideId, position, delta)),
     reset: () => {
       clearPlanDraft(key)
       setState({ key, baseId: base.id, plan: null })
