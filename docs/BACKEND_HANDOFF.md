@@ -352,6 +352,25 @@ Q&A организаторов и наш макет исходят из того
 Ответы 404, 405 и 501 на новые ручки фронт считает «ещё не реализовано» и тихо остаётся на прежнем поведении;
 5xx показывает как ошибку. После слияния мы обновим типы командой `npm run api:types:live`.
 
+## 8a. Финал (ADR-030): что фронт уже ждёт
+
+**Обновлено 16.10.** Фронт для доработок из [`docs/FINAL_IMPROVEMENTS_RU.md`](FINAL_IMPROVEMENTS_RU.md) готов
+и работает на текущем API: план стал главным шагом, бриф проходит с одной фразой, пункты и визуал правятся.
+Всё, что требует ADR-030, фронт читает по формам ниже и включает само; пока полей нет, экран выглядит как сейчас.
+Лишние поля в запросах текущий бэк игнорирует (проверено: 200, а не 422).
+
+| Ваша правка | Что мы отправляем и читаем | Что включится |
+|---|---|---|
+| F1 общий план | `POST /projects/{id}/plans` с `strategies: ["balanced"]` (один план на все варианты) и `respond_async: true`; сборка — `POST /generations` с `deck_plan` и всеми выбранными `variants` | уже работает |
+| F2 бриф из одной фразы | без файла и текста мы загружаем `topic.md` (`# тема` + абзац) через `POST /content-packs`, в поле `brief` формы — `title_hint` с темой | уже работает; когда появится `ContentPack` из брифа без файла, переключимся на него |
+| F3 режим текста | `brief.content_fill`: «Дополнить» → `expand`, «Ужать» → `expand` (как в таблице ADR), «Сохранить как есть» → `shrink`, и все текстовые пункты плана уходят с `locked: true`. Чипы на брифе видны при `features.content_fill: true` | чипы на брифе и на плане |
+| F3 плашка | `PlanSet.sufficiency = {status: "short" \| "ok" \| "excess", content_slides, target_slides}` | «Вашего контента хватает примерно на 4 слайда из 10», кнопки «Дополнить до 10» / «Сократить до 4» (или «Ужать» / «Увеличить»); смена чипа перестраивает план |
+| F4 правки пунктов | отредактированный и новый пункт уходят в `content_units[]` с `locked: true` (`role: "bullet"`, `kind: "bullet"`); визуал — `desired_visual`; новый слайд получает `evidence_ids: ["<pack>:meta"]` (иначе 422 `too_short`) | уже работает; `locked` вёрстка должна только сокращать |
+| F4 бейджи | `ContentUnit.origin`: строка `user \| web \| model` или объект `{kind, source_id}`; `source_id` ссылается на `PlanSet.research.sources[].id` | «ваш контент» / «интернет» (ссылка на источник) / «знания модели» у каждого пункта |
+| F5 план job'ом | ответ `202 {plan_id, job_id}` на тот же `POST /plans`; события `GET /jobs/{job_id}/events?after=N`: `stage.started {stage}`, `research.query {query}`, `research.source {source: {id, title, url, site?, accessed_at?, facts_count?}}`, `plan.slide {slide: SlidePlan}`; итог — `GET /projects/{id}/plans/{plan_id}` → `PlanSet`; отмена — `POST /projects/{id}/plans/{plan_id}/cancel` | экран «Строю план колоды»: шаги, запросы, кликабельные источники, карточки слайдов по одной, «Отменить». Без 202 — тот же экран с таймером |
+| F6 источники | `PlanSet.research = {queries[], sources: [{id, title, url, accessed_at, facts_count}], duration_s}`; удаление источника — повторный `POST /plans` с `exclude_source_ids: [...]` | блок «Источники» над «Почему такая структура», крестик убирает источник и перестраивает план |
+| F7 паспорт | `metrics.content_origin = {user, web, model}` (число фактов), `metrics.research = {sources_count, duration_s, content_fill}` | раздел паспорта «Откуда факты»: доли, число источников, режим текста, время поиска |
+
 ## 9. Приложение: воспроизведение прогона одним скриптом
 
 ```bash

@@ -88,12 +88,16 @@ E2E (`e2e/`) сами собирают приложение в mock-режиме
 `npm run e2e -- --project=chromium`; свой бинарник Chromium — `PW_CHROMIUM_PATH=/path/to/chrome`.
 Отчёт — `npx playwright show-report`.
 
-Проверка совместимости с настоящим бэкендом (`e2e-live/`): сценарий проходит весь путь на реальном
-шаблоне — загрузка, разбор, три варианта, PDF-превью, исправление, скачивание PPTX — и падает при любом
-ответе 5xx или ошибке страницы. Нужен запущенный DeckDNA (`BACKEND_URL`, по умолчанию `http://localhost:8000`):
+Проверка совместимости с настоящим бэкендом (`e2e-live/`): сценарии проходят весь путь на реальном
+шаблоне — загрузка, разбор, три варианта, PDF-превью, исправление, скачивание PPTX, а также тема одной
+фразой → план → правка пунктов, визуала и новый слайд → вёрстка по плану — и падают при любом ответе 5xx,
+отклонённом 422 или ошибке страницы. Нужен запущенный DeckDNA (`BACKEND_URL`, по умолчанию
+`http://localhost:8000`). `E2E_LIVE_NO_LLM=1` выключает языковую модель в брифе — для бэкенда без
+провайдера и чтобы не тратить токены:
 
 ```bash
 E2E_TEMPLATE=/path/to/template.pptx npm run e2e:live
+E2E_LIVE_NO_LLM=1 E2E_TEMPLATE=/path/to/template.pptx npm run e2e:live
 ```
 
 CI (GitHub Actions, `.github/workflows/ci.yml`) на push и PR в `main`: lint, typecheck, тесты,

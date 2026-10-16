@@ -54,7 +54,8 @@ flowchart LR
 |---|---|---|
 | Проекты (`/`) | — | `GET/POST /projects` |
 | Шаблон (`/projects/:id/template`) | парсинг | `POST /projects/{id}/templates`, `POST /templates/{id}/analyze`, `GET /templates/{id}`, `GET /templates/{id}/design-dna` |
-| Бриф и контент (`…/brief`) | парсинг контента | `POST /projects/{id}/content-packs`, `GET /content-packs/{id}` |
+| Бриф и контент (`…/brief`) | парсинг контента | `POST /projects/{id}/content-packs`, `GET /content-packs/{id}`, `POST /projects/{id}/plans` |
+| План до вёрстки (`…/plan`) | генерация (план) | `POST /projects/{id}/plans`, `GET /jobs/{id}/events` (если план строится job'ом), `POST /projects/{id}/generations` с `deck_plan` |
 | Генерация (`…/runs/:runId`) | генерация, вёрстка | `POST /projects/{id}/generations`, `GET /generations/{id}`, `GET /jobs/{id}`, `POST /generations/{id}/cancel`, `/retry` |
 | План (`…/runs/:runId/plan`) | генерация | `GET /generations/{id}` (поле `deck_plan`) |
 | Три варианта (`…/runs/:runId/variants`) | вёрстка | `GET /generations/{id}/variants`, `GET /variants/{id}`, `GET /variants/{id}/slides`, `GET /exports/{id}`, `GET /artifacts/{id}/download` |
@@ -251,7 +252,7 @@ SSE-поток `/jobs/{id}/events` интерфейс не использует.
 |---|---|---|
 | HTML-экспорт (API отвечает 501) | карточка HTML с меткой «Не реализовано сервисом», без кнопки. Включится сама, когда `/capabilities` заявит формат | Экспорт |
 | Соответствие шаблону (`style_fidelity` в паспорте пустой) | метрика скрыта; появится в карточке варианта, как только бэкенд её заполнит | Три варианта |
-| Правка плана до вёрстки (`features.plan_only` в `/capabilities`) | без флага план только для чтения: главная кнопка «К вариантам →», второстепенная «Пересобрать с теми же данными» с подтверждением. С флагом включается редактор плана и сборка по нему | План, Бриф |
+| План до вёрстки | всегда главный шаг брифа. Плашка достаточности контента, источники и бейджи происхождения пунктов появляются, когда бэкенд отдаёт `PlanSet.sufficiency`, `PlanSet.research` и `ContentUnit.origin`; живой прогресс — когда `POST /plans` отвечает 202 с job | План, Бриф |
 | Картинка «после» repair (PDF не перерисовывается) | в режиме «до / после» справа список действий вместо картинки; предупреждение, что превью от старой ревизии | Аудит |
 | PDF и паспорт новой ревизии после repair | рамки на превью пунктиром и пометка «Превью устарело: картинка rX, проблемы rY»; в экспорте файлы помечены как устаревшие, над файлами предупреждение «Открыто N ошибок · К аудиту» | Аудит, Экспорт |
 | Статус каждого варианта по отдельности (async) | «О системе»: «сейчас три варианта готовы вместе» | Генерация, «О системе» |
