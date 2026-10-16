@@ -1,4 +1,5 @@
 import { clsx } from 'clsx'
+import { useLayoutEffect, useRef } from 'react'
 import { hasChartData, isEditableUnit, isUnitLocked, unitOrigin, unitSourceId, type ResearchSource, type SlidePlan, type UnitOrigin } from '@/entities/generation'
 import { ArrowDown, ArrowUp, ExternalLink, Icon, Lock, Plus, X } from '@/shared/ui'
 import { EDITOR_VISUALS, ORIGIN_LABEL, VISUAL_LABEL } from '../lib/plan'
@@ -29,6 +30,19 @@ function OriginBadge({ origin, source }: { origin: UnitOrigin; source: ResearchS
   )
 }
 
+function UnitField({ value, label, onChange }: { value: string; label: string; onChange: (value: string) => void }) {
+  const field = useRef<HTMLTextAreaElement>(null)
+
+  useLayoutEffect(() => {
+    const element = field.current
+    if (!element) return
+    element.style.height = 'auto'
+    element.style.height = `${element.scrollHeight}px`
+  }, [value])
+
+  return <textarea ref={field} rows={1} className={styles.unitInput} value={value} placeholder="Пункт" aria-label={label} onChange={(event) => onChange(event.target.value)} />
+}
+
 export function SlideContentEditor({ slide, number, editor, sources }: SlideContentEditorProps) {
   const editable = slide.content_units.map((unit, position) => ({ unit, position })).filter(({ unit }) => isEditableUnit(unit))
   const assets = slide.content_units.filter((unit) => !isEditableUnit(unit) && unit.kind !== 'title')
@@ -44,13 +58,7 @@ export function SlideContentEditor({ slide, number, editor, sources }: SlideCont
             const sourceId = unitSourceId(unit)
             return (
               <li key={position} className={styles.unit}>
-                <input
-                  className={styles.unitInput}
-                  value={unit.text ?? ''}
-                  placeholder="Пункт"
-                  aria-label={`Пункт ${order + 1} слайда ${number}`}
-                  onChange={(event) => editor.onUnitChange(slide.id, position, event.target.value)}
-                />
+                <UnitField value={unit.text ?? ''} label={`Пункт ${order + 1} слайда ${number}`} onChange={(text) => editor.onUnitChange(slide.id, position, text)} />
                 {isUnitLocked(unit) && (
                   <span className={styles.locked} title="Ваша формулировка: вёрстка её только сократит">
                     <Icon as={Lock} size={11} />

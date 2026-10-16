@@ -128,3 +128,20 @@ describe('buildPassportView', () => {
     expect(byKey('pei')).toMatchObject({ value: '5/5', hint: 'шкала 0–5; 5 — всё нативное и привязано к макетам' })
   })
 })
+
+describe('researchView', () => {
+  it('turns fact origins into shares and labels the text mode', () => {
+    const passport = parsePassport({
+      ...passportFixture,
+      metrics: { ...passportFixture.metrics, content_origin: { user: 6, web: 3, model: 3 }, research: { sources_count: 2, content_fill: 'shrink' } },
+    })
+    const view = buildPassportView(passport, { budgetSeconds: 300 }).research
+    expect(view?.origins.map((origin) => [origin.key, origin.fraction])).toEqual([
+      ['user', 0.5],
+      ['web', 0.25],
+      ['model', 0.25],
+    ])
+    expect(view).toMatchObject({ sources: 2, mode: 'сохранить как есть', seconds: null })
+    expect(buildPassportView(parsePassport(passportFixture), { budgetSeconds: 300 }).research).toBeNull()
+  })
+})

@@ -31,6 +31,20 @@ export interface SourcesView {
   numbersFailed: number | null
 }
 
+export interface OriginShareView {
+  key: 'user' | 'web' | 'model'
+  label: string
+  count: number
+  fraction: number
+}
+
+export interface ResearchView {
+  origins: OriginShareView[]
+  sources: number | null
+  mode: string | null
+  seconds: string | null
+}
+
 export interface ReadabilityView {
   contrastFailures: number | null
   overflowCount: number | null
@@ -86,6 +100,7 @@ export interface PassportView {
   proof: ProofCell[]
   style: StyleFidelityView
   sources: SourcesView | null
+  research: ResearchView | null
   readability: ReadabilityView
   issues: IssuesView
   timing: TimingView
@@ -299,6 +314,26 @@ function provenanceRows(passport: QualityPassport, context: PassportContext): Pr
   return rows
 }
 
+const ORIGIN_LABEL: Record<OriginShareView['key'], string> = { user: 'ваш контент', web: 'интернет', model: 'знания модели' }
+
+const FILL_LABEL: Record<string, string> = { expand: 'дополнить', shrink: 'сохранить как есть' }
+
+export function researchView(passport: QualityPassport): ResearchView | null {
+  const { research } = passport
+  if (!research) return null
+  const origin = research.origin
+  const total = origin ? origin.user + origin.web + origin.model : 0
+  const origins: OriginShareView[] = origin
+    ? (['user', 'web', 'model'] as const).map((key) => ({ key, label: ORIGIN_LABEL[key], count: origin[key], fraction: total > 0 ? origin[key] / total : 0 }))
+    : []
+  return {
+    origins,
+    sources: research.sources,
+    mode: research.contentFill ? (FILL_LABEL[research.contentFill] ?? research.contentFill) : null,
+    seconds: research.seconds === null ? null : formatSeconds(research.seconds),
+  }
+}
+
 export function buildPassportView(passport: QualityPassport, context: PassportContext): PassportView {
   return {
     generatedAt: passport.generatedAt,
@@ -308,6 +343,7 @@ export function buildPassportView(passport: QualityPassport, context: PassportCo
     proof: proofCells(passport, context.fallbackPei ?? null),
     style: styleView(passport),
     sources: sourcesView(passport),
+    research: researchView(passport),
     readability: { ...passport.readability },
     issues: issuesView(passport),
     timing: timingView(passport, context.budgetSeconds),
