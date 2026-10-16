@@ -105,6 +105,7 @@ Workflow `.github/workflows/deploy.yml`:
 | Включить языковую модель | в `.env`: `DECKDNA_MOCK_PROVIDER=false`, `DECKDNA_PROVIDER_BASE_URL`, `DECKDNA_PROVIDER_API_KEY`, `DECKDNA_MODEL_TEXT`, `DECKDNA_MODEL_VISION`, затем запустить workflow (только открытые модели до 35B по ТЗ) |
 | Посмотреть состояние | `ssh -i ~/.ssh/deckdna-ci-deploy deckdna@<host> status` |
 | Журнал выкаток | `/srv/deckdna/state/history.jsonl` |
+| Заморозка кода | после `FREEZE_AT` (переменная репозитория, по умолчанию `2026-10-20T20:30:00Z`, то есть 23:30 МСК) автоматическая и ручная выкатка пропускаются, остаётся только `rollback`. Сменить границу: `gh variable set FREEZE_AT --body 2026-10-20T20:45:00Z` |
 | Перевыпустить ключ CI | `ssh-keygen -t ed25519 -f key`, затем `sudo bash scripts/bootstrap.sh key.pub <app> <ops>` и обновить секрет |
 
 ## Ограничения

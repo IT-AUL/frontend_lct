@@ -95,6 +95,7 @@ jobs:
           RUNNING_API: ${{ steps.running.outputs.api }}
           GH_TOKEN: ${{ github.token }}
           BACKEND_TOKEN: ${{ secrets.BACKEND_READ_TOKEN }}
+          FREEZE_AT: ${{ vars.FREEZE_AT || '2026-10-20T20:30:00Z' }}
         run: |
           set -euo pipefail
           short() { printf '%s' "${1:0:12}"; }
@@ -137,6 +138,10 @@ jobs:
           deploy=false
           if [ "$action" = rollback ]; then deploy=true
           elif [ "$web_sha" != "$RUNNING_WEB" ] || [ "$api_sha" != "$RUNNING_API" ]; then deploy=true
+          fi
+          if [ "$deploy" = true ] && [ "$action" != rollback ] && [ "$(date -u +%s)" -ge "$(date -u -d "$FREEZE_AT" +%s)" ]; then
+            echo "code freeze since $FREEZE_AT: release skipped"
+            deploy=false
           fi
 
           {
