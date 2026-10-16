@@ -47,6 +47,8 @@ describe('SlideContentEditor', () => {
     expect(actions.onUnitChange).toHaveBeenCalledWith('s1', 3, 'Из модели!')
     await userEvent.click(screen.getByRole('button', { name: 'Удалить пункт 1' }))
     expect(actions.onUnitRemove).toHaveBeenCalledWith('s1', 1)
+    await userEvent.click(screen.getByRole('button', { name: 'Текст' }))
+    expect(actions.onUpdate).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: 'Таблица' }))
     expect(actions.onUpdate).toHaveBeenCalledWith('s1', { desired_visual: 'table' })
     await userEvent.click(screen.getByRole('button', { name: /Пункт$/ }))

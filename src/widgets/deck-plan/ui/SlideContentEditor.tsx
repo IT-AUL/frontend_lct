@@ -107,7 +107,9 @@ export function SlideContentEditor({ slide, number, editor, sources }: SlideCont
               type="button"
               aria-pressed={visual === option}
               className={styles.visualChip}
-              onClick={() => editor.onUpdate(slide.id, { desired_visual: option })}
+              onClick={() => {
+                if (option !== visual) editor.onUpdate(slide.id, { desired_visual: option })
+              }}
             >
               {VISUAL_LABEL[option]}
             </button>
