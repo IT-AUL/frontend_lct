@@ -38,6 +38,7 @@ services:
       DECKDNA_GEN_WORKERS: ${DECKDNA_GEN_WORKERS:-4}
       DECKDNA_OFFICIAL_MODE: ${DECKDNA_OFFICIAL_MODE:-true}
       DECKDNA_ARTIFACT_ROOT: /data/artifacts
+      DECKDNA_STATE_SNAPSHOT: ${DECKDNA_STATE_SNAPSHOT:-true}
       HOME: /tmp
     volumes:
       - api-artifacts:/data/artifacts
