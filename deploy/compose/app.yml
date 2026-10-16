@@ -64,6 +64,33 @@ services:
     networks:
       - deckdna
 
+  vk-gateway:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      VK_PROJECT_ID: ${VK_PROJECT_ID:-}
+      VK_INFERENCE_ORIGIN: ${VK_INFERENCE_ORIGIN:-https://ai-demo.platformpreview.ru}
+    volumes:
+      - ${CONFIG_DIR:-../config}/vk-gateway/Caddyfile:/etc/caddy/Caddyfile:ro
+    read_only: true
+    tmpfs:
+      - /data:size=8m
+      - /config:size=8m
+    mem_limit: 64m
+    cpus: 0.5
+    pids_limit: 64
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      com.deckdna.stack: deckdna
+      com.deckdna.role: vk-gateway
+      com.deckdna.config-hash: ${CONFIG_HASH:-none}
+    logging: *logging
+    networks:
+      - deckdna
+
   web:
     image: ghcr.io/it-aul/deckdna-web:${WEB_TAG:?WEB_TAG is required}
     restart: unless-stopped

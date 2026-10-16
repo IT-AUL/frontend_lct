@@ -105,6 +105,7 @@ Workflow `.github/workflows/deploy.yml`:
 | Включить языковую модель | в `.env`: `DECKDNA_MOCK_PROVIDER=false`, `DECKDNA_PROVIDER_BASE_URL`, `DECKDNA_PROVIDER_API_KEY`, `DECKDNA_MODEL_TEXT`, `DECKDNA_MODEL_VISION`, затем запустить workflow (только открытые модели до 35B по ТЗ) |
 | Посмотреть состояние | `ssh -i ~/.ssh/deckdna-ci-deploy deckdna@<host> status` |
 | Журнал выкаток | `/srv/deckdna/state/history.jsonl` |
+| Модель через VK Inference | в `.env`: `DECKDNA_PROVIDER_BASE_URL=http://vk-gateway:8080/api/inference-providers-router/<router-id>/v1`, `DECKDNA_PROVIDER_API_KEY`, `VK_PROJECT_ID`, `DECKDNA_MODEL_TEXT=DECKDNA_MODEL_VISION=qwen38-27b-fp8`. Сервис `vk-gateway` (Caddy) добавляет обязательный заголовок `Project-ID`, которого бэк сам не шлёт. Прежний провайдер оставлен в `.env` закомментированным (`# cerebras-fallback`) |
 | Заморозка кода | после `FREEZE_AT` (переменная репозитория, по умолчанию `2026-10-20T20:30:00Z`, то есть 23:30 МСК) автоматическая и ручная выкатка пропускаются, остаётся только `rollback`. Сменить границу: `gh variable set FREEZE_AT --body 2026-10-20T20:45:00Z` |
 | Перевыпустить ключ CI | `ssh-keygen -t ed25519 -f key`, затем `sudo bash scripts/bootstrap.sh key.pub <app> <ops>` и обновить секрет |
 
