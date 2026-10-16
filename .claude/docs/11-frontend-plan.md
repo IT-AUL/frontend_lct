@@ -95,7 +95,7 @@ pdfjs-dist, MSW, Vitest + Testing Library, Playwright (Chromium/Firefox/WebKit �
 - `docker-compose.yml` для локальной проверки связки (наш фронт + их api).
 - CI (позже): GitHub Actions → GHCR → ssh на VPS → `docker compose pull && up -d`.
 
-## График до стоп-кода 29.09 23:59 МСК
+## График до стоп-кода отборочного этапа 29.09 23:59 МСК (прошёл; финал: стоп кодинга 20.10 23:59)
 
 | День | Что делаем |
 |---|---|
