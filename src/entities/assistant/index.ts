@@ -1,5 +1,6 @@
 export { useAssistantSession, useStartAutopilot, useIntake, useSetIntakeKind, useTemplateSummary, useBrandbook, useBrandbookSummary, useSetBrandPriority, useUnderstanding, useEditBlocks, useEditInsight, useAddNotes, useQuestions, useSubmitAnswers, usePatchPlanSlide, usePlanSlideAction, useStartStylePreviews, useStylePreview, useRegenerateSlide, useSlideExplain, useSlide } from './api/hooks'
 export type { IntakeInput } from './api/hooks'
+export { normalizeStylePreview } from './model/normalize'
 export { subscribeJobEvents, useJobEvents } from './api/events'
 export type { SubscribeJobEventsOptions } from './api/events'
 export { assistantKeys } from './api/keys'

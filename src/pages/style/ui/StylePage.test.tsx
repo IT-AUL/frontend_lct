@@ -1,0 +1,336 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
+import {
+  normalizeStylePreview,
+  useAssistantSession,
+  useJobEvents,
+  useStartAutopilot,
+  useStartStylePreviews,
+  useStylePreview,
+  type AssistantSession,
+  type JobEvent,
+  type StylePreview,
+  type StylePreviewAccepted,
+} from '@/entities/assistant'
+import { startGeneration, whenGenerationAccepted, type DeckPlan, type GenerationCreate } from '@/entities/generation'
+import { useProject } from '@/entities/project'
+import { readPlanRequest, type StoredPlanRequest } from '@/features/edit-deck-plan'
+import planFixture from '@/shared/api/mocks/fixtures/assistant/data-plan.json'
+import stylePreviewFixture from '@/shared/api/mocks/fixtures/assistant/data-style-preview.json'
+import { routes } from '@/shared/config'
+import { StylePage } from './StylePage'
+import type * as AssistantModule from '@/entities/assistant'
+import type * as GenerationModule from '@/entities/generation'
+import type * as ProjectModule from '@/entities/project'
+import type * as EditPlanModule from '@/features/edit-deck-plan'
+
+vi.mock('@/entities/assistant', async (importOriginal) => ({
+  ...(await importOriginal<typeof AssistantModule>()),
+  useAssistantSession: vi.fn(),
+  useStartAutopilot: vi.fn(),
+  useStartStylePreviews: vi.fn(),
+  useStylePreview: vi.fn(),
+  useJobEvents: vi.fn(),
+}))
+
+vi.mock('@/entities/generation', async (importOriginal) => ({
+  ...(await importOriginal<typeof GenerationModule>()),
+  startGeneration: vi.fn(),
+  whenGenerationAccepted: vi.fn(),
+}))
+
+vi.mock('@/entities/project', async (importOriginal) => ({
+  ...(await importOriginal<typeof ProjectModule>()),
+  useProject: vi.fn(),
+  rememberRun: vi.fn(),
+}))
+
+vi.mock('@/features/edit-deck-plan', async (importOriginal) => ({
+  ...(await importOriginal<typeof EditPlanModule>()),
+  readPlanRequest: vi.fn(),
+  requestAndStorePlan: vi.fn(),
+}))
+
+const PROJECT_ID = 'prj_dcfe27bda1874f76b03a28e7ee495aa1'
+const PLAN_ID = planFixture.body.plan_id
+const PREVIEW_ID = stylePreviewFixture.body.preview_id
+const JOB_ID = 'job_79e6951091864f71b03f8e75f7dbd546'
+const deckPlan = (planFixture.body.plans[0]?.deck_plan ?? null) as unknown as DeckPlan
+const normalizedPreview = normalizeStylePreview(stylePreviewFixture.body)
+
+const storedPlan: StoredPlanRequest = {
+  request: {
+    template_id: 'tpl_7c4f33420b0e4c1cb783c86d1cfb12c1',
+    content_pack_id: 'pack_52549aa7639543a8b68b55c5f60d42a8',
+    strategies: ['balanced'],
+    brief: {
+      purpose: 'Итоги продаж за год для совета директоров',
+      audience: 'Совет директоров',
+      language: 'ru',
+      target_slide_count: 8,
+    },
+    use_llm: false,
+  },
+  result: {
+    planId: PLAN_ID,
+    proposals: [{ strategy: 'balanced', deckPlan }],
+    sufficiency: null,
+    research: null,
+  },
+  createdAt: '2026-10-17T13:52:04.311Z',
+}
+
+const defaultSession: AssistantSession = {
+  step: 5,
+  completed_steps: [1, 2, 3, 4],
+  skipped_steps: [],
+  artifacts: {
+    template_id: 'tpl_7c4f33420b0e4c1cb783c86d1cfb12c1',
+    content_pack_id: 'pack_52549aa7639543a8b68b55c5f60d42a8',
+    brandbook_id: null,
+    plan_id: PLAN_ID,
+    preview_id: null,
+    generation_id: null,
+  },
+  brief: {
+    purpose: 'Итоги продаж за год для совета директоров',
+    audience: 'Совет директоров',
+    language: 'ru',
+    target_slide_count: 8,
+  },
+  assistant_note: 'Выберите подходящий стиль вёрстки.',
+  job_id: null,
+}
+
+function LocationProbe() {
+  return <output data-testid="location">{useLocation().pathname}</output>
+}
+
+function renderStylePage(initialPath = routes.style(PROJECT_ID)) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Routes>
+          <Route path="/projects/:projectId/style" element={<StylePage />} />
+          <Route path="*" element={<div>other screen</div>} />
+        </Routes>
+        <LocationProbe />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
+describe('StylePage', () => {
+  const startPreviewsMutate = vi.fn()
+  const autopilotMutateAsync = vi.fn()
+
+  beforeEach(() => {
+    startPreviewsMutate.mockReset()
+    autopilotMutateAsync.mockReset()
+    vi.mocked(readPlanRequest).mockReturnValue(storedPlan)
+    vi.mocked(useProject).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof useProject>)
+    vi.mocked(useAssistantSession).mockReturnValue({
+      data: defaultSession,
+      isPending: false,
+    } as unknown as ReturnType<typeof useAssistantSession>)
+    vi.mocked(useStartStylePreviews).mockReturnValue({
+      mutate: startPreviewsMutate,
+      data: { preview_id: PREVIEW_ID, job_id: JOB_ID, events_url: `/api/v1/jobs/${JOB_ID}/events` } satisfies StylePreviewAccepted,
+      isPending: false,
+      isSuccess: true,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useStartStylePreviews>)
+    vi.mocked(useStylePreview).mockReturnValue({
+      data: normalizedPreview,
+      isPending: false,
+    } as unknown as ReturnType<typeof useStylePreview>)
+    vi.mocked(useJobEvents).mockReturnValue({
+      events: [],
+      lastEvent: null,
+      done: true,
+      error: null,
+    })
+    vi.mocked(useStartAutopilot).mockReturnValue({
+      mutateAsync: autopilotMutateAsync,
+      isPending: false,
+    } as unknown as ReturnType<typeof useStartAutopilot>)
+    vi.mocked(startGeneration).mockReturnValue('local-run-1')
+    vi.mocked(whenGenerationAccepted).mockReturnValue(undefined)
+  })
+
+  it('starts style previews, renders three style columns in a radiogroup, and selects the recommended style by default', () => {
+    renderStylePage()
+
+    expect(startPreviewsMutate).toHaveBeenCalledWith({})
+    expect(screen.getByRole('heading', { level: 1, name: 'Выбери стиль вёрстки' })).toBeInTheDocument()
+    expect(screen.getByTestId('assistant-note')).toHaveTextContent(
+      'Советую визуальный: на 4 из 6 слайдов графики и схемы.',
+    )
+
+    const group = screen.getByRole('radiogroup', { name: 'Стиль вёрстки' })
+    const faithful = within(group).getByRole('radio', { name: 'Строгий' })
+    const balanced = within(group).getByRole('radio', { name: 'Сбалансированный' })
+    const visual = within(group).getByRole('radio', { name: 'Визуальный' })
+
+    expect(faithful).toHaveAttribute('aria-checked', 'false')
+    expect(balanced).toHaveAttribute('aria-checked', 'false')
+    expect(visual).toHaveAttribute('aria-checked', 'true')
+    expect(within(visual).getByText('советую')).toBeInTheDocument()
+    expect(within(faithful).getByText(/Ближе всего к вашему шаблону/)).toBeInTheDocument()
+    expect(within(balanced).getByText(/Другие подходящие раскладки шаблона/)).toBeInTheDocument()
+    expect(within(visual).getByText(/Больше графиков и схем, меньше текста/)).toBeInTheDocument()
+  })
+
+  it('renders skeletons with captions while streaming and reveals images as preview.ready events arrive', () => {
+    const events: JobEvent[] = [
+      {
+        sequence: 1,
+        type: 'preview.ready',
+        timestamp: null,
+        stage: 'style_preview',
+        progress: 0,
+        message: null,
+        data: {
+          strategy: 'visual',
+          slide_id: 'slide-0',
+          image_artifact_id: 'art_8c02eb48d9884f0c9bc8a50f78c5b8b4',
+        },
+      },
+    ]
+    vi.mocked(useJobEvents).mockReturnValue({
+      events,
+      lastEvent: events[0] ?? null,
+      done: false,
+      error: null,
+    })
+    vi.mocked(useStylePreview).mockReturnValue({
+      data: null as unknown as StylePreview,
+      isPending: true,
+    } as unknown as ReturnType<typeof useStylePreview>)
+
+    renderStylePage()
+
+    const group = screen.getByRole('radiogroup', { name: 'Стиль вёрстки' })
+    const visual = within(group).getByRole('radio', { name: 'Визуальный' })
+    expect(within(visual).getByRole('img', { name: /Визуальный — слайд 1/ })).toBeInTheDocument()
+    expect(within(visual).getByText('Верстаю слайд с графиком…')).toBeInTheDocument()
+  })
+
+  it('opens the comparison lightbox when clicking a slide and allows switching slides and styles', async () => {
+    renderStylePage()
+
+    const group = screen.getByRole('radiogroup', { name: 'Стиль вёрстки' })
+    const visual = within(group).getByRole('radio', { name: 'Визуальный' })
+    const slideBtn = within(visual).getByRole('button', { name: /Открыть сравнение слайда 1/ })
+    await userEvent.click(slideBtn)
+
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByRole('heading', { name: /Сравнение трёх стилей · Слайд 01/ })).toBeInTheDocument()
+    expect(within(dialog).getByRole('region', { name: 'Стиль «Строгий»' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('region', { name: 'Стиль «Сбалансированный»' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('region', { name: 'Стиль «Визуальный»' })).toBeInTheDocument()
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Следующий слайд' }))
+    expect(within(dialog).getByRole('heading', { name: /Сравнение трёх стилей · Слайд 02/ })).toBeInTheDocument()
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Выбрать «Строгий»' }))
+    expect(within(group).getByRole('radio', { name: 'Строгий', hidden: true })).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('starts generation in the chosen style with deck_plan and preview_id, or in all three styles', async () => {
+    const { unmount } = renderStylePage()
+
+    await userEvent.click(screen.getByRole('button', { name: /Собрать в этом стиле/ }))
+    expect(startGeneration).toHaveBeenCalledWith(
+      PROJECT_ID,
+      expect.objectContaining({
+        template_id: storedPlan.request.template_id,
+        content_pack_id: storedPlan.request.content_pack_id,
+        preview_id: PREVIEW_ID,
+        variants: [{ strategy: 'visual' }],
+        deck_plan: expect.objectContaining({ id: deckPlan.id }),
+      } satisfies Partial<GenerationCreate>),
+    )
+    expect(screen.getByTestId('location')).toHaveTextContent(routes.run(PROJECT_ID, 'local-run-1'))
+
+    unmount()
+    vi.mocked(startGeneration).mockClear()
+    renderStylePage()
+
+    await userEvent.click(screen.getByRole('button', { name: /Собрать во всех трёх/ }))
+    expect(startGeneration).toHaveBeenCalledWith(
+      PROJECT_ID,
+      expect.objectContaining({
+        preview_id: PREVIEW_ID,
+        variants: [{ strategy: 'faithful' }, { strategy: 'balanced' }, { strategy: 'visual' }],
+      }),
+    )
+  })
+
+  it('starts autopilot from step 5 when clicking «Сделай сам»', async () => {
+    autopilotMutateAsync.mockResolvedValue({
+      job_id: 'job_autopilot_5',
+      events_url: '/api/v1/jobs/job_autopilot_5/events',
+      assistant_note: 'Собираю колоду.',
+    })
+    renderStylePage()
+
+    await userEvent.click(screen.getByRole('button', { name: /Сделай сам/ }))
+    expect(autopilotMutateAsync).toHaveBeenCalledWith({
+      from_step: 5,
+      use_llm: false,
+    })
+    expect(screen.getByTestId('location')).toHaveTextContent(routes.run(PROJECT_ID, 'job_autopilot_5'))
+  })
+
+  it('degrades gracefully when /style-previews returns 404/501 (null)', () => {
+    vi.mocked(useStartStylePreviews).mockReturnValue({
+      mutate: startPreviewsMutate,
+      data: null,
+      isPending: false,
+      isSuccess: true,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useStartStylePreviews>)
+    vi.mocked(useStylePreview).mockReturnValue({
+      data: null,
+      isPending: false,
+    } as unknown as ReturnType<typeof useStylePreview>)
+
+    renderStylePage()
+
+    expect(screen.getByRole('radiogroup', { name: 'Стиль вёрстки' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Собрать в этом стиле/ })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /Собрать во всех трёх/ })).toBeEnabled()
+  })
+
+  it('shows an empty state when no plan or materials exist yet', () => {
+    vi.mocked(readPlanRequest).mockReturnValue(null)
+    vi.mocked(useAssistantSession).mockReturnValue({
+      data: {
+        ...defaultSession,
+        artifacts: {
+          template_id: null,
+          content_pack_id: null,
+          brandbook_id: null,
+          plan_id: null,
+          preview_id: null,
+          generation_id: null,
+        },
+      },
+      isPending: false,
+    } as unknown as ReturnType<typeof useAssistantSession>)
+
+    renderStylePage()
+
+    expect(screen.getByText('Плана пока нет')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Перейти к плану' })).toHaveAttribute(
+      'href',
+      routes.planDraft(PROJECT_ID),
+    )
+  })
+})

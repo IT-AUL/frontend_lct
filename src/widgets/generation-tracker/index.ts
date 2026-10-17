@@ -1,4 +1,7 @@
 export { describeFailure, failureMeta, isTrackingLost } from './lib/failure'
 export type { FailureView } from './lib/failure'
+export { buildFilmstripSlots, extractEventGenerationId, latestAssistantNote } from './lib/filmstrip'
+export type { BuildFilmstripSlotsOptions, FilmstripSlot, FilmstripSlotState } from './lib/filmstrip'
 export { GenerationProgress } from './ui/GenerationProgress'
 export { RunNotice } from './ui/RunNotice'
+export { SlideFilmstrip } from './ui/SlideFilmstrip'

@@ -1,16 +1,39 @@
-import { useEffect } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
-import { CancelGenerationButton } from '@/features/cancel-generation'
-import { useRerunGeneration } from '@/features/rerun-generation'
-import { describeFailure, failureMeta, GenerationProgress, isTrackingLost, RunNotice } from '@/widgets/generation-tracker'
-import { isTrackingId, useGenerationTracker, type GenerationPhase, type GenerationTracker } from '@/entities/generation'
+import { useEffect, useMemo } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
+import { useJobEvents } from '@/entities/assistant'
+import { isTrackingId, useGenerationTracker, useJob, type DeckPlan, type GenerationPhase, type GenerationTracker } from '@/entities/generation'
 import { markEvidence, projectRunId, rememberRun, useProject } from '@/entities/project'
 import { useTemplate } from '@/entities/template'
+import { CancelGenerationButton } from '@/features/cancel-generation'
+import { readPlanRequest } from '@/features/edit-deck-plan'
+import { useRerunGeneration } from '@/features/rerun-generation'
+import {
+  describeFailure,
+  extractEventGenerationId,
+  failureMeta,
+  GenerationProgress,
+  isTrackingLost,
+  latestAssistantNote,
+  RunNotice,
+} from '@/widgets/generation-tracker'
 import { routes } from '@/shared/config'
-import { ArrowRight, Button, Icon, PageHeader } from '@/shared/ui'
+import { ArrowRight, Button, Icon, PageHeader, Sparkles } from '@/shared/ui'
 import styles from './GenerationPage.module.css'
 
 const VARIANT_WORD: Record<number, string> = { 1: 'один вариант', 2: 'два варианта', 3: 'три варианта' }
+const AUTO_POLISH_DELAY_MS = 450
+
+interface RunLocationState {
+  fromStyle?: boolean
+  fromAutopilot?: boolean
+  strategies?: string[]
+  deckPlan?: DeckPlan | null
+  previewId?: string | null
+}
+
+function isRunLocationState(value: unknown): value is RunLocationState {
+  return typeof value === 'object' && value !== null
+}
 
 function variantWord(count: number): string {
   return VARIANT_WORD[count] ?? `${count} вариантов`
@@ -136,23 +159,92 @@ function RecoveryNotice({ projectId, runId, tracker }: { projectId: string; runI
 
 export function GenerationPage() {
   const { projectId = '', runId = '' } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
-  const tracker = useGenerationTracker(runId)
-  const { phase, generationId, canCancel } = tracker
+  const routeState = isRunLocationState(location.state) ? location.state : null
+
+  const isJobRun = runId.startsWith('job_')
+  const autopilotJobQuery = useJob(isJobRun ? runId : null)
+  const autopilotJob = autopilotJobQuery.data
+  const jobIdForEvents = isJobRun ? runId : null
+  const preEvents = useJobEvents(jobIdForEvents)
+
+  const resolvedRunIdFromJob =
+    (typeof autopilotJob?.result_ids?.generation_id === 'string' ? autopilotJob.result_ids.generation_id : null) ??
+    extractEventGenerationId(preEvents.events)
+
+  const trackerTargetId = isJobRun ? resolvedRunIdFromJob : runId
+  const tracker = useGenerationTracker(trackerTargetId)
+
+  const activeJobId = isJobRun ? runId : tracker.jobId
+  const jobEvents = useJobEvents(activeJobId)
+
+  const phase: GenerationPhase =
+    isJobRun && !resolvedRunIdFromJob
+      ? autopilotJob?.state === 'failed'
+        ? 'failed'
+        : autopilotJob?.state === 'canceled'
+          ? 'canceled'
+          : 'running'
+      : tracker.phase
+
+  const generationId = tracker.generationId ?? resolvedRunIdFromJob
+  const canCancel = tracker.canCancel
   const tracking = isTrackingId(runId)
-  const variantCount = tracker.generation?.variants.length || tracker.variantIds.length || 3
-  const lost = isTrackingLost(tracker.error)
+
+  const requestedStrategies = routeState?.strategies
+  const variantCount =
+    tracker.generation?.variants.length ||
+    tracker.variantIds.length ||
+    requestedStrategies?.length ||
+    (isJobRun ? 1 : 3)
+
+  const lost = !isJobRun && isTrackingLost(tracker.error)
   const { data: template } = useTemplate(tracker.generation?.template_id)
 
+  const storedPlan = useMemo(() => readPlanRequest(projectId), [projectId])
+  const deckPlan: DeckPlan | null =
+    tracker.generation?.deck_plan ??
+    routeState?.deckPlan ??
+    storedPlan?.result.proposals[0]?.deckPlan ??
+    null
+
+  const assistantNote = useMemo(
+    () => latestAssistantNote(jobEvents.events, null, deckPlan?.slides.length),
+    [jobEvents.events, deckPlan?.slides.length],
+  )
+
   useEffect(() => {
-    if (!tracking || !generationId) return
+    if ((!tracking && !isJobRun) || !generationId) return
     rememberRun(projectId, generationId)
-    navigate(routes.run(projectId, generationId), { replace: true })
-  }, [tracking, generationId, projectId, navigate])
+    navigate(routes.run(projectId, generationId), { replace: true, state: location.state })
+  }, [tracking, isJobRun, generationId, projectId, navigate, location.state])
 
   useEffect(() => {
     if (phase === 'completed') markEvidence(projectId, 'generated')
   }, [phase, projectId])
+
+  const shouldAutoPolish = Boolean(
+    routeState?.fromStyle ||
+      routeState?.fromAutopilot ||
+      isJobRun ||
+      jobEvents.done ||
+      jobEvents.events.some((event) => event.type === 'slide.ready' || event.type === 'stage.started') ||
+      tracker.generation?.variants.length === 1,
+  )
+
+  useEffect(() => {
+    if (phase !== 'completed' || !generationId || !shouldAutoPolish) return
+    const timer = setTimeout(() => {
+      navigate(routes.polish(projectId, generationId))
+    }, AUTO_POLISH_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [phase, generationId, shouldAutoPolish, navigate, projectId])
+
+  const effectiveTracker: GenerationTracker = useMemo(
+    () => (isJobRun && !resolvedRunIdFromJob ? { ...tracker, phase, jobId: runId } : tracker),
+    [isJobRun, resolvedRunIdFromJob, tracker, phase, runId],
+  )
 
   const actions =
     phase === 'submitting' && !generationId ? (
@@ -160,22 +252,46 @@ export function GenerationPage() {
     ) : phase === 'running' && canCancel && generationId ? (
       <CancelGenerationButton generationId={generationId} onCanceled={() => navigate(routes.brief(projectId))} />
     ) : phase === 'completed' && generationId ? (
-      <Link className={styles.secondaryLink} to={routes.variants(projectId, generationId)}>
-        Сравнить по слайдам
-        <Icon as={ArrowRight} />
-      </Link>
+      <>
+        <Link className={styles.secondaryLink} to={routes.variants(projectId, generationId)}>
+          Сравнить по слайдам
+          <Icon as={ArrowRight} />
+        </Link>
+        <Link className={styles.primaryLink} to={routes.polish(projectId, generationId)}>
+          Перейти к доводке
+          <Icon as={ArrowRight} />
+        </Link>
+      </>
     ) : undefined
 
   return (
     <div className={styles.page}>
       <PageHeader
-        eyebrow="Шаг 4 · Генерация"
+        eyebrow="Шаг 6 · Сборка"
         title={lost ? 'Статус запуска неизвестен' : headline(phase, variantCount)}
         description={lost ? 'Бриф и загруженные файлы сохранены.' : lead(phase, template?.filename ?? null)}
         actions={actions}
       />
-      <RecoveryNotice projectId={projectId} runId={runId} tracker={tracker} />
-      {!lost && <GenerationProgress tracker={tracker} auditHref={generationId ? (variantId, slideNumber) => auditLink(projectId, generationId, variantId, slideNumber) : undefined} />}
+      {assistantNote && !lost && (
+        <div className={styles.assistantStrip} role="status" aria-live="polite" data-testid="assistant-note">
+          <p className={styles.assistantNote}>
+            <Icon as={Sparkles} size={15} />
+            <span key={assistantNote} className={styles.noteText}>
+              {assistantNote}
+            </span>
+          </p>
+        </div>
+      )}
+      <RecoveryNotice projectId={projectId} runId={runId} tracker={effectiveTracker} />
+      {!lost && (
+        <GenerationProgress
+          tracker={effectiveTracker}
+          events={jobEvents.events}
+          deckPlan={deckPlan}
+          requestedStrategies={requestedStrategies}
+          auditHref={generationId ? (variantId, slideNumber) => auditLink(projectId, generationId, variantId, slideNumber) : undefined}
+        />
+      )}
     </div>
   )
 }

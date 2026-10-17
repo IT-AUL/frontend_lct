@@ -1,0 +1,156 @@
+import { normalizeStylePreview, type JobEvent } from '@/entities/assistant'
+import type { DeckPlan } from '@/entities/generation'
+import planFixture from '@/shared/api/mocks/fixtures/assistant/data-plan.json'
+import stylePreviewFixture from '@/shared/api/mocks/fixtures/assistant/data-style-preview.json'
+import {
+  buildGenerationPayload,
+  buildStyleColumns,
+  extractPreviewReadyMap,
+  formatExemplarLabel,
+  pickKeySlideIds,
+  resolveRecommendedStrategy,
+  resolveStyleAssistantNote,
+} from './styleView'
+
+const deckPlan = (planFixture.body.plans[0]?.deck_plan ?? null) as unknown as DeckPlan
+const normalizedPreview = normalizeStylePreview(stylePreviewFixture.body)
+
+function makePreviewEvent(sequence: number, strategy: string, slideId: string, artifactId: string): JobEvent {
+  return {
+    sequence,
+    type: 'preview.ready',
+    timestamp: null,
+    stage: 'style_preview',
+    progress: 0,
+    message: null,
+    data: {
+      strategy,
+      slide_id: slideId,
+      image_artifact_id: artifactId,
+    },
+  }
+}
+
+describe('styleView model', () => {
+  it('picks cover, first data slide and text slide from the deck plan', () => {
+    const ids = pickKeySlideIds(deckPlan)
+    expect(ids).toEqual(['slide-0', 'slide-2', 'slide-1'])
+  })
+
+  it('formats exemplar paths into human labels', () => {
+    expect(formatExemplarLabel('ppt/slides/slide24.xml')).toBe('Образец: слайд #24')
+    expect(formatExemplarLabel('slide7')).toBe('Образец: слайд #7')
+    expect(formatExemplarLabel(null)).toBeNull()
+  })
+
+  it('builds loading skeletons before preview.ready events arrive, then populates ready images progressively', () => {
+    const initial = buildStyleColumns({
+      preview: null,
+      events: [],
+      isStreaming: true,
+      plan: deckPlan,
+    })
+    expect(initial).toHaveLength(3)
+    expect(initial[2]?.slots.map((slot) => [slot.slideId, slot.state, slot.loadingCaption])).toEqual([
+      ['slide-0', 'loading', 'Верстаю обложку…'],
+      ['slide-1', 'loading', 'Верстаю текстовый слайд…'],
+      ['slide-2', 'loading', 'Верстаю слайд с графиком…'],
+    ])
+
+    const streaming = buildStyleColumns({
+      preview: normalizedPreview,
+      events: [makePreviewEvent(1, 'visual', 'slide-0', 'art_cover_visual')],
+      isStreaming: true,
+      plan: deckPlan,
+    })
+    const visualSlots = streaming.find((col) => col.strategy === 'visual')?.slots
+    expect(visualSlots?.[0]?.state).toBe('ready')
+    expect(visualSlots?.[0]?.imageUrl).toContain('art_cover_visual')
+    expect(visualSlots?.[1]?.state).toBe('loading')
+  })
+
+  it('uses backend titles, differences, recommendation and final preview images once settled', () => {
+    const settled = buildStyleColumns({
+      preview: normalizedPreview,
+      events: [],
+      isStreaming: false,
+      plan: deckPlan,
+    })
+    expect(settled.map((col) => [col.strategy, col.title, col.recommended])).toEqual([
+      ['faithful', 'Строгий', false],
+      ['balanced', 'Сбалансированный', false],
+      ['visual', 'Визуальный', true],
+    ])
+    expect(settled[0]?.difference).toBe(
+      'Ближе всего к вашему шаблону: его привычные раскладки, спокойная плотность текста.',
+    )
+    expect(resolveRecommendedStrategy(settled)).toBe('visual')
+    expect(settled[2]?.slots.every((slot) => slot.state === 'ready' && Boolean(slot.imageUrl))).toBe(true)
+  })
+
+  it('extracts preview.ready map from job events', () => {
+    const map = extractPreviewReadyMap([
+      makePreviewEvent(1, 'faithful', 'slide-0', 'art_1'),
+      makePreviewEvent(2, 'visual', 'slide-2', 'art_2'),
+    ])
+    expect(map.get('faithful:slide-0')).toBe('art_1')
+    expect(map.get('visual:slide-2')).toBe('art_2')
+  })
+
+  it('resolves assistant note from backend preview, streaming progress or fallback', () => {
+    expect(
+      resolveStyleAssistantNote({
+        preview: normalizedPreview,
+        events: [],
+        isStreaming: false,
+        hasPlan: true,
+      }),
+    ).toBe('Советую визуальный: на 4 из 6 слайдов графики и схемы.')
+
+    expect(
+      resolveStyleAssistantNote({
+        preview: null,
+        events: [makePreviewEvent(1, 'visual', 'slide-0', 'art_1')],
+        isStreaming: true,
+        hasPlan: true,
+      }),
+    ).toContain('Примерил 1 из 9 пробных слайдов')
+  })
+
+  it('builds POST /generations payload with inline deck_plan, preview_id and chosen variants', () => {
+    const single = buildGenerationPayload({
+      stored: null,
+      plan: deckPlan,
+      session: {
+        step: 5,
+        completed_steps: [1, 2, 3, 4],
+        skipped_steps: [],
+        artifacts: {
+          template_id: 'tpl_1',
+          content_pack_id: 'pack_1',
+          brandbook_id: 'brand_1',
+          plan_id: 'plan_1',
+          preview_id: 'prev_1',
+          generation_id: null,
+        },
+        brief: { purpose: 'Итоги года', audience: 'Совет директоров', language: 'ru', target_slide_count: 8 },
+        assistant_note: '',
+        job_id: null,
+      },
+      project: undefined,
+      previewId: 'prev_1',
+      strategies: ['visual'],
+    })
+
+    expect(single).toMatchObject({
+      template_id: 'tpl_1',
+      content_pack_id: 'pack_52549aa7639543a8b68b55c5f60d42a8',
+      preview_id: 'prev_1',
+      brandbook_id: 'brand_1',
+      variants: [{ strategy: 'visual' }],
+      use_llm: false,
+    })
+    expect(single?.deck_plan?.id).toBe(deckPlan.id)
+    expect(single).not.toHaveProperty('deck_plan_id')
+  })
+})
