@@ -5,9 +5,17 @@ import { fileURLToPath } from 'node:url'
 const root = fileURLToPath(new URL('../', import.meta.url))
 const output = resolve(root, 'src/shared/api/mocks/fixtures/assistant')
 const base = (process.env.API_BASE ?? 'https://deckdna.195-209-218-212.sslip.io/api/v1').replace(/\/$/, '')
-const template = process.env.TEMPLATE_PATH ?? '/Users/renat/Downloads/DeckDNA-demo/VK Tech шаблон.pptx'
-const data = process.env.DATA_PATH ?? '/Users/renat/dev/LCT-prezi-2026/examples/stage2/purchases.csv'
-const brand = process.env.BRAND_PATH ?? '/Users/renat/dev/LCT-prezi-2026/examples/stage2/brandbook/tokens.json'
+const requireEnv = (name) => {
+  const value = process.env[name]
+  if (!value) {
+    console.error(`${name} is required`)
+    process.exit(2)
+  }
+  return value
+}
+const template = requireEnv('TEMPLATE_PATH')
+const data = requireEnv('DATA_PATH')
+const brand = requireEnv('BRAND_PATH')
 const delay = (ms) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
 await mkdir(output, { recursive: true })
 

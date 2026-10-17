@@ -6,9 +6,17 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const API_BASE = (process.env.API_BASE ?? 'https://deckdna.195-209-218-212.sslip.io/api/v1').replace(/\/+$/, '');
-const TEMPLATE_PATH = process.env.TEMPLATE_PATH ?? '/Users/renat/Downloads/DeckDNA-demo/VK Tech шаблон.pptx';
-const CSV_DIR = process.env.CSV_DIR ?? '/Users/renat/dev/LCT-prezi-2026/examples/stage2';
-const REPORT_PATH = process.env.REPORT_PATH ?? '/Users/renat/dev/frontend_lct/.claude/orchestra/state/contract-probe.md';
+const requireEnv = (name) => {
+  const value = process.env[name];
+  if (!value) {
+    console.error(`${name} is required`);
+    process.exit(2);
+  }
+  return value;
+};
+const TEMPLATE_PATH = requireEnv('TEMPLATE_PATH');
+const CSV_DIR = requireEnv('CSV_DIR');
+const REPORT_PATH = process.env.REPORT_PATH ?? path.resolve('contract-probe.md');
 const OPENAPI_PATH = process.env.OPENAPI_PATH ?? path.join(ROOT, '.claude/backend-snapshot/openapi.json');
 const HTTP_TIMEOUT = Number(process.env.PROBE_HTTP_TIMEOUT ?? 60_000);
 const UPLOAD_TIMEOUT = Number(process.env.PROBE_UPLOAD_TIMEOUT ?? 300_000);

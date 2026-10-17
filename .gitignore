@@ -42,3 +42,4 @@ Thumbs.db
 
 # Local multi-agent orchestration state
 .claude/orchestra/
+contract-probe.md
