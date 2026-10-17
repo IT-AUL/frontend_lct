@@ -325,22 +325,4 @@ describe('PolishPage', { timeout: 20_000 }, () => {
     expect(await screen.findByRole('dialog', { name: 'Паспорт качества' })).toBeInTheDocument()
   })
 
-  it('starts autopilot from step 7 when clicking «Сделай сам»', async () => {
-    const user = userEvent.setup()
-    const router = renderPolish(`${routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID)}?slide=1`)
-
-    const autoBtn = await screen.findByRole('button', { name: 'Сделай сам' })
-    await user.click(autoBtn)
-
-    await waitFor(() =>
-      expect(postSpy).toHaveBeenCalledWith(
-        '/api/v1/projects/{project_id}/session/autopilot',
-        expect.objectContaining({
-          params: { path: { project_id: PROJECT_ID } },
-          body: { from_step: 7 },
-        }),
-      ),
-    )
-    await waitFor(() => expect(router.state.location.pathname).toBe(routes.run(PROJECT_ID, 'job_auto_7')))
-  })
 })

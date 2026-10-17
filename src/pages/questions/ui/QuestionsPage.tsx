@@ -469,38 +469,6 @@ export function QuestionsPage() {
         eyebrow="Уточнения"
         title="Пара вопросов"
         description="Спрашиваю только то, без чего презентация выйдет не о том. На каждый вопрос уже выбран ответ по умолчанию."
-        actions={
-          <div className={styles.footerActions}>
-            <Button
-              variant="ghost"
-              size="md"
-              disabled={submitAnswers.isPending || addNotes.isPending}
-              onClick={handleSkipAll}
-            >
-              Пропустить вопросы
-            </Button>
-            <Button
-              variant="secondary"
-              size="md"
-              disabled={autopilot.isPending}
-              title="Приму безопасные настройки по умолчанию и соберу колоду по подтверждённым фактам"
-              onClick={() => void handleStartAutopilot()}
-            >
-              <Icon as={Wand2} size={14} />
-              {autopilot.isPending ? 'Запускаю…' : 'Сделай сам'}
-            </Button>
-            <Button
-              variant="primary"
-              size="md"
-              disabled={submitAnswers.isPending || addNotes.isPending}
-              onClick={handleSubmit}
-            >
-              <Icon as={ListOrdered} size={14} />
-              Составить план
-              <Icon as={ArrowRight} size={14} />
-            </Button>
-          </div>
-        }
       />
 
       <section className={styles.assistantBar} aria-label="Помощник">

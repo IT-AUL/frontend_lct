@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
-import { useAssistantSession, useRegenerateSlide, useSlideExplain, useStartAutopilot, type RegenerateResult } from '@/entities/assistant'
+import { useAssistantSession, useRegenerateSlide, useSlideExplain, type RegenerateResult } from '@/entities/assistant'
 import {
   buildIssueViews,
   clusterIssueViews,
@@ -26,7 +26,7 @@ import {
 import { useContentPack } from '@/entities/content-pack'
 import { parseResearch, useGeneration } from '@/entities/generation'
 import { usePassport } from '@/entities/passport'
-import { markEvidence, rememberRun, useProject } from '@/entities/project'
+import { markEvidence, useProject } from '@/entities/project'
 import { FEATURE_PATHS, useCapabilities, useCapabilityFlag } from '@/entities/system'
 import { useTemplate } from '@/entities/template'
 import { orderVariants, slidePreviewUrl, useVariant, useVariants, useVariantSlides, type VariantSummary } from '@/entities/variant'
@@ -151,7 +151,6 @@ function PolishWorkspace({ projectId, runId, variantId, slideParam, onSlideChang
   const toast = useToast()
 
   const sessionQuery = useAssistantSession(projectId)
-  const autopilot = useStartAutopilot(projectId)
   const variantsQuery = useVariants(runId)
   const variantQuery = useVariant(variantId)
   const slidesQuery = useVariantSlides(variantId)
@@ -449,24 +448,6 @@ function PolishWorkspace({ projectId, runId, variantId, slideParam, onSlideChang
     })
   }
 
-  const handleAutopilot = async () => {
-    if (autopilot.isPending) return
-    try {
-      const accepted = await autopilot.mutateAsync({ from_step: 7 })
-      if (!accepted) {
-        toast.show('Автопилот недоступен на этом сервере')
-        return
-      }
-      if (accepted.job_id) {
-        rememberRun(projectId, accepted.job_id)
-        setActionNote('Запустил автоматическую сборку колоды.')
-        navigate(routes.run(projectId, accepted.job_id))
-      }
-    } catch (error) {
-      toast.show(`Не удалось запустить автопилот: ${errorText(error)}`)
-    }
-  }
-
   const handleDismissed = (dismissed: readonly AuditIssue[], reason: string) => {
     if (dismissed.length === 0) return
     appendJournal(
@@ -559,7 +540,7 @@ function PolishWorkspace({ projectId, runId, variantId, slideParam, onSlideChang
     currentSlide,
     regeneratingSlideNumber: regeneratingSlide,
     repairPending: repair.isPending,
-    autopilotPending: autopilot.isPending,
+    autopilotPending: false,
     actionNote,
     explainNote: effectiveExplain?.assistant_note ?? null,
     hasChart: explainView.hasChart,
@@ -589,8 +570,6 @@ function PolishWorkspace({ projectId, runId, variantId, slideParam, onSlideChang
         auditHref={auditHref}
         exportHref={exportHref}
         note={note}
-        autopilotPending={autopilot.isPending}
-        onAutopilot={() => void handleAutopilot()}
         onOpenPassport={() => {
           setPassportOpen(true)
           setActionNote('Проверил выходной PPTX повторным открытием: все слайды, таблицы и графики собраны родными объектами PowerPoint.')

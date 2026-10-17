@@ -72,12 +72,18 @@
 }
 
 .actions {
+  position: sticky;
+  bottom: 16px;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 16px;
-  padding: 14px 0 0;
-  border-top: 1px solid var(--line);
+  padding: 14px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-stage);
 }
 
 .status {

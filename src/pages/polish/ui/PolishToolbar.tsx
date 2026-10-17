@@ -22,8 +22,6 @@ interface PolishToolbarProps {
   auditHref: string
   exportHref: string
   note: string
-  autopilotPending: boolean
-  onAutopilot: () => void
   onOpenPassport: () => void
 }
 
@@ -43,8 +41,6 @@ export function PolishToolbar(props: PolishToolbarProps) {
     auditHref,
     exportHref,
     note,
-    autopilotPending,
-    onAutopilot,
     onOpenPassport,
   } = props
 
@@ -65,18 +61,6 @@ export function PolishToolbar(props: PolishToolbarProps) {
             {note}
           </span>
         </p>
-        <div className={styles.stripActions}>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={autopilotPending}
-            aria-busy={autopilotPending || undefined}
-            title="Приму безопасные настройки по умолчанию и соберу колоду по подтверждённым фактам"
-            onClick={onAutopilot}
-          >
-            {autopilotPending ? 'Собираю…' : 'Сделай сам'}
-          </Button>
-        </div>
       </div>
 
       <header className={styles.toolbar} aria-label="Управление доводкой и экспортом">
