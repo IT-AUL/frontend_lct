@@ -153,7 +153,8 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
   const slideInfos = slidesQuery.data ?? []
   const lastIssueSlide = issues.reduce((max, issue) => Math.max(max, slideNumber(issue) ?? 0), 0)
   const slideCount = Math.max(slideInfos.length, lastIssueSlide, 1)
-  const slideAt = (number: number) => slideInfos.find((info) => info.index === number - 1)
+  const zeroBasedSlides = slideInfos.some((info) => info.index === 0)
+  const slideAt = (number: number) => slideInfos.find((info) => info.index === (zeroBasedSlides ? number - 1 : number))
   const titleOf = (number: number) => slideAt(number)?.title ?? undefined
 
   const pending = views.filter((view) => isPendingStatus(view.status))
