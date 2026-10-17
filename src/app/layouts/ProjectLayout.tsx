@@ -1,4 +1,5 @@
 import { Outlet, useLocation, useMatch, useParams } from 'react-router'
+import { useAssistantSession } from '@/entities/assistant'
 import { useOpenCounts } from '@/entities/audit'
 import { isTrackingId, useGenerationTracker } from '@/entities/generation'
 import { projectRunId, useProject, useProjectEvidence } from '@/entities/project'
@@ -19,6 +20,7 @@ export function ProjectLayout() {
   const runId = runMatch?.params.runId ?? projectRunId(project, projectId)
   const tracker = useGenerationTracker(runId)
   const openCounts = useOpenCounts(projectId, runId)
+  const { data: session } = useAssistantSession(projectId)
   const assistantNote = useAssistantBarNote(projectId)
 
   const progress: ProjectProgress = {
@@ -40,7 +42,7 @@ export function ProjectLayout() {
     <AppFrame
       projectName={project?.name ?? '…'}
       status={runStatus(step, progress, tracker, openCounts)}
-      top={<AssistantBar steps={buildAssistantSteps(progressSnapshot(progress), assistantStepFromPath(pathname))} note={assistantNote} />}
+      top={<AssistantBar steps={buildAssistantSteps(progressSnapshot(progress, session), assistantStepFromPath(pathname))} note={assistantNote} />}
     >
       <Outlet />
     </AppFrame>

@@ -76,7 +76,7 @@
   flex: none;
   align-items: center;
   gap: 4px;
-  max-width: 220px;
+  max-width: 320px;
   overflow: hidden;
   color: var(--ok);
   font-size: 12px;
