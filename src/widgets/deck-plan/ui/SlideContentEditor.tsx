@@ -118,7 +118,16 @@ export function SlideContentEditor({ slide, number, editor, sources }: SlideCont
       </div>
       {missingChartData && (
         <p className={styles.chartHint} role="note">
-          Нет данных для графика: добавьте цифры в пункты или выберите{' '}
+          Нет данных для графика: добавьте цифры в пункты
+          {editor.onResearch && (
+            <>
+              ,{' '}
+              <button type="button" className={styles.hintAction} disabled={editor.researchingSlideId === slide.id} onClick={() => editor.onResearch?.(slide.id)}>
+                найдите цифры
+              </button>
+            </>
+          )}{' '}
+          или выберите{' '}
           <button type="button" className={styles.hintAction} onClick={() => editor.onUpdate(slide.id, { desired_visual: 'table' })}>
             таблицу
           </button>{' '}

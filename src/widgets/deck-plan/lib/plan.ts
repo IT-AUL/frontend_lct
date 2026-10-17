@@ -1,5 +1,24 @@
-import { slidePurposeLabel, type DeckPlan, type SlidePlan, type UnitOrigin } from '@/entities/generation'
+import { isEditableUnit, slidePurposeLabel, type DeckPlan, type SlidePlan, type UnitOrigin } from '@/entities/generation'
 import { formatIndex } from '@/shared/lib/format'
+
+export type QuickActionKind = 'shorten' | 'split' | 'merge_next' | 'to_chart' | 'to_diagram' | 'remove'
+
+export interface SlideChartOption {
+  type: string
+  label: string
+  active: boolean
+  reasons: string[]
+}
+
+export interface SlideChartView {
+  type: string
+  label: string
+  why: string
+  reasons: string[]
+  options: SlideChartOption[]
+  viewId: string | null
+  previewArtifactId: string | null
+}
 
 export interface EvidenceRef {
   raw: string
@@ -27,6 +46,8 @@ export interface PlanRow {
   sources: SlideSource[]
   sectionId: string | null
   sectionTitle: string | null
+  chart: SlideChartView | null
+  supportsKeyMessage: boolean | null
 }
 
 export interface PlanSectionSummary {
@@ -61,12 +82,109 @@ export const VISUAL_LABEL: Record<string, string> = {
   icon: 'Иконки',
 }
 
+export const CHART_TYPE_LABEL: Record<string, string> = {
+  line: 'Линия',
+  bar: 'Столбцы',
+  bar_horizontal: 'Горизонтальные столбцы',
+  bar_stacked: 'Накопительные столбцы',
+  bar_stacked_100: 'Столбцы 100%',
+  histogram: 'Гистограмма',
+  pie: 'Круговая',
+  doughnut: 'Кольцевая',
+  donut: 'Кольцевая',
+  scatter: 'Точечная',
+  kpi: 'Карточки с числами',
+  table: 'Таблица',
+}
+
+export function chartTypeLabel(type: string): string {
+  return CHART_TYPE_LABEL[type] ?? type
+}
+
 export const EDITOR_VISUALS = ['none', 'chart', 'table', 'diagram', 'image'] as const satisfies readonly NonNullable<SlidePlan['desired_visual']>[]
 
 export const ORIGIN_LABEL: Record<UnitOrigin, string> = {
   user: 'ваш контент',
   web: 'интернет',
   model: 'знания модели',
+}
+
+const BOOKENDS = new Set(['title', 'thank_you', 'cta', 'agenda'])
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0) : []
+}
+
+export function parseSlideChartView(slide: Pick<SlidePlan, 'chart'>): SlideChartView | null {
+  const raw = slide.chart
+  if (!isRecord(raw) || typeof raw.type !== 'string' || !raw.type.trim()) return null
+  const type = raw.type.trim()
+  const label = chartTypeLabel(type)
+  const reasons = stringArray(raw.reasons)
+  const rawWhy = typeof raw.why === 'string' && raw.why.trim() ? raw.why.trim() : null
+  const why = rawWhy ?? (reasons.length > 0 ? `${label}: ${reasons.join(', ')}.` : `Выбран тип «${label}» по структуре данных.`)
+  const seen = new Set<string>([type])
+  const options: SlideChartOption[] = [{ type, label, active: true, reasons }]
+  if (Array.isArray(raw.alternatives)) {
+    for (const item of raw.alternatives) {
+      if (!isRecord(item) || typeof item.type !== 'string') continue
+      const altType = item.type.trim()
+      if (!altType || seen.has(altType)) continue
+      seen.add(altType)
+      options.push({
+        type: altType,
+        label: chartTypeLabel(altType),
+        active: false,
+        reasons: stringArray(item.reasons),
+      })
+    }
+  }
+  return {
+    type,
+    label,
+    why,
+    reasons,
+    options,
+    viewId: typeof raw.view_id === 'string' ? raw.view_id : null,
+    previewArtifactId: typeof raw.preview_artifact_id === 'string' ? raw.preview_artifact_id : null,
+  }
+}
+
+export function resolveDeckKeyMessage(plan: DeckPlan, explicit?: string | null): string {
+  const candidates = [
+    explicit,
+    plan.brief.key_message,
+    plan.slides.find((slide) => slide.purpose === 'overview')?.key_message,
+    plan.slides.find((slide) => slide.purpose === 'data')?.key_message,
+    plan.objective,
+    plan.brief.purpose,
+  ]
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) return candidate.trim()
+  }
+  return ''
+}
+
+export function availableQuickActions(plan: DeckPlan, slideId: string): QuickActionKind[] {
+  const ordered = [...plan.slides].sort((a, b) => a.index - b.index)
+  const index = ordered.findIndex((item) => item.id === slideId)
+  const slide = ordered[index]
+  if (!slide) return []
+  const texts = slide.content_units.filter((unit) => isEditableUnit(unit) && Boolean((unit.text ?? '').trim()))
+  const actions: QuickActionKind[] = []
+  const isBookend = BOOKENDS.has(slide.purpose)
+  if (!isBookend && texts.length > 0) actions.push('shorten')
+  if (!isBookend && texts.length >= 2) actions.push('split')
+  const next = ordered[index + 1]
+  if (slide.purpose !== 'title' && next && !BOOKENDS.has(next.purpose)) actions.push('merge_next')
+  if (!isBookend && slide.desired_visual !== 'chart' && !slide.chart) actions.push('to_chart')
+  if (!isBookend && slide.desired_visual !== 'diagram' && texts.length >= 2) actions.push('to_diagram')
+  if (ordered.length > 1 && slide.purpose !== 'title') actions.push('remove')
+  return actions
 }
 
 const UNIT_VISUAL: Record<string, string> = {
@@ -164,6 +282,8 @@ export function buildPlanView(plan: DeckPlan, headings: ReadonlyMap<string, stri
       sources: slideSources(slide.evidence_ids, headings),
       sectionId: section?.id ?? null,
       sectionTitle: section?.title ?? null,
+      chart: parseSlideChartView(slide),
+      supportsKeyMessage: typeof slide.supports_key_message === 'boolean' ? slide.supports_key_message : null,
     }
   })
 

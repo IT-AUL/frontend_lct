@@ -245,6 +245,21 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
       objects(deck.slides).forEach((item, index) => { item.index = index })
       return json(current)
     })),
+    route('post', '/plans/:planId/slides/:slideId/research', async ({ request, param }) => {
+      const current = plan(param('planId'))
+      const body = await readJson(request)
+      if (body.focus !== undefined && !['facts', 'numbers'].includes(String(body.focus))) throw validationError('focus', 'Неизвестный фокус поиска')
+      const deck = object(objects(current.plans)[0]?.deck_plan)
+      const slide = objects(deck.slides).find((item) => item.id === param('slideId'))
+      if (!slide) throw notFound('Slide', param('slideId'))
+      const evidence = (Array.isArray(slide.evidence_ids) ? slide.evidence_ids : []).slice(0, 1)
+      const added = [
+        { role: 'bullet', kind: 'bullet', text: 'Найдено в источниках: рост выручки 2,1× за год', origin: 'web', evidence_ids: evidence },
+        { role: 'bullet', kind: 'bullet', text: 'Доля корпоративного сегмента выросла до 41%', origin: 'web', evidence_ids: evidence },
+      ]
+      slide.content_units = [...objects(slide.content_units), ...added]
+      return json({ plan_set: current, slide, added_units: added.length, research: { focus: body.focus ?? 'numbers', sources: objects(object(current.research).sources) } })
+    }),
     route('post', '/plans/:planId/style-previews', ({ param }) => {
       const current = plan(param('planId'))
       const started = fixture('data', 'style-start')

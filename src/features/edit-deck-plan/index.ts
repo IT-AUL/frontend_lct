@@ -1,6 +1,30 @@
-export { addSlide, addUnit, editSummary, isPlanEdited, moveSlide, moveUnit, prepareForBuild, removeSlide, removeUnit, updateSlide, updateUnit } from './lib/editPlan'
-export type { BuildOptions, EditableUnit, SlidePatch } from './lib/editPlan'
-export { readPlanRequest, requestAndStorePlan, useRequestPlan } from './model/planRequest'
+export {
+  addSlide,
+  addUnit,
+  annotateKeyMessageSupport,
+  applyQuickAction,
+  canApplyQuickAction,
+  changeSlideChart,
+  editSummary,
+  isPlanEdited,
+  keepSlideOnTopic,
+  mergeNextSlide,
+  moveSlide,
+  moveUnit,
+  parseSlideChart,
+  prepareForBuild,
+  removeSlide,
+  removeUnit,
+  shortenSlide,
+  splitSlide,
+  toChartSlide,
+  toDiagramSlide,
+  updateKeyMessage,
+  updateSlide,
+  updateUnit,
+} from './lib/editPlan'
+export type { BuildOptions, EditableUnit, QuickSlideAction, SlideChartAlternative, SlideChartInfo, SlidePatch } from './lib/editPlan'
+export { applyServerPlanSet, readPlanRequest, requestAndStorePlan, syncPlanDraftToStorage, useRequestPlan, useResearchPlanSlide, writePlanRequest } from './model/planRequest'
 export type { PlanRequestExtras, StoredPlanRequest, StoredRequest } from './model/planRequest'
 export { useBuildFromPlan } from './model/useBuildFromPlan'
 export type { BuildFromPlan } from './model/useBuildFromPlan'

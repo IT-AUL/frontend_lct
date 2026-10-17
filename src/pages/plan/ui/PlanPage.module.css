@@ -7,6 +7,28 @@
   padding: 28px 32px 64px;
 }
 
+.assistantNote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.assistantNote > svg {
+  flex: none;
+  color: var(--focus);
+}
+
+.assistantNoteText {
+  animation: global(dd-fade) 0.25s ease-out;
+}
+
 .banner {
   display: flex;
   gap: 12px;
