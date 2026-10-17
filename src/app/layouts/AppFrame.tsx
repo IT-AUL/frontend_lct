@@ -12,10 +12,11 @@ interface AppFrameProps {
   projectName?: ReactNode
   status?: RunStatus
   rail?: ReactNode
+  top?: ReactNode
   children: ReactNode
 }
 
-export function AppFrame({ projectName, status, rail, children }: AppFrameProps) {
+export function AppFrame({ projectName, status, rail, top, children }: AppFrameProps) {
   const [panel, setPanel] = useState<Panel>(null)
   const providerSession = useActiveProviderSession()
   const modelAuto = useCapabilityFlag(FEATURE_PATHS.modelAuto)
@@ -32,6 +33,7 @@ export function AppFrame({ projectName, status, rail, children }: AppFrameProps)
         onOpenProvider={() => setPanel('provider')}
         onOpenAbout={() => setPanel('about')}
       />
+      {top}
       <div className={styles.body}>
         {rail}
         <main className={styles.main}>{children}</main>

@@ -29,9 +29,9 @@ describe('buildAssistantSteps', () => {
   it('marks viewed, completed, skipped and pending steps', () => {
     const steps = buildAssistantSteps({ completed: [1, 2], skipped: [3], current: 4, hrefs: { 1: '/a', 2: '/b' } }, 2)
     expect(steps.map((step) => step.state)).toEqual(['done', 'current', 'skipped', 'todo', 'todo', 'todo', 'todo'])
-    expect(steps[0].href).toBe('/a')
-    expect(steps[2].hint).toMatch(/Понял сам/)
-    expect(steps[3].href).toBeUndefined()
+    expect(steps[0]?.href).toBe('/a')
+    expect(steps[2]?.hint).toMatch(/Понял сам/)
+    expect(steps[3]?.href).toBeUndefined()
   })
 
   it('falls back to the session step when the path is outside the flow', () => {

@@ -1,13 +1,10 @@
 .bar {
-  position: sticky;
-  top: 0;
-  z-index: 5;
+  flex: none;
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px 32px 10px;
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(8px);
+  background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
 

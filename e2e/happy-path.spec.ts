@@ -17,13 +17,13 @@ test('demo path: template DNA, brief, three variants, audit repair, export', asy
   await test.step('projects list shows the seeded project', async () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Проекты' })).toBeVisible()
     await page.getByRole('list', { name: 'Проекты' }).getByRole('link', { name: new RegExp(SEEDED_PROJECT) }).click()
-    await expect(page.getByRole('navigation', { name: 'Шаги проекта' })).toBeVisible()
+    await expect(page.getByRole('navigation', { name: 'Шаги' })).toBeVisible()
   })
 
-  const steps = page.getByRole('navigation', { name: 'Шаги проекта' })
+  const steps = page.getByRole('navigation', { name: 'Шаги' })
 
   await test.step('template step shows the design DNA', async () => {
-    await steps.getByRole('link', { name: /Шаблон/ }).click()
+    await steps.getByRole('link', { name: /Материалы/ }).click()
     await expect(page.getByRole('heading', { level: 1, name: 'ДНК шаблона' })).toBeVisible()
     const palette = page.getByRole('region', { name: 'Палитра' })
     await expect(palette.getByRole('list', { name: 'Цвета темы' }).getByRole('listitem')).not.toHaveCount(0)

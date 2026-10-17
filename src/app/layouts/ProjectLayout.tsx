@@ -39,8 +39,8 @@ export function ProjectLayout() {
     <AppFrame
       projectName={project?.name ?? '…'}
       status={runStatus(step, progress, tracker, openCounts)}
+      top={<AssistantBar steps={buildAssistantSteps(progressSnapshot(progress), assistantStepFromPath(pathname))} />}
     >
-      <AssistantBar steps={buildAssistantSteps(progressSnapshot(progress), assistantStepFromPath(pathname))} />
       <Outlet />
     </AppFrame>
   )
