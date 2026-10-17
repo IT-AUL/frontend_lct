@@ -17,6 +17,7 @@ services:
       - --workers=1
       - --proxy-headers
       - --forwarded-allow-ips=*
+    init: true
     restart: unless-stopped
     environment:
       DECKDNA_MOCK_PROVIDER: ${DECKDNA_MOCK_PROVIDER:-true}
@@ -53,7 +54,7 @@ services:
       start_period: 20s
     mem_limit: ${API_MEM_LIMIT:-5120m}
     cpus: ${API_CPUS:-4}
-    pids_limit: 512
+    pids_limit: 4096
     security_opt:
       - no-new-privileges:true
     cap_drop:

@@ -135,6 +135,16 @@ VK Tech, WorkSpace, Education, шаблон питча и 3 синтетичес
 
 ## 7. Журнал (новые записи сверху)
 
+- **2026-10-17 21:18** — Перехват дежурства на время лимита Claude (20:50–21:20 МСК):
+  1. **Прод-инцидент (`deckdna.it-aul.ru`):** контейнер `deckdna-app-api-1` упёрся в `PidsLimit=512` (`PIDS=511`) из-за ~490 `<defunct>` зомби `gpgconf`/`gpg`/`gpgsm` от LibreOffice (`uvicorn` как PID 1 без `init: true`), что давало `BlockingIOError: [Errno 11]` и `RuntimeError: can't start new thread` на рендере. Живьём поднят лимит `docker update --pids-limit 8192 deckdna-app-api-1` без рестарта — рендер-пул сразу восстановился, `R6`, `R1` (собрал 3 варианта) и `T40` (догнал корпус до 40/42 шаблонов) успешно завершились.
+  2. **Фронт (`ef1b61d`, `6014592`, `907ea9a` в `main`):** закрыты P0/P1 баги из `R1`, `R2`, `U3`, `U5`:
+     - убрана гонка `autoSkippedRef` в `QuestionsPage.tsx`, отменявшая первый `POST /plans` после ответа на вопросы;
+     - добавлен `fetchAndStorePlan` (`GET /projects/{id}/plans/{planId}`): `PlanDraftPage` и `StylePage` при пустом `localStorage` подтягивают существующий серверный план по `session.artifacts.plan_id`, а не затирают его новым `POST /plans`;
+     - синхронизация правок типа графика (`slide.chart.type` ↔ `content_units[].chart_spec.chart_type` и `desired_visual`) в `prepareForBuild`, `unitSignature` и `onServerPlanSet`, плюс фолбэк `deck_plan_id` в `buildGenerationPayload`;
+     - сохранение принятых `local-*` → `run_*` прогонов в `localStorage` (`tracker.ts`) и авто-редирект `/runs/local-*` на `project.latest_run_id` в `GenerationPage.tsx`;
+     - влит раннер корпуса шаблонов `scripts/template-corpus-run.mjs` из `T40`. Проверки: lint, lint:fsd, typecheck, 444 unit-теста, build — зелёные.
+  3. **Оркестрация (`.claude/orchestra/BOARD.md`):** в `screen` продолжают работу `BE1` (Codex, объектный HTML-экспорт), `BE2` (Devin, варианты/таблицы/сироты), `BE3` (Devin, план regions/аудитория/метаданные) и `T42` (Devin, тексты и иерархия по `T41`).
+
 - **2026-10-17 16:45** — Прод: фронт `1306342`, бэк `2b4f0b0`. Модель — VK Inference напрямую (`qwen38-27b-fp8`,
   `DECKDNA_PROVIDER_PROJECT_ID`, `enable_thinking: false`); сайдкар `vk-gateway` удалён — бэк сам шлёт `Project-ID` и чинит JSON
   (`3fe737b`, `7cf755b`). Живая проверка API: 3 варианта с моделью за 166 с, 84 вызова, 0 ошибок разбора. Cerebras — в `.env`
