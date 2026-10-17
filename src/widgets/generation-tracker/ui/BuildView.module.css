@@ -1,0 +1,56 @@
+.variants {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.variant {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.variant:hover {
+  background: var(--surface-2);
+}
+
+.variant[aria-pressed='true'] .variantName {
+  font-weight: 600;
+}
+
+.variant:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.variantState {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.variantState[data-state='done'] {
+  color: var(--ok);
+}
+
+.variantState[data-state='error'] {
+  color: var(--error);
+}
+
+.empty {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 15px;
+}

@@ -8,19 +8,22 @@ import { CancelGenerationButton } from '@/features/cancel-generation'
 import { readPlanRequest } from '@/features/edit-deck-plan'
 import { useRerunGeneration } from '@/features/rerun-generation'
 import {
+  BuildTable,
+  BuildVariants,
   describeFailure,
   extractEventGenerationId,
   failureMeta,
-  GenerationProgress,
   isTrackingLost,
   latestAssistantNote,
   RunNotice,
+  useBuildCards,
+  useSelectedBuildKey,
 } from '@/widgets/generation-tracker'
+import { StepShell } from '@/widgets/step-shell'
 import { routes } from '@/shared/config'
-import { ArrowRight, Button, Icon, PageHeader, Sparkles } from '@/shared/ui'
+import { Button } from '@/shared/ui'
 import styles from './GenerationPage.module.css'
 
-const VARIANT_WORD: Record<number, string> = { 1: 'один вариант', 2: 'два варианта', 3: 'три варианта' }
 const AUTO_POLISH_DELAY_MS = 450
 
 interface RunLocationState {
@@ -35,41 +38,18 @@ function isRunLocationState(value: unknown): value is RunLocationState {
   return typeof value === 'object' && value !== null
 }
 
-function variantWord(count: number): string {
-  return VARIANT_WORD[count] ?? `${count} вариантов`
-}
-
-function headline(phase: GenerationPhase, count: number): string {
-  switch (phase) {
-    case 'submitting':
-    case 'running':
-      return `Собираем ${variantWord(count)}`
-    case 'completed':
-      return count === 1 ? 'Вариант готов' : `${variantWord(count).replace(/^./, (letter) => letter.toUpperCase())} готовы`
-    case 'failed':
-      return 'Генерация не завершилась'
-    case 'canceled':
-      return 'Генерация отменена'
-  }
-}
-
 function lead(phase: GenerationPhase, templateName: string | null): string {
   switch (phase) {
     case 'submitting':
     case 'running':
       return templateName ? `Шаблон «${templateName}». Можно уйти с экрана — сборка продолжится.` : 'Можно уйти с экрана — сборка продолжится.'
     case 'completed':
-      return 'Выберите колоду, чтобы открыть её в аудите.'
+      return 'Проверьте слайды и доработайте то, что нужно.'
     case 'failed':
       return 'Бриф и файлы сохранены.'
     case 'canceled':
       return 'Бриф и загруженные файлы сохранены.'
   }
-}
-
-function auditLink(projectId: string, runId: string, variantId: string, slideNumber?: number): string {
-  const path = routes.audit(projectId, runId, variantId)
-  return slideNumber ? `${path}?${new URLSearchParams({ slide: String(slideNumber) }).toString()}` : path
 }
 
 function RecoveryNotice({ projectId, runId, tracker }: { projectId: string; runId: string; tracker: GenerationTracker }) {
@@ -97,8 +77,8 @@ function RecoveryNotice({ projectId, runId, tracker }: { projectId: string; runI
                 Открыть последний прогон
               </Link>
             )}
-            <Link className={canOpenLatest ? styles.secondaryLink : styles.primaryLink} to={routes.brief(projectId)}>
-              Назад к брифу
+            <Link className={canOpenLatest ? styles.secondaryLink : styles.primaryLink} to={routes.planDraft(projectId)}>
+              К плану
             </Link>
           </>
         }
@@ -149,8 +129,8 @@ function RecoveryNotice({ projectId, runId, tracker }: { projectId: string; runI
       actions={
         <>
           {retry}
-          <Link className={retry ? styles.secondaryLink : styles.primaryLink} to={routes.brief(projectId)}>
-            Назад к брифу
+          <Link className={retry ? styles.secondaryLink : styles.primaryLink} to={routes.planDraft(projectId)}>
+            К плану
           </Link>
         </>
       }
@@ -194,11 +174,6 @@ export function GenerationPage() {
   const tracking = isTrackingId(runId)
 
   const requestedStrategies = routeState?.strategies
-  const variantCount =
-    tracker.generation?.variants.length ||
-    tracker.variantIds.length ||
-    requestedStrategies?.length ||
-    (isJobRun ? 1 : 3)
 
   const lost = !isJobRun && isTrackingLost(tracker.error)
   const { data: project } = useProject(projectId)
@@ -255,52 +230,32 @@ export function GenerationPage() {
     [isJobRun, resolvedRunIdFromJob, tracker, phase, runId],
   )
 
-  const actions =
-    phase === 'submitting' && !generationId ? (
-      <CancelGenerationButton generationId={null} />
-    ) : phase === 'running' && canCancel && generationId ? (
-      <CancelGenerationButton generationId={generationId} onCanceled={() => navigate(routes.brief(projectId))} />
-    ) : phase === 'completed' && generationId ? (
-      <>
-        <Link className={styles.secondaryLink} to={routes.variants(projectId, generationId)}>
-          Сравнить по слайдам
-          <Icon as={ArrowRight} />
-        </Link>
-        <Link className={styles.primaryLink} to={routes.polish(projectId, generationId)}>
-          Перейти к доводке
-          <Icon as={ArrowRight} />
-        </Link>
-      </>
-    ) : undefined
+  const cards = useBuildCards(effectiveTracker, requestedStrategies)
+  const [selectedKey, setSelectedKey] = useSelectedBuildKey(cards)
+  const done = phase === 'completed' && Boolean(generationId)
+  const title = lost ? 'Сборка потерялась' : phase === 'completed' ? 'Презентация готова' : phase === 'failed' ? 'Не получилось собрать' : 'Собираю презентацию'
+  const note = lost ? 'Материалы и план сохранены.' : (assistantNote ?? lead(phase, template?.filename ?? null))
 
   return (
-    <div className={styles.page}>
-      <PageHeader
-        eyebrow="Сборка"
-        title={lost ? 'Статус запуска неизвестен' : headline(phase, variantCount)}
-        description={lost ? 'Бриф и загруженные файлы сохранены.' : lead(phase, template?.filename ?? null)}
-        actions={actions}
-      />
-      {assistantNote && !lost && (
-        <div className={styles.assistantStrip} role="status" aria-live="polite" data-testid="assistant-note">
-          <p className={styles.assistantNote}>
-            <Icon as={Sparkles} size={15} />
-            <span key={assistantNote} className={styles.noteText}>
-              {assistantNote}
-            </span>
-          </p>
-        </div>
-      )}
+    <StepShell
+      title={title}
+      note={note}
+      canvasLabel="Слайды презентации"
+      canvas={lost ? null : <BuildTable tracker={effectiveTracker} events={jobEvents.events} deckPlan={deckPlan} cards={cards} selectedKey={selectedKey} />}
+      actions={
+        done && generationId ? (
+          <Button variant="primary" size="lg" onClick={() => navigate(routes.polish(projectId, generationId))}>
+            Открыть и доработать
+          </Button>
+        ) : phase === 'running' && canCancel && generationId ? (
+          <CancelGenerationButton generationId={generationId} onCanceled={() => navigate(routes.planDraft(projectId))} />
+        ) : phase === 'submitting' && !generationId ? (
+          <CancelGenerationButton generationId={null} />
+        ) : undefined
+      }
+    >
+      <BuildVariants cards={cards} selectedKey={selectedKey} onSelect={setSelectedKey} />
       <RecoveryNotice projectId={projectId} runId={runId} tracker={effectiveTracker} />
-      {!lost && (
-        <GenerationProgress
-          tracker={effectiveTracker}
-          events={jobEvents.events}
-          deckPlan={deckPlan}
-          requestedStrategies={requestedStrategies}
-          auditHref={generationId ? (variantId, slideNumber) => auditLink(projectId, generationId, variantId, slideNumber) : undefined}
-        />
-      )}
-    </div>
+    </StepShell>
   )
 }

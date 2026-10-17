@@ -5,3 +5,5 @@ export type { BuildFilmstripSlotsOptions, FilmstripSlot, FilmstripSlotState } fr
 export { GenerationProgress } from './ui/GenerationProgress'
 export { RunNotice } from './ui/RunNotice'
 export { SlideFilmstrip } from './ui/SlideFilmstrip'
+export { BuildTable, BuildVariants } from './ui/BuildView'
+export { useBuildCards, useSelectedBuildKey } from './model/buildSelection'
