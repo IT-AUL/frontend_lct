@@ -1,0 +1,441 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: var(--page-width);
+  margin: 0 auto;
+  padding: 24px 32px 72px;
+}
+
+.assistantBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+}
+
+.assistantNote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.assistantNote svg {
+  flex: none;
+  color: var(--focus);
+}
+
+.questionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.questionCard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2xl);
+  transition: border-color 0.15s, opacity 0.15s;
+}
+
+.questionCard[data-skipped='true'] {
+  background: var(--surface-2);
+  border-style: dashed;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cardHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 240px;
+}
+
+.cardEyebrowRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cardEyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.cardReason {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.reasonPrefix {
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.chipsArea {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chipsRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.optionChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.optionChip:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--ink-2);
+}
+
+.optionChip[data-selected='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--inv);
+}
+
+.optionChip:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.optionChip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.starMark {
+  font-size: 12px;
+  color: var(--ok);
+}
+
+.optionChip[data-selected='true'] .starMark {
+  color: var(--inv);
+}
+
+.recSuffix {
+  font-size: 11px;
+  opacity: 0.78;
+}
+
+.customRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 520px;
+}
+
+.customInput {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.customInput:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.shortGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.shortOptionCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--line-2);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.shortOptionCard:hover:not(:disabled) {
+  border-color: var(--ink-2);
+}
+
+.shortOptionCard[data-selected='true'] {
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.06);
+}
+
+.shortOptionTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.radioDot {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-2);
+  background: var(--surface);
+  color: var(--inv);
+  flex: none;
+}
+
+.radioDot[data-checked='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.shortOptionLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.shortOptionDesc {
+  padding-left: 26px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+.notesBox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--radius-xl);
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+}
+
+.notesHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notesTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.notesHint {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.notesFields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.noteFieldRow {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.noteSlotLabel {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.noteSlotInput {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.noteSlotInput:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.autoSkippedCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 24px;
+  background: var(--surface);
+  border: 1px solid var(--ok);
+  border-radius: var(--radius-2xl);
+}
+
+.autoSkippedTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.autoSkippedTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.autoSkippedText {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+.footerBar {
+  position: sticky;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-stage);
+  z-index: 5;
+}
+
+.footerMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.footerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.errorBanner {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--error-bg);
+  color: var(--error);
+  font-size: 13px;
+}
+
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.skeletonCard {
+  height: 180px;
+  border-radius: var(--radius-2xl);
+}
+
+@media (max-width: 1360px) {
+  .page {
+    padding-inline: 24px;
+  }
+}
+
+@media (max-width: 900px) {
+  .shortGrid {
+    grid-template-columns: 1fr;
+  }
+}
