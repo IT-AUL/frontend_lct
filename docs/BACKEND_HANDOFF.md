@@ -371,6 +371,23 @@ Q&A организаторов и наш макет исходят из того
 | F6 источники | `PlanSet.research = {queries[], sources: [{id, title, url, accessed_at, facts_count}], duration_s}`; удаление источника — повторный `POST /plans` с `exclude_source_ids: [...]` | блок «Источники» над «Почему такая структура», крестик убирает источник и перестраивает план |
 | F7 паспорт | `metrics.content_origin = {user, web, model}` (число фактов), `metrics.research = {sources_count, duration_s, content_fill}` | раздел паспорта «Откуда факты»: доли, число источников, режим текста, время поиска |
 
+## 8b. Финал, 17.10: что нашли на живом стенде
+
+1. **P0 — после рестарта API пропадают все проекты.** В `backend/deckdna/api/app.py` восстановление снимка
+   (`if settings.state_snapshot and load_store(STORE, _snapshot_path())`) стоит выше объявления `class DesignDNAOut`
+   и других моделей, лежащих в снимке. При импорте модуля pickle не находит класс и пишет
+   `state snapshot … unreadable (Can't get attribute 'DesignDNAOut' …); starting empty`. Через 15 секунд фоновый поток
+   перезаписывает файл пустым состоянием. Срабатывает на каждой выкатке, если в проекте был разобран шаблон.
+   Исправление: перенести вызов восстановления в самый конец модуля (или в lifespan FastAPI), а нечитаемый файл
+   переименовывать в `store.pkl.unreadable-<ts>`, не затирая его. Регресс-тест: записать снимок с ДНК шаблона и
+   импортировать `deckdna.api.app` в отдельном процессе.
+2. **VK Inference:** с `DECKDNA_PROVIDER_PROJECT_ID` и `enable_thinking: false` прод собирает 3 варианта с моделью за
+   166 с, 84 вызова, без ошибок разбора. Роутер VK игнорирует `response_format` (и `json_schema`, и `json_object`);
+   JSON стабильно приходит только при схеме в промпте (как сейчас) или при `tool_choice` с именем функции.
+   `tool_choice: "required"` даёт 502.
+3. `GET /templates/{id}/summary` → `preview_artifact_ids` пустой. Для карточки шаблона на шаге 1 нужны 3–4 PNG.
+4. `slide.ready` приходит пачкой после рендера варианта; для ленты на шаге 6 нужен поштучный рендер (ADR-036, пачка 2).
+
 ## 9. Приложение: воспроизведение прогона одним скриптом
 
 ```bash
