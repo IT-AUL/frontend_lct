@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { routePatterns } from '@/shared/config'
 import { ProjectLayout } from '../layouts/ProjectLayout'
 import { RootLayout } from '../layouts/RootLayout'
+import { ProjectRedirect } from './ProjectRedirect'
 import { RouteError } from './RouteError'
 
 export const router = createBrowserRouter([
@@ -28,7 +29,7 @@ export const router = createBrowserRouter([
           { path: routePatterns.brief, lazy: async () => ({ Component: (await import('@/pages/brief')).BriefPage }) },
           { path: routePatterns.planDraft, lazy: async () => ({ Component: (await import('@/pages/plan')).PlanDraftPage }) },
           { path: routePatterns.run, lazy: async () => ({ Component: (await import('@/pages/generation')).GenerationPage }) },
-          { path: routePatterns.plan, lazy: async () => ({ Component: (await import('@/pages/plan')).PlanPage }) },
+          { path: routePatterns.plan, element: <ProjectRedirect to="planDraft" /> },
           { path: routePatterns.polish, lazy: async () => ({ Component: (await import('@/pages/polish')).PolishPage }) },
           { path: routePatterns.variants, lazy: async () => ({ Component: (await import('@/pages/variants')).VariantsPage }) },
           { path: routePatterns.audit, lazy: async () => ({ Component: (await import('@/pages/audit')).AuditPage }) },

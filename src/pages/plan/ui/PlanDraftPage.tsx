@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { useAssistantSession, useStartAutopilot } from '@/entities/assistant'
-import { useContentPack } from '@/entities/content-pack'
-import { contentFillValue, suggestedContentFill, type DeckPlan, type GenerationBrief, type GenerationCreate, type Job, type PlanProposal } from '@/entities/generation'
+import { contentFillValue, type DeckPlan, type GenerationBrief, type GenerationCreate, type Job, type PlanProposal } from '@/entities/generation'
 import { rememberRun } from '@/entities/project'
-import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
-import { DEFAULT_STRATEGY, STRATEGY_ORDER, strategyInfo, type CatalogStrategy } from '@/entities/variant'
+import { DEFAULT_STRATEGY, STRATEGY_ORDER, type CatalogStrategy } from '@/entities/variant'
 import {
   applyServerPlanSet,
   fetchAndStorePlan,
@@ -20,15 +18,11 @@ import {
 } from '@/features/edit-deck-plan'
 import { requestOptionalJson } from '@/shared/api'
 import { routes } from '@/shared/config'
-import { EmptyState, PageHeader, Segmented, Skeleton } from '@/shared/ui'
-import { EditablePlan } from './EditablePlan'
-import styles from './PlanPage.module.css'
-import { SourcesPanel } from './SourcesPanel'
-import { SufficiencyPanel, type PlanAdjustment } from './SufficiencyPanel'
+import { Button, Skeleton } from '@/shared/ui'
+import { StepShell } from '@/widgets/step-shell'
+import { PlanExtras, type PlanAdjustment } from './PlanExtras'
+import { PlanStep } from './PlanStep'
 
-const EMPTY_HEADINGS: ReadonlyMap<string, string> = new Map()
-const SLIDE_COUNT_MIN = 3
-const SLIDE_COUNT_MAX = 40
 
 function catalogStrategies(strategies: readonly string[]): CatalogStrategy[] {
   const known = STRATEGY_ORDER.filter((strategy) => strategies.includes(strategy))
@@ -96,14 +90,8 @@ export function PlanDraftPage() {
   const planBuild = usePlanBuild()
   const sessionQuery = useAssistantSession(projectId)
   const autopilot = useStartAutopilot(projectId)
-  const contentFillFlag = useCapabilityFlag(FEATURE_PATHS.contentFill)
   const proposals = useMemo(() => stored?.result.proposals ?? [], [stored])
   const [selected, setSelected] = useState(() => defaultProposal(proposals))
-  const { data: contentPack } = useContentPack(stored?.request.content_pack_id)
-  const headings = useMemo<ReadonlyMap<string, string>>(
-    () => (contentPack ? new Map(contentPack.sections.map((section) => [section.id, section.heading])) : EMPTY_HEADINGS),
-    [contentPack],
-  )
 
   const index = proposals.findIndex((proposal, position) => proposalKey(proposal, position) === selected)
   const proposal = proposals[index] ?? proposals[0]
@@ -176,39 +164,28 @@ export function PlanDraftPage() {
 
   if (rebuilding) {
     return (
-      <div className={styles.page}>
-        <PageHeader eyebrow="План" title="Строю план" />
+      <StepShell title="Составляю план" note="Собираю структуру из ваших материалов…" canvasLabel="План презентации" canvas={<Skeleton style={{ height: 320, borderRadius: 6 }} />}>
         <PlanBuildProgress progress={planBuild.progress} phase={planBuild.phase} startedAt={planBuild.startedAt} onCancel={planBuild.cancel} />
-      </div>
+      </StepShell>
     )
   }
 
   if (!stored || !proposal) {
-    if (sessionQuery.isLoading || (canAutoBuild && !rebuildError)) {
-      return (
-        <div className={styles.page}>
-          <PageHeader eyebrow="План" title="План колоды" />
-          <div className={styles.skeletons} aria-busy="true" aria-label="Загружаем план">
-            {Array.from({ length: 5 }, (_, itemIndex) => (
-              <Skeleton key={itemIndex} className={styles.skeletonRow} delay={itemIndex * 0.08} />
-            ))}
-          </div>
-        </div>
-      )
-    }
+    const waiting = sessionQuery.isLoading || (canAutoBuild && !rebuildError)
     return (
-      <div className={styles.page}>
-        <PageHeader eyebrow="План" title="План колоды" />
-        <EmptyState
-          title="Плана пока нет"
-          description={rebuildError ?? 'Опишите тему на шаге «Бриф» и нажмите «Составить план».'}
-          actions={
-            <Link className={styles.secondaryLink} to={routes.brief(projectId)}>
-              К брифу
-            </Link>
-          }
-        />
-      </div>
+      <StepShell
+        title="План презентации"
+        note={waiting ? 'Загружаю план…' : (rebuildError ?? 'Плана пока нет. Вернитесь к материалам и нажмите «Дальше».')}
+        canvasLabel="План презентации"
+        canvas={waiting ? <Skeleton style={{ height: 320, borderRadius: 6 }} /> : null}
+        actions={
+          waiting ? undefined : (
+            <Button variant="primary" size="lg" onClick={() => navigate(routes.start(projectId))}>
+              К материалам
+            </Button>
+          )
+        }
+      />
     )
   }
 
@@ -263,37 +240,22 @@ export function PlanDraftPage() {
   }
 
   const { sufficiency, research, planId } = stored.result
-  const contentFill = stored.contentFill ?? suggestedContentFill(sufficiency?.status) ?? null
-  const showFill = contentFillFlag || sufficiency !== null
-  const variantCount = buildBody(stored).variants.length
-  const showDirectBuild = Boolean(stored.variants && stored.variants.length > 1)
-  const options = proposals.map((item, position) => ({
-    value: proposalKey(item, position),
-    label: item.strategy ? strategyInfo(item.strategy).name : `План ${position + 1}`,
-  }))
   const sessionKeyMessage = typeof sessionQuery.data?.brief?.key_message === 'string' ? sessionQuery.data.brief.key_message : null
 
   return (
-    <EditablePlan
+    <PlanStep
       key={proposal.deckPlan.id}
-      projectId={projectId}
       draftKey={draftKey}
       basePlan={proposal.deckPlan}
-      headings={headings}
-      eyebrow="План"
-      description="Один план для всех вариантов: поправьте слайды, пункты и визуал — вёрстка сохранит ваш смысл."
-      buildLabel={variantCount === 1 ? 'Сверстать вариант' : `Сверстать ${variantCount} варианта`}
       buildBody={buildBody(stored)}
-      lockAll={stored.contentFill === 'keep'}
-      sources={research?.sources}
       planId={planId}
       strategy={proposal.strategy}
       keyMessage={stored.keyMessage ?? sessionKeyMessage}
-      assistantNote={autopilotNote ?? stored.assistantNote}
+      assistantNote={autopilotNote ?? stored.assistantNote ?? null}
+      notice={rebuildError ? `Не удалось перестроить план: ${rebuildError}` : null}
       onSelectStyle={handleSelectStyle}
       onAutopilot={(plan) => void handleAutopilot(plan)}
       autopilotPending={autopilot.isPending || fallbackBuild.isPending}
-      showDirectBuild={showDirectBuild}
       onServerPlanSet={(planSet, optimisticPlan) => {
         setStored((current) => {
           if (!current) return current
@@ -304,32 +266,15 @@ export function PlanDraftPage() {
       onKeyMessageCommit={(_, nextPlan) => {
         setStored((current) => (current ? syncPlanDraftToStorage(projectId, current, nextPlan, proposal.strategy) : current))
       }}
-      notice={rebuildError ? `Не удалось перестроить план: ${rebuildError}` : null}
-      intro={
-        showFill ? (
-          <SufficiencyPanel
-            sufficiency={sufficiency}
-            contentFill={contentFill}
-            targetSlides={stored.request.brief.target_slide_count}
-            minSlides={SLIDE_COUNT_MIN}
-            maxSlides={SLIDE_COUNT_MAX}
-            disabled={rebuilding}
-            onAdjust={(adjustment) => void rebuild(adjustment)}
-          />
-        ) : undefined
-      }
-      asideTop={
-        research ? (
-          <SourcesPanel research={research} disabled={rebuilding} onRemove={(sourceId) => void rebuild({}, [...excludedSources(stored), sourceId])} />
-        ) : undefined
-      }
-      toolbar={
-        options.length > 1 ? (
-          <details className={styles.advanced}>
-            <summary>Дополнительно: план другой стратегии</summary>
-            <Segmented label="План какой стратегии править" options={options} value={proposalKey(proposal, Math.max(0, index))} onChange={setSelected} />
-          </details>
-        ) : undefined
+      extra={
+        <PlanExtras
+          sufficiency={sufficiency}
+          sources={research?.sources ?? []}
+          targetSlides={stored.request.brief.target_slide_count}
+          disabled={rebuilding}
+          onAdjust={(adjustment) => void rebuild(adjustment)}
+          onRemoveSource={(sourceId) => void rebuild({}, [...excludedSources(stored), sourceId])}
+        />
       }
     />
   )
