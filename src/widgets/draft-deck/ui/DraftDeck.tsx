@@ -3,19 +3,20 @@ import type { Understanding } from '@/entities/assistant'
 import { SlideGrid, SlideTile } from '@/shared/ui'
 import { blockTitle, insightEntries, insightTitle, keyFigure, needsDecision, textBlocks } from '../lib/table'
 import { MiniChart } from './MiniChart'
-import styles from './UnderstandingPage.module.css'
+import styles from './DraftDeck.module.css'
 
 export type Selection = { kind: 'insight'; id: string } | { kind: 'block'; id: string }
 
 const VISIBLE_BLOCKS = 6
 
-interface UnderstandingTableProps {
+interface DraftDeckProps {
   understanding: Understanding
   selection: Selection | null
-  onSelect: (selection: Selection) => void
+  onSelect?: (selection: Selection) => void
+  quiet?: boolean
 }
 
-export function UnderstandingTable({ understanding, selection, onSelect }: UnderstandingTableProps) {
+export function DraftDeck({ understanding, selection, onSelect, quiet }: DraftDeckProps) {
   const [showAll, setShowAll] = useState(false)
   const insights = insightEntries(understanding)
   const blocks = textBlocks(understanding)
@@ -35,9 +36,10 @@ export function UnderstandingTable({ understanding, selection, onSelect }: Under
                   <SlideTile
                     title={title}
                     selected={selection?.kind === 'insight' && selection.id === insight.id}
-                    onOpen={() => onSelect({ kind: 'insight', id: insight.id })}
+                    onOpen={onSelect ? () => onSelect({ kind: 'insight', id: insight.id }) : undefined}
                     openLabel={`Открыть вывод: ${title}`}
-                    caption={needsDecision(insight) ? 'Нужно ваше решение' : null}
+                    muted={quiet}
+                    caption={!quiet && needsDecision(insight) ? 'Нужно ваше решение' : null}
                   >
                     {first && preview ? (
                       <MiniChart preview={preview} chartType={dataset.recommendations[0]?.chart_type} label={`График: ${dataset.title ?? ''}`} />
@@ -63,8 +65,9 @@ export function UnderstandingTable({ understanding, selection, onSelect }: Under
                   <SlideTile
                     title={title}
                     selected={selection?.kind === 'block' && selection.id === block.id}
-                    onOpen={() => onSelect({ kind: 'block', id: block.id })}
+                    onOpen={onSelect ? () => onSelect({ kind: 'block', id: block.id }) : undefined}
                     openLabel={`Открыть: ${title}`}
+                    muted={quiet}
                   />
                 </div>
               )

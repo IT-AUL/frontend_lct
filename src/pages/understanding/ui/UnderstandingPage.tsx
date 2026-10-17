@@ -24,9 +24,7 @@ import { isAbortError, PlanBuildProgress, requestAndStorePlan, usePlanBuild } fr
 import { routes } from '@/shared/config'
 import { Button, EmptyState, Skeleton } from '@/shared/ui'
 import { StepShell } from '@/widgets/step-shell'
-import { applyOptimisticBlockOps, applyOptimisticInsightPatch, applyOptimisticNotes, fallbackUnderstandingFromContentPack } from '../lib/understanding'
-import { stepNote } from '../lib/table'
-import { UnderstandingTable, type Selection } from './UnderstandingTable'
+import { applyOptimisticBlockOps, applyOptimisticInsightPatch, applyOptimisticNotes, DraftDeck, fallbackUnderstandingFromContentPack, stepNote, type Selection } from '@/widgets/draft-deck'
 import { SelectionDetails } from './SelectionDetails'
 import styles from './UnderstandingPage.module.css'
 
@@ -324,7 +322,7 @@ export function UnderstandingPage() {
         isLoading || !understanding ? (
           <Skeleton style={{ height: 320, borderRadius: 6 }} />
         ) : (
-          <UnderstandingTable understanding={understanding} selection={selection} onSelect={setSelection} />
+          <DraftDeck understanding={understanding} selection={selection} onSelect={setSelection} />
         )
       }
       inspector={

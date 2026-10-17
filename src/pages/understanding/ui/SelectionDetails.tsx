@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import type { InsightPatch, Understanding } from '@/entities/assistant'
 import { Button } from '@/shared/ui'
-import { blockTitle, insightEntries, insightTitle, needsDecision } from '../lib/table'
-import { CHART_TYPE_LABEL } from '../lib/understanding'
-import type { Selection } from './UnderstandingTable'
-import { MiniChart } from './MiniChart'
+import { blockTitle, CHART_TYPE_LABEL, insightEntries, insightTitle, MiniChart, needsDecision, type Selection } from '@/widgets/draft-deck'
 import styles from './UnderstandingPage.module.css'
 
 interface SelectionDetailsProps {
