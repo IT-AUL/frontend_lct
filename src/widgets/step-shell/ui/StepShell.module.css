@@ -1,0 +1,150 @@
+.shell {
+  display: grid;
+  grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+}
+
+.decision {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+}
+
+.decisionBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 40px 36px 24px;
+}
+
+.title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.note {
+  margin: 14px 0 0;
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 28px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 36px 28px;
+  border-top: 1px solid var(--line);
+}
+
+.table {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: var(--stage);
+}
+
+.tableScroll {
+  height: 100%;
+  overflow-y: auto;
+  padding: 40px 48px 64px;
+}
+
+.inspector {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(440px, 100%);
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  box-shadow: var(--shadow-toast);
+  animation: global(dd-fade) 0.18s ease-out;
+}
+
+.inspector[data-wide] {
+  width: min(760px, 100%);
+}
+
+.inspectorHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 16px;
+}
+
+.inspectorTitle {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.close {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.close:hover {
+  color: var(--ink);
+  background: var(--sunken);
+}
+
+.close:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.inspectorBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 24px 32px;
+}
+
+@media (max-width: 1360px) {
+  .decisionBody {
+    padding: 32px 28px 20px;
+  }
+
+  .actions {
+    padding: 16px 28px 24px;
+  }
+
+  .tableScroll {
+    padding: 32px 32px 56px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inspector {
+    animation: none;
+  }
+}

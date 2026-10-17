@@ -1,110 +1,239 @@
-.page {
+.ideaLabel {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 28px 32px 64px;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
 }
 
-.panel {
+.idea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.idea::placeholder {
+  color: var(--ink-3);
+}
+
+.idea:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.files {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
 }
 
-.progress {
+.file {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-height: 44px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
 }
 
-.progressLabel {
+.fileName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kind {
   flex: none;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--ink-2);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.kind:hover {
+  background: var(--sunken);
+}
+
+.kind:focus-visible {
+  outline: 2px solid var(--focus);
+}
+
+.fileError {
+  flex: none;
+  color: var(--error);
   font-size: 13px;
 }
 
-.progressMeter {
-  flex: 1;
+.filePending {
+  color: var(--ink-3);
+  font-size: 13px;
 }
 
-.autopilot {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-xl);
-  background: var(--surface-2);
+.remove {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.remove:hover {
+  background: var(--sunken);
+  color: var(--ink);
+}
+
+.remove:focus-visible {
+  outline: 2px solid var(--focus);
 }
 
 .error {
   margin: 0;
   color: var(--error);
-  font-size: 13px;
+  font-size: 14px;
 }
 
-.listCaption {
+.hint {
   margin: 0;
-  color: var(--ink-2);
-  font-size: 12px;
-  font-weight: 600;
+  color: var(--ink-3);
+  font-size: 14px;
 }
 
-.cards {
+.tableEmpty {
+  max-width: 640px;
+}
+
+.ghost {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-  gap: 16px;
-  align-items: stretch;
+  place-items: center;
+  height: 100%;
+  color: var(--ink-3);
+  font-size: 15px;
 }
 
-.skeletonCard {
+.tableContent {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 14px;
-  min-height: 140px;
+  max-width: 760px;
 }
 
-.skeletonSwatches {
+.specimen {
+  width: 100%;
+}
+
+.specimenSlide {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 8% 8% 7%;
+}
+
+.specimenBar {
+  width: 56px;
+  height: 6px;
+  margin-bottom: 7%;
+  border-radius: 3px;
+}
+
+.specimenTitle {
+  color: var(--ink);
+  font-size: clamp(18px, 2.4vw, 34px);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.specimenBody {
+  max-width: 70%;
+  margin-top: 4%;
+  color: var(--ink-2);
+  font-size: clamp(11px, 1.1vw, 16px);
+  line-height: 1.45;
+}
+
+.specimenPalette {
   display: flex;
   gap: 8px;
+  margin-top: auto;
 }
 
-.actions {
-  position: sticky;
-  bottom: 16px;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 16px;
-  padding: 14px 20px;
-  background: var(--surface);
-  border: 1px solid var(--line-2);
-  border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-stage);
+.swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.08);
 }
 
-.status {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  margin-right: auto;
+.templateFacts {
+  margin: 10px 0 0;
   color: var(--ink-2);
-  font-size: 13px;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
-.actionsHint {
-  margin: 0;
-  margin-right: auto;
-  color: var(--ink-3);
-  font-size: 13px;
+.linkButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 
-.buttons {
+.linkButton:hover {
+  color: var(--focus);
+}
+
+.linkButton:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.brand {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line-2);
+  width: 100%;
+}
+
+.brandText {
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
 }
