@@ -19,7 +19,7 @@ function slide(patch: Partial<SlidePlan> = {}): SlidePlan {
     content_units: [
       { role: 'title', kind: 'title', text: 'Рынок растёт' },
       { role: 'bullet', kind: 'bullet', text: 'Из вашего документа', origin: 'user', locked: true } as SlidePlan['content_units'][number],
-      { role: 'bullet', kind: 'bullet', text: 'Из поиска', origin: { kind: 'web', source_id: 'src-1' } } as SlidePlan['content_units'][number],
+      { role: 'bullet', kind: 'bullet', text: 'Из поиска', origin: 'web', source_id: 'src-1' } as SlidePlan['content_units'][number],
       { role: 'bullet', kind: 'bullet', text: 'Из модели', origin: 'model' } as SlidePlan['content_units'][number],
     ],
     ...patch,

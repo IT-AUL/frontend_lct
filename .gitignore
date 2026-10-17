@@ -39,3 +39,6 @@ Thumbs.db
 
 # Local scratch scripts
 /demo/
+
+# Local multi-agent orchestration state
+.claude/orchestra/

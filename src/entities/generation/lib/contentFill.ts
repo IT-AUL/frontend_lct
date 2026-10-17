@@ -14,9 +14,11 @@ export const CONTENT_FILL_MODES: readonly ContentFillOption[] = [
   { value: 'keep', label: 'Сохранить как есть', hint: 'ваш текст не переписываем, только сокращаем' },
 ]
 
-const SERVICE_VALUE: Record<ContentFillMode, string> = { expand: 'expand', condense: 'expand', keep: 'shrink' }
+export type ServiceContentFill = 'expand' | 'shrink' | 'ask'
 
-export function contentFillValue(mode: ContentFillMode): string {
+const SERVICE_VALUE: Record<ContentFillMode, ServiceContentFill> = { expand: 'expand', condense: 'expand', keep: 'shrink' }
+
+export function contentFillValue(mode: ContentFillMode): ServiceContentFill {
   return SERVICE_VALUE[mode]
 }
 

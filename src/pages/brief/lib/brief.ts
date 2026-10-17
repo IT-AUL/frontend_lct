@@ -9,7 +9,7 @@ export const TEXT_CONTENT_FILENAME = 'brief.md'
 export const TOPIC_CONTENT_FILENAME = 'topic.md'
 export const TOPIC_MAX_LENGTH = 500
 
-export type BriefBody = Brief & { content_fill?: string }
+export type BriefBody = Brief
 
 export interface BriefErrors {
   purpose?: string

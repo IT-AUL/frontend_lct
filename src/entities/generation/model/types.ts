@@ -31,4 +31,4 @@ export interface PlanDraftResult {
   research: PlanResearch | null
 }
 
-export type PlanRequest = Schemas['PlanRequest']
+export type PlanRequest = Omit<Schemas['PlanRequest'], 'run_async'> & { run_async?: boolean }

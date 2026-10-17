@@ -6,7 +6,7 @@ export interface SlidePatch {
   desired_visual?: SlidePlan['desired_visual']
 }
 
-export type EditableUnit = ContentUnit & { locked?: boolean }
+export type EditableUnit = ContentUnit
 
 function ordered(plan: DeckPlan): SlidePlan[] {
   return [...plan.slides].sort((a, b) => a.index - b.index)
