@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 5173,
+      watch: { ignored: ['**/.claude/**', '**/dist*/**', '**/playwright-report/**', '**/test-results*/**'] },
       proxy: { '/api': { target: backendUrl, changeOrigin: true } },
     },
     preview: {

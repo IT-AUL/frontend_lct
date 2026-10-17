@@ -4,7 +4,7 @@ import { clampSlideCount, DEFAULT_AUDIENCE } from '../model/form'
 import { contentFillValue, type GenerationCreate } from '@/entities/generation'
 import type { BriefForm, ContentMode, ParsedContent } from '../model/form'
 
-export const CONTENT_EXTENSIONS = ['.md', '.txt', '.json', '.docx', '.pdf', '.xlsx'] as const
+export const CONTENT_EXTENSIONS = ['.md', '.txt', '.json', '.csv', '.xlsx', '.docx', '.pdf', '.pptx'] as const
 export const TEXT_CONTENT_FILENAME = 'brief.md'
 export const TOPIC_CONTENT_FILENAME = 'topic.md'
 export const TOPIC_MAX_LENGTH = 500
