@@ -22,8 +22,10 @@ export {
   Plus,
   RefreshCw,
   Search,
+  Sparkles,
   Sun,
   Upload,
+  Wand2,
   X,
 } from 'lucide-react'
 export { Icon } from './Icon'
