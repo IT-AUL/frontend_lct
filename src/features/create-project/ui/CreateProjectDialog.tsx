@@ -50,7 +50,7 @@ function CreateProjectForm({ onCreated, onCancel }: { onCreated: (project: Proje
           Отмена
         </Button>
         <Button type="submit" variant="primary" size="lg" disabled={!normalized || create.isPending}>
-          {create.isPending ? 'Создаю…' : 'Создать и загрузить шаблон'}
+          {create.isPending ? 'Создаю…' : 'Создать и закинуть файлы'}
         </Button>
       </div>
     </form>
@@ -65,7 +65,7 @@ export function CreateProjectDialog({ open, onOpenChange, onCreated }: CreatePro
         <Dialog.Content className={styles.content}>
           <Dialog.Title className={styles.title}>Новый проект</Dialog.Title>
           <Dialog.Description className={styles.description}>
-            Следующий шаг — корпоративный шаблон .pptx или прошлая презентация.
+            Следующий шаг — закинуть шаблон, материалы и брендбук одной пачкой.
           </Dialog.Description>
           <CreateProjectForm onCreated={onCreated} onCancel={() => onOpenChange(false)} />
         </Dialog.Content>

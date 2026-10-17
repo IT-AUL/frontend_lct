@@ -2,8 +2,9 @@ import { http, HttpResponse } from 'msw'
 import type { RequestHandler } from 'msw'
 import { API_BASE } from '@/shared/config'
 import type { MockContext } from '../context'
+import { designDnaFixture, templateDetailFixture } from '../fixtures'
 import { json, notFound, validationError } from '../http'
-import { prefixedId } from '../ids'
+import { prefixedId, rebrand } from '../ids'
 import { isRecord, readJson } from '../validate'
 
 type Object = Record<string, unknown>
@@ -102,25 +103,37 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
       if (!files.length && !(typeof idea === 'string' && idea.trim())) throw validationError('files', 'Добавьте файлы или идею')
       const scenario = files.some((file) => /\.(csv|xlsx)$/.test(file.name)) ? 'data' : 'idea'
       const intake = fixture(scenario, 'intake')
-      const packId = prefixedId('pack')
       intake.project_id = projectId
-      intake.content_pack_id = packId
       intake.files = files.map((file) => {
-        const kind = /\.(pptx|potx)$/i.test(file.name) ? 'template' : /\.(csv|xlsx)$/i.test(file.name) ? 'data' : /brand|бренд|tokens/i.test(file.name) ? 'brandbook' : 'content'
-        const example = objects(intake.files).find((f) => f.kind === kind) ?? objects(fixture('data', 'brand-intake').files)[0]
-        return { ...example, name: file.name, kind, detected_kind: kind, accepted: true, size_bytes: file.size }
+        const supported = /\.(pptx|potx|md|txt|docx|pdf|csv|xlsx|json|png|jpe?g|svg)$/i.test(file.name)
+        const kind = !supported ? 'unknown' : /\.(pptx|potx)$/i.test(file.name) ? 'template' : /\.(csv|xlsx)$/i.test(file.name) ? 'data' : /brand|бренд|tokens/i.test(file.name) ? 'brandbook' : 'content'
+        const example = objects(intake.files).find((f) => f.kind === kind) ?? objects(fixture('data', 'brand-intake').files).find((f) => f.kind === kind) ?? {}
+        return { ...example, name: file.name, kind, detected_kind: kind, accepted: supported, reason: supported ? (example.reason ?? null) : 'формат не поддерживается', size_bytes: file.size }
       })
       if (!files.some((file) => /\.(pptx|potx)$/i.test(file.name))) intake.template_id = object(current.session.artifacts).template_id ?? null
-      if (objects(intake.files).some((file) => file.kind === 'brandbook')) intake.brandbook_id = fixture('data', 'brandbook').id
+      if (intake.template_id && !store.templates.has(String(intake.template_id))) {
+        const { latest_analysis: analysis, ...asset } = templateDetailFixture
+        const record = { ...asset, id: String(intake.template_id), project_id: projectId }
+        const seeded = analysis ? { ...analysis, id: prefixedId('ana'), template_id: record.id } : null
+        const dna = seeded ? rebrand(designDnaFixture, new Map([[designDnaFixture.template_id, record.id], [designDnaFixture.analysis_id, seeded.id]])) : designDnaFixture
+        store.templates.set(record.id, { asset: record, analysis: seeded, dna })
+      }
+      intake.brandbook_id = objects(intake.files).some((file) => file.kind === 'brandbook') ? fixture('data', 'brandbook').id : null
+      const hasMaterial = (typeof idea === 'string' && Boolean(idea.trim())) || objects(intake.files).some((file) => file.kind === 'content' || file.kind === 'data')
+      let packId: string | null = null
+      if (hasMaterial) {
+        packId = prefixedId('pack')
+        const understanding = fixture(scenario, 'understanding')
+        understanding.content_pack_id = packId
+        packs.set(packId, { projectId, understanding })
+      } else intake.assistant_note = 'Принял: шаблон. Добавьте материалы или идею.'
+      intake.content_pack_id = packId ?? object(current.session.artifacts).content_pack_id ?? null
       current.scenario = scenario
       current.intake = intake
       current.questions = fixture(scenario, 'questions')
-      const understanding = fixture(scenario, 'understanding')
-      understanding.content_pack_id = packId
-      packs.set(packId, { projectId, understanding })
-      current.session = { ...fixture(scenario, 'session-initial'), artifacts: { template_id: intake.template_id, content_pack_id: packId, brandbook_id: intake.brandbook_id, plan_id: null, preview_id: null, generation_id: null } }
-      mark(projectId, 2, [1])
-      store.touchProject(projectId, { template_id: String(intake.template_id ?? ''), content_pack_id: packId })
+      current.session = { ...fixture(scenario, 'session-initial'), artifacts: { template_id: intake.template_id, content_pack_id: intake.content_pack_id, brandbook_id: intake.brandbook_id, plan_id: null, preview_id: null, generation_id: null } }
+      mark(projectId, packId ? 2 : 1, packId ? [1] : [])
+      store.touchProject(projectId, { template_id: String(intake.template_id ?? ''), ...(packId ? { content_pack_id: packId } : {}) })
       return json(intake, 202)
     }),
     route('patch', '/projects/:projectId/intake/files/:name', async ({ request, param }) => {

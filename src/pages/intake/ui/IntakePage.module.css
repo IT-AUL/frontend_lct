@@ -1,0 +1,104 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 32px 64px;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progressLabel {
+  flex: none;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.progressMeter {
+  flex: 1;
+}
+
+.autopilot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--surface-2);
+}
+
+.error {
+  margin: 0;
+  color: var(--error);
+  font-size: 13px;
+}
+
+.listCaption {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.skeletonCard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 140px;
+}
+
+.skeletonSwatches {
+  display: flex;
+  gap: 8px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  margin-right: auto;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.actionsHint {
+  margin: 0;
+  margin-right: auto;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

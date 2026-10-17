@@ -3,7 +3,7 @@ import { useOpenCounts } from '@/entities/audit'
 import { isTrackingId, useGenerationTracker } from '@/entities/generation'
 import { projectRunId, useProject, useProjectEvidence } from '@/entities/project'
 import { readPlanRequest } from '@/features/edit-deck-plan'
-import { AssistantBar, assistantStepFromPath, buildAssistantSteps } from '@/widgets/assistant-bar'
+import { AssistantBar, assistantStepFromPath, buildAssistantSteps, useAssistantBarNote } from '@/widgets/assistant-bar'
 import { stepFromPath, type ProjectProgress } from '@/widgets/project-rail'
 import { AppFrame } from './AppFrame'
 import { progressSnapshot } from './assistantSnapshot'
@@ -19,6 +19,7 @@ export function ProjectLayout() {
   const runId = runMatch?.params.runId ?? projectRunId(project, projectId)
   const tracker = useGenerationTracker(runId)
   const openCounts = useOpenCounts(projectId, runId)
+  const assistantNote = useAssistantBarNote(projectId)
 
   const progress: ProjectProgress = {
     projectId,
@@ -39,7 +40,7 @@ export function ProjectLayout() {
     <AppFrame
       projectName={project?.name ?? '…'}
       status={runStatus(step, progress, tracker, openCounts)}
-      top={<AssistantBar steps={buildAssistantSteps(progressSnapshot(progress), assistantStepFromPath(pathname))} />}
+      top={<AssistantBar steps={buildAssistantSteps(progressSnapshot(progress), assistantStepFromPath(pathname))} note={assistantNote} />}
     >
       <Outlet />
     </AppFrame>

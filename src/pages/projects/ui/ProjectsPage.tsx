@@ -31,7 +31,7 @@ export function ProjectsPage() {
       return
     }
     createDemo.mutate(defaultProjectName('Демо'), {
-      onSuccess: (project) => navigate(routes.template(project.id)),
+      onSuccess: (project) => navigate(routes.start(project.id)),
       onError: (error) => toast.show(isApiError(error) ? error.message : 'Не удалось открыть демо'),
     })
   }
@@ -95,7 +95,7 @@ export function ProjectsPage() {
         onOpenChange={setDialogOpen}
         onCreated={(project) => {
           setDialogOpen(false)
-          navigate(routes.template(project.id))
+          navigate(routes.start(project.id))
         }}
       />
     </div>
