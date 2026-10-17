@@ -38,7 +38,7 @@ test('demo path: template DNA, brief, three variants, audit repair, export', asy
   })
 
   await test.step('brief: purpose «Продукт» and a plan as the main step', async () => {
-    await page.getByRole('button', { name: 'Дальше' }).click()
+    await page.goto(page.url().replace(/\/start$/, '/brief'))
     await expect(page.getByRole('heading', { level: 1, name: 'Новая презентация' })).toBeVisible()
     const product = page.getByRole('radiogroup', { name: 'Назначение' }).getByRole('radio', { name: /^Продукт/ })
     await product.check()

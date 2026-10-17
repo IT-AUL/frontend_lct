@@ -27,7 +27,7 @@ const contentKeys = (packId: string): QueryKey[] => [assistantKeys.sessions, ['a
 const planKeys = (planId: string): QueryKey[] => [assistantKeys.sessions, assistantKeys.plan(planId), ['plan'], ['assistant', 'style-preview']]
 
 export function useAssistantSession(projectId: Id) {
-  return useQuery({ queryKey: assistantKeys.session(projectId ?? ''), enabled: Boolean(projectId), queryFn: ({ signal }) => normalized(unwrap(api.GET('/api/v1/projects/{project_id}/session', { params: { path: { project_id: projectId as string } }, signal })), normalizeSession), refetchInterval: (q) => q.state.data?.job_id ? 2000 : false })
+  return useQuery({ queryKey: assistantKeys.session(projectId ?? ''), enabled: Boolean(projectId), queryFn: ({ signal }) => normalized(unwrap(api.GET('/api/v1/projects/{project_id}/session', { params: { path: { project_id: projectId as string } }, signal })), normalizeSession), staleTime: 0, refetchInterval: (q) => q.state.data?.job_id ? 2000 : false })
 }
 export function useStartAutopilot(projectId: string) {
   const client = useQueryClient()

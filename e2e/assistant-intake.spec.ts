@@ -76,7 +76,7 @@ test('assistant step 1: upload files, review roles and cards, go next', async ({
 
   await expect(next).toBeEnabled()
   await next.click()
-  await expect(page).toHaveURL(/\/brief$/)
+  await expect(page).toHaveURL(/\/understanding$/)
 })
 
 test('assistant step 1: template only still needs material or idea', async ({ page }) => {

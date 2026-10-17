@@ -15,7 +15,7 @@ async function seedAssistantProject(page: Page): Promise<string> {
   await page.getByRole('button', { name: 'Новый проект' }).click()
   const dialog = page.getByRole('dialog', { name: 'Новый проект' })
   await dialog.getByRole('textbox', { name: /^Название/ }).fill(name)
-  await dialog.getByRole('button', { name: 'Создать и загрузить шаблон' }).click()
+  await dialog.getByRole('button', { name: 'Создать и закинуть файлы' }).click()
   await expect(dialog).toBeHidden()
   await expect(page).toHaveURL(/\/projects\/[^/]+\//)
   const projectId = /\/projects\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1] ?? ''
