@@ -153,7 +153,7 @@ export function PlanDraftPage() {
   if (rebuilding) {
     return (
       <div className={styles.page}>
-        <PageHeader eyebrow="Шаг 4 · План" title="Строю план" />
+        <PageHeader eyebrow="План" title="Строю план" />
         <PlanBuildProgress progress={planBuild.progress} phase={planBuild.phase} startedAt={planBuild.startedAt} onCancel={planBuild.cancel} />
       </div>
     )
@@ -163,7 +163,7 @@ export function PlanDraftPage() {
     if (sessionQuery.isLoading || (canAutoBuild && !rebuildError)) {
       return (
         <div className={styles.page}>
-          <PageHeader eyebrow="Шаг 4 · План" title="План колоды" />
+          <PageHeader eyebrow="План" title="План колоды" />
           <div className={styles.skeletons} aria-busy="true" aria-label="Загружаем план">
             {Array.from({ length: 5 }, (_, itemIndex) => (
               <Skeleton key={itemIndex} className={styles.skeletonRow} delay={itemIndex * 0.08} />
@@ -174,7 +174,7 @@ export function PlanDraftPage() {
     }
     return (
       <div className={styles.page}>
-        <PageHeader eyebrow="Шаг 4 · План" title="План колоды" />
+        <PageHeader eyebrow="План" title="План колоды" />
         <EmptyState
           title="Плана пока нет"
           description={rebuildError ?? 'Опишите тему на шаге «Бриф» и нажмите «Составить план».'}
@@ -256,7 +256,7 @@ export function PlanDraftPage() {
       draftKey={draftKey}
       basePlan={proposal.deckPlan}
       headings={headings}
-      eyebrow="Шаг 4 · План"
+      eyebrow="План"
       description="Один план для всех вариантов: поправьте слайды, пункты и визуал — вёрстка сохранит ваш смысл."
       buildLabel={variantCount === 1 ? 'Сверстать вариант' : `Сверстать ${variantCount} варианта`}
       buildBody={buildBody(stored)}

@@ -161,7 +161,7 @@ function ExportContent({ projectId, runId, variant, variants }: ExportContentPro
 
   return (
     <>
-      <PageHeader eyebrow="Шаг 7 · Экспорт" title="Заберите колоду" description={`Вариант «${info.name}»${revisionLabel ? ` · ревизия ${revisionLabel}` : ''}`} />
+      <PageHeader eyebrow="Экспорт" title="Заберите колоду" description={`Вариант «${info.name}»${revisionLabel ? ` · ревизия ${revisionLabel}` : ''}`} />
 
       <div className={styles.grid}>
         <DeckPreview variant={variant} auditHref={(slideNumber) => auditSlideLink(auditPath, slideNumber)} />

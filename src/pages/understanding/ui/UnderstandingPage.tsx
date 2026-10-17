@@ -324,7 +324,7 @@ export function UnderstandingPage() {
   if (projectError) {
     return (
       <div className={styles.page}>
-        <PageHeader eyebrow="Шаг 2 · Понимание материала" title="Вот что я понял" />
+        <PageHeader eyebrow="Понимание материала" title="Вот что я понял" />
         <EmptyState title="Не удалось открыть проект" description={projectError.message} />
       </div>
     )
@@ -336,7 +336,7 @@ export function UnderstandingPage() {
     return (
       <div className={styles.page} aria-busy="true" aria-label="Загрузка разбора материалов">
         <PageHeader
-          eyebrow="Шаг 2 · Понимание материала"
+          eyebrow="Понимание материала"
           title="Вот что я понял"
           description="Разбираю структуру материалов, таблицы и ключевые факты…"
         />
@@ -355,7 +355,7 @@ export function UnderstandingPage() {
     return (
       <div className={styles.page}>
         <PageHeader
-          eyebrow="Шаг 3 · Понял сам → План"
+          eyebrow="Понял сам → План"
           title="Составляю план презентации"
           description="Все параметры понятны из ваших материалов — лишних вопросов не задаю."
         />
@@ -373,7 +373,7 @@ export function UnderstandingPage() {
     return (
       <div className={styles.page}>
         <PageHeader
-          eyebrow="Шаг 2 · Понимание материала"
+          eyebrow="Понимание материала"
           title="Вот что я понял"
           description="Чтобы разобрать структуру и цифры, сначала добавьте файлы или идею презентации."
         />
@@ -398,7 +398,7 @@ export function UnderstandingPage() {
   if (understandingQuery.error) {
     return (
       <div className={styles.page}>
-        <PageHeader eyebrow="Шаг 2 · Понимание материала" title="Вот что я понял" />
+        <PageHeader eyebrow="Понимание материала" title="Вот что я понял" />
         <EmptyState
           title="Не удалось разобрать материалы"
           description={understandingQuery.error.message}
@@ -422,7 +422,7 @@ export function UnderstandingPage() {
     return (
       <div className={styles.page}>
         <PageHeader
-          eyebrow="Шаг 2 · Понимание материала"
+          eyebrow="Понимание материала"
           title="Вот что я понял"
           description="Подробный разбор блоков на этом стенде недоступен — можно сразу перейти к брифу и плану."
         />
@@ -457,7 +457,7 @@ export function UnderstandingPage() {
   return (
     <div className={styles.page}>
       <PageHeader
-        eyebrow="Шаг 2 · Понимание материала"
+        eyebrow="Понимание материала"
         title="Вот что я понял"
         description="Проверьте выводы по таблицам и смысловые блоки: лишнее можно убрать, порядок — поменять, а рекомендации — подтвердить."
         actions={

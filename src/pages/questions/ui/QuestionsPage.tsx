@@ -325,7 +325,7 @@ export function QuestionsPage() {
   if (projectError) {
     return (
       <div className={styles.page}>
-        <PageHeader eyebrow="Шаг 3 · Уточнения" title="Пара вопросов" />
+        <PageHeader eyebrow="Уточнения" title="Пара вопросов" />
         <EmptyState title="Не удалось открыть проект" description={projectError.message} />
       </div>
     )
@@ -335,7 +335,7 @@ export function QuestionsPage() {
     return (
       <div className={styles.page} aria-busy="true" aria-label="Загрузка вопросов">
         <PageHeader
-          eyebrow="Шаг 3 · Уточнения"
+          eyebrow="Уточнения"
           title="Пара вопросов"
           description="Проверяю, достаточно ли данных для построения плана…"
         />
@@ -349,7 +349,7 @@ export function QuestionsPage() {
     return (
       <div className={styles.page}>
         <PageHeader
-          eyebrow="Шаг 4 · План"
+          eyebrow="План"
           title="Составляю план презентации"
           description={
             questions.length === 0
@@ -370,7 +370,7 @@ export function QuestionsPage() {
   if (questionsQuery.error) {
     return (
       <div className={styles.page}>
-        <PageHeader eyebrow="Шаг 3 · Уточнения" title="Пара вопросов" />
+        <PageHeader eyebrow="Уточнения" title="Пара вопросов" />
         <EmptyState
           title="Не удалось загрузить вопросы"
           description={questionsQuery.error.message}
@@ -394,7 +394,7 @@ export function QuestionsPage() {
     return (
       <div className={styles.page}>
         <PageHeader
-          eyebrow="Шаг 3 · Уточнения"
+          eyebrow="Уточнения"
           title="Пара вопросов"
           description="Уточняющие вопросы на этом стенде недоступны — продолжайте через классический бриф."
         />
@@ -429,7 +429,7 @@ export function QuestionsPage() {
     return (
       <div className={styles.page}>
         <PageHeader
-          eyebrow="Шаг 3 · Понял сам"
+          eyebrow="Понял сам"
           title="Пара вопросов"
           description="Все ключевые параметры понятны из ваших материалов — лишних вопросов не задаю."
         />
@@ -466,7 +466,7 @@ export function QuestionsPage() {
   return (
     <div className={styles.page}>
       <PageHeader
-        eyebrow="Шаг 3 · Уточнения"
+        eyebrow="Уточнения"
         title="Пара вопросов"
         description="Спрашиваю только то, без чего презентация выйдет не о том. На каждый вопрос уже выбран ответ по умолчанию."
         actions={

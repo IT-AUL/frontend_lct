@@ -216,12 +216,15 @@ export function parseEvidenceRef(raw: string): EvidenceRef {
   return { raw, packId, sectionId: second, blockId: third, meta: false }
 }
 
+const DATASET_REF = /^ds-([0-9a-f]+)(?:-|$)/
+
 export function slideSources(evidenceIds: readonly string[], headings: ReadonlyMap<string, string>): SlideSource[] {
   const sources = new Map<string, SlideSource>()
   for (const raw of evidenceIds) {
     const ref = parseEvidenceRef(raw)
-    const key = ref.meta ? 'meta' : (ref.sectionId ?? raw)
-    const label = ref.meta ? 'Заголовок контента' : ref.sectionId ? (headings.get(ref.sectionId) ?? ref.sectionId) : raw
+    const dataset = DATASET_REF.exec(raw)?.[1] ?? null
+    const key = ref.meta ? 'meta' : dataset ? `ds-${dataset}` : (ref.sectionId ?? raw)
+    const label = ref.meta ? 'Заголовок контента' : dataset ? 'Ваша таблица' : ref.sectionId ? (headings.get(ref.sectionId) ?? ref.sectionId) : raw
     const existing = sources.get(key)
     if (existing) existing.refs.push(raw)
     else sources.set(key, { key, label, refs: [raw] })

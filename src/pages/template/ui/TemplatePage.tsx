@@ -168,7 +168,7 @@ export function TemplatePage() {
   return (
     <div className={styles.page}>
       <PageHeader
-        eyebrow="Шаг 1 · Шаблон"
+        eyebrow="Шаблон"
         title="ДНК шаблона"
         description={
           showDna

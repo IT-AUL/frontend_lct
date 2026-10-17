@@ -80,7 +80,7 @@ export function PlanPage() {
 
   const header = (
     <PageHeader
-      eyebrow="Шаг 3 · План"
+      eyebrow="План"
       title="План колоды"
       description="Порядок слайдов, заголовки-выводы и источники."
       actions={
@@ -148,7 +148,7 @@ export function PlanPage() {
         draftKey={`run:${generation.id}`}
         basePlan={plan}
         headings={headings}
-        eyebrow="Шаг 3 · План"
+        eyebrow="План"
         buildLabel="Пересобрать по этому плану"
         buildBody={rebuildBody(generation, plan, session?.id ?? null)}
         next={<VariantsLink to={routes.variants(projectId, generation.id)} />}

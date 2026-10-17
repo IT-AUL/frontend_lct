@@ -86,7 +86,7 @@ function BriefScreen({ project }: { project: Project }) {
   if (planFirst.isPending) {
     return (
       <div className={styles.page}>
-        <PageHeader eyebrow="Шаг 3 · План" title="Составляю план" description={form.topic.trim() || previewLabel || undefined} />
+        <PageHeader eyebrow="План" title="Составляю план" description={form.topic.trim() || previewLabel || undefined} />
         <PlanBuildProgress progress={planBuild.progress} phase={planBuild.phase} startedAt={planBuild.startedAt} onCancel={planBuild.cancel} />
       </div>
     )
@@ -95,7 +95,7 @@ function BriefScreen({ project }: { project: Project }) {
   return (
     <div className={styles.page}>
       <PageHeader
-        eyebrow="Шаг 2 · Бриф и контент"
+        eyebrow="Бриф и контент"
         title="Новая презентация"
         description="Достаточно темы и назначения. Сначала составим план — его можно поправить до вёрстки."
       />

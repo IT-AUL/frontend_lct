@@ -234,7 +234,7 @@ export function StylePage() {
     return (
       <div className={styles.page}>
         <PageHeader
-          eyebrow="Шаг 5 · Стиль"
+          eyebrow="Стиль"
           title="Выбери стиль вёрстки"
           description="Примерил три подхода на ключевых слайдах вашего плана — кликните слайд для сравнения."
         />
@@ -272,7 +272,7 @@ export function StylePage() {
   return (
     <div className={styles.page}>
       <PageHeader
-        eyebrow="Шаг 5 · Стиль"
+        eyebrow="Стиль"
         title="Выбери стиль вёрстки"
         description="Примерил три подхода на ключевых слайдах вашего плана — кликните слайд для сравнения."
         actions={

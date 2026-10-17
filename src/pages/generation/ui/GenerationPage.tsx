@@ -145,6 +145,7 @@ function RecoveryNotice({ projectId, runId, tracker }: { projectId: string; runI
       title={phase === 'failed' ? 'Вёрстка не завершилась' : 'Генерация отменена'}
       message={failure ? failure.message : 'Сборку можно запустить заново с теми же данными.'}
       meta={failure ? failureMeta(failure) : null}
+      details={failure?.technical ? [failureMeta(failure), failure.technical].filter(Boolean).join('\n') : null}
       actions={
         <>
           {retry}
@@ -267,7 +268,7 @@ export function GenerationPage() {
   return (
     <div className={styles.page}>
       <PageHeader
-        eyebrow="Шаг 6 · Сборка"
+        eyebrow="Сборка"
         title={lost ? 'Статус запуска неизвестен' : headline(phase, variantCount)}
         description={lost ? 'Бриф и загруженные файлы сохранены.' : lead(phase, template?.filename ?? null)}
         actions={actions}

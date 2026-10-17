@@ -260,7 +260,7 @@ export function IntakePage() {
   return (
     <div className={styles.page}>
       <PageHeader
-        eyebrow="Шаг 1 · Приём материалов и правил оформления"
+        eyebrow="Приём материалов и правил оформления"
         title="Закинь, что есть"
         description="Сложите в одну зону шаблон, таблицы, документы и брендбук — я сам определю роль каждого файла."
       />

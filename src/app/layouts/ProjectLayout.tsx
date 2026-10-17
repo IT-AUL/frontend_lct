@@ -21,6 +21,8 @@ export function ProjectLayout() {
   const tracker = useGenerationTracker(runId)
   const openCounts = useOpenCounts(projectId, runId)
   const { data: session } = useAssistantSession(projectId)
+  const assistantStep = assistantStepFromPath(pathname)
+  const beforeBuild = assistantStep !== undefined && assistantStep <= 5
   const assistantNote = useAssistantBarNote(projectId)
 
   const progress: ProjectProgress = {
@@ -41,8 +43,8 @@ export function ProjectLayout() {
   return (
     <AppFrame
       projectName={project?.name ?? '…'}
-      status={runStatus(step, progress, tracker, openCounts)}
-      top={<AssistantBar steps={buildAssistantSteps(progressSnapshot(progress, session), assistantStepFromPath(pathname))} note={assistantNote} />}
+      status={beforeBuild ? undefined : runStatus(step, progress, tracker, openCounts)}
+      top={<AssistantBar steps={buildAssistantSteps(progressSnapshot(progress, session), assistantStep)} note={assistantNote} />}
     >
       <Outlet />
     </AppFrame>

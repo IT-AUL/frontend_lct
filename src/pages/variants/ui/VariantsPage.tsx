@@ -42,7 +42,7 @@ export function VariantsPage() {
   return (
     <div className={styles.page}>
       <PageHeader
-        eyebrow="Шаг 5 · Три варианта"
+        eyebrow="Три варианта"
         title="Один контент, один шаблон, три стратегии"
         description={STRATEGY_AXIS}
         actions={

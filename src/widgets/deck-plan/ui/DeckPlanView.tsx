@@ -279,6 +279,7 @@ export function DeckPlanView({ plan, headings, editor, sources = NO_SOURCES, asi
   const { rows, sections, stats } = view
   const { provenance, brief } = plan
   const namedSections = sections.filter((section) => section.id !== 'unassigned').length
+  const audience = (plan.audience || brief.audience || '').trim()
   const resolvedKeyMessage = resolveDeckKeyMessage(plan, keyMessage)
   const showKeyMessage = Boolean(editor?.onKeyMessageChange || keyMessage || brief.key_message)
 
@@ -338,7 +339,8 @@ export function DeckPlanView({ plan, headings, editor, sources = NO_SOURCES, asi
         {asideTop}
         <h2 className={styles.asideTitle}>Почему такая структура</h2>
         <p className={styles.asideText}>
-          Назначение «{deckPurposeLabel(brief.purpose || plan.objective)}», аудитория «{plan.audience || brief.audience}».{' '}
+          Назначение «{deckPurposeLabel(brief.purpose || plan.objective)}»
+          {audience ? `, аудитория «${audience}»` : ''}.{' '}
           {namedSections > 0
             ? `План делит историю на ${namedSections} ${pluralize(namedSections, ['раздел', 'раздела', 'разделов'])}; у каждого — слайды, которые его раскрывают.`
             : ''}
