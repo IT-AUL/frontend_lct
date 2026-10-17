@@ -103,7 +103,7 @@ function renderAudit(url: string) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   const router = createMemoryRouter(
     [
-      { path: '/projects/:projectId/runs/:runId/audit/:variantId?', element: <AuditPage /> },
+      { path: '/projects/:projectId/runs/:runId/polish/:variantId?', element: <AuditPage /> },
       { path: '*', element: <div>other page</div> },
     ],
     { initialEntries: [url] },
@@ -138,15 +138,15 @@ afterEach(() => {
 
 describe('AuditPage', { timeout: 20_000 }, () => {
   it('opens the default strategy variant and the slide from the query', async () => {
-    const router = renderAudit(`${routes.audit(PROJECT_ID, RUN_ID)}?slide=3`)
-    await waitFor(() => expect(router.state.location.pathname).toBe(routes.audit(PROJECT_ID, RUN_ID, VARIANT_ID)))
+    const router = renderAudit(`${routes.polish(PROJECT_ID, RUN_ID)}?slide=3`)
+    await waitFor(() => expect(router.state.location.pathname).toBe(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID)))
     expect(router.state.location.search).toBe('?slide=3')
     expect(await screen.findByText('03 / 12')).toBeInTheDocument()
   })
 
   it('groups findings by rule with collapsed groups and a summary line', async () => {
     const user = userEvent.setup()
-    renderAudit(routes.audit(PROJECT_ID, RUN_ID, VARIANT_ID))
+    renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
     expect(await screen.findByRole('tab', { name: 'Проблемы · 108' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByText('108 находок')).toBeInTheDocument()
@@ -176,7 +176,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
 
   it('selects every auto-fixable issue of a rule from the group checkbox', async () => {
     const user = userEvent.setup()
-    renderAudit(routes.audit(PROJECT_ID, RUN_ID, VARIANT_ID))
+    renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
     const contrastCount = deck.issues.filter((issue) => issue.rule_code === 'accessibility.contrast').length
     const groupCheck = await screen.findByRole('checkbox', { name: `Выбрать все исправимые в группе «Контраст текста ниже 4.5:1» (${contrastCount})` })
@@ -202,7 +202,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
 
   it('keeps the D/N split, filters and alternative groupings', async () => {
     const user = userEvent.setup()
-    renderAudit(routes.audit(PROJECT_ID, RUN_ID, VARIANT_ID))
+    renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
     await screen.findByRole('tab', { name: 'Проблемы · 108' })
     const checks = screen.getByRole('group', { name: 'Типы проверок' })
@@ -230,7 +230,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
 
   it('does not hijack arrow keys from a focused radio button', async () => {
     const user = userEvent.setup()
-    const router = renderAudit(`${routes.audit(PROJECT_ID, RUN_ID, VARIANT_ID)}?slide=2`)
+    const router = renderAudit(`${routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID)}?slide=2`)
 
     expect(await screen.findByText('02 / 12')).toBeInTheDocument()
     const bySlide = screen.getByRole('radio', { name: 'По слайдам' })
@@ -250,7 +250,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
 
   it('repairs selected issues and builds the journal by signature', async () => {
     const user = userEvent.setup()
-    renderAudit(routes.audit(PROJECT_ID, RUN_ID, VARIANT_ID))
+    renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
     const overflow = await screen.findByRole('region', { name: 'Текст не помещается в рамку' })
     await user.click(within(overflow).getByRole('button', { expanded: false }))
@@ -268,7 +268,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
     const banner = screen.getByText('Повторный аудит: 0 блокеров').closest('[role="status"]') as HTMLElement
     expect(within(banner).getByText(/ошибок 54 → 53 · исправлено 1/)).toBeInTheDocument()
     expect(within(banner).getByText(/не удалось 1/)).toBeInTheDocument()
-    expect(within(banner).getByRole('link', { name: /Скачать PPTX и паспорт/ })).toBeInTheDocument()
+    expect(within(banner).getByText(/Можно скачивать/)).toBeInTheDocument()
     expect(JSON.parse(window.localStorage.getItem('deckdna.evidence.v1') ?? '{}')[PROJECT_ID]).toMatchObject({ repaired: true, reaudited: true })
     expect(readOpenCounts(PROJECT_ID, RUN_ID)).toEqual({ blocker: 0, error: 53 })
 
@@ -282,7 +282,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
   it('follows the new audit returned by repair even if the variant still points at the old one', async () => {
     repairCreatesAudit = true
     const user = userEvent.setup()
-    renderAudit(routes.audit(PROJECT_ID, RUN_ID, fixtures.faithful.variant.id))
+    renderAudit(routes.polish(PROJECT_ID, RUN_ID, fixtures.faithful.variant.id))
 
     const overflow = await screen.findByRole('region', { name: 'Текст не помещается в рамку' })
     await user.click(within(overflow).getByRole('button', { expanded: false }))
@@ -298,7 +298,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
 
   it('reports a failed re-audit instead of showing stale results', async () => {
     const user = userEvent.setup()
-    renderAudit(routes.audit(PROJECT_ID, RUN_ID, VARIANT_ID))
+    renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
     await screen.findByText('108 находок')
     auditRequestFails = true
@@ -310,7 +310,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
 
   it('requires a reason to dismiss an issue', async () => {
     const user = userEvent.setup()
-    renderAudit(routes.audit(PROJECT_ID, RUN_ID, VARIANT_ID))
+    renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
     const fontScale = await screen.findByRole('region', { name: 'Кегль не из шкалы шаблона' })
     await user.click(within(fontScale).getByRole('button', { expanded: false }))
@@ -330,7 +330,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
   })
 
   it('explains next to a disabled button that contextual checks need a model provider', async () => {
-    renderAudit(routes.audit(PROJECT_ID, RUN_ID, VARIANT_ID))
+    renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
     const button = await screen.findByRole('button', { name: /Смысл моделью/ })
     expect(button).toBeDisabled()
@@ -341,7 +341,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
 
   it('marks the preview as stale when the picture is older than the issues', async () => {
     const user = userEvent.setup()
-    renderAudit(routes.audit(PROJECT_ID, RUN_ID, VARIANT_ID))
+    renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
     const overflow = await screen.findByRole('region', { name: 'Текст не помещается в рамку' })
     await user.click(within(overflow).getByRole('button', { expanded: false }))
@@ -350,5 +350,16 @@ describe('AuditPage', { timeout: 20_000 }, () => {
     await user.click(screen.getByRole('button', { name: 'Исправить выбранное (1)' }))
     await screen.findByText('Ревизия r2: исправлено 1')
     expect(await screen.findByText('Превью устарело: картинка r1, проблемы r2')).toBeInTheDocument()
+  })
+})
+
+describe('AuditPage slide tab', { timeout: 20_000 }, () => {
+  it('offers to rework only the current slide and downloads in one place', async () => {
+    renderAudit(`${routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID)}?slide=2`)
+    expect(await screen.findByRole('group', { name: 'Скачать презентацию' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('tab', { name: 'Слайд' }))
+    expect(screen.getByRole('heading', { name: 'Переделать слайд 2' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Короче' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Почему так' })).toBeInTheDocument()
   })
 })

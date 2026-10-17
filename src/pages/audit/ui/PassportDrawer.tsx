@@ -8,8 +8,8 @@ import { buildPassportView, EditabilityProof, QualityPassport as PassportPanel }
 import { GENERATION_BUDGET_SECONDS } from '@/shared/config'
 import { formatBytes } from '@/shared/lib/format'
 import { Drawer, EmptyState, Skeleton } from '@/shared/ui'
-import { exportFileName } from '../model/polishModel'
-import styles from './PolishPage.module.css'
+import { exportFileName } from '../model/slideModel'
+import styles from './AuditPage.module.css'
 
 interface PassportDrawerProps {
   open: boolean

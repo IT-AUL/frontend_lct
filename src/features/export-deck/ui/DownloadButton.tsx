@@ -18,6 +18,7 @@ export interface DownloadButtonProps {
   fileName: string
   label: string
   primary?: boolean
+  compact?: boolean
 }
 
 function revision(value: number | null | undefined): string {
@@ -28,11 +29,11 @@ function meta(file: DeckFile | null): string {
   return [file?.sizeBytes != null ? formatBytes(file.sizeBytes) : null, revision(file?.deckRevision)].filter(Boolean).join(' · ')
 }
 
-export function DownloadButton({ projectId, variantId, format, file, currentRevision, supported, fileName, label, primary }: DownloadButtonProps) {
+export function DownloadButton({ projectId, variantId, format, file, currentRevision, supported, fileName, label, primary, compact }: DownloadButtonProps) {
   const { state, create, markDownloaded } = useDeckExport({ projectId, variantId, format, file, currentRevision, supported })
   const fresh = state.file && !state.stale ? state.file : null
   const previous = state.file && state.stale ? state.file : null
-  const buttonClass = clsx(styles.button, primary ? styles.primary : styles.secondary)
+  const buttonClass = clsx(styles.button, primary ? styles.primary : styles.secondary, compact && styles.compactButton)
 
   const link = (target: DeckFile, text: string, className: string | undefined) => (
     <a className={className} href={artifactUrl(target.artifactId)} download={fileName} onClick={markDownloaded}>
@@ -75,8 +76,10 @@ export function DownloadButton({ projectId, variantId, format, file, currentRevi
     note = state.status === 'error' ? state.message : previous ? `соберём для ${revision(currentRevision)}` : null
   }
 
+  if (compact && state.status === 'unavailable' && !state.file) return null
+
   return (
-    <div className={styles.root} data-status={state.status} data-format={format}>
+    <div className={clsx(styles.root, compact && styles.compact)} data-status={state.status} data-format={format}>
       {action}
       {(note || (previous && state.status !== 'unavailable')) && (
         <div className={clsx(styles.note, state.status === 'error' && styles.error)} role={state.status === 'error' ? 'alert' : undefined}>

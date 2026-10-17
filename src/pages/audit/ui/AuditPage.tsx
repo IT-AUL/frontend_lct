@@ -1,11 +1,15 @@
-import { Link, Navigate, useLocation, useParams, useSearchParams } from 'react-router'
-import { useVariants } from '@/entities/variant'
+import { Navigate, useLocation, useParams, useSearchParams } from 'react-router'
+import { useGeneration } from '@/entities/generation'
+import { useTemplate } from '@/entities/template'
+import { useVariant, useVariants } from '@/entities/variant'
 import { AuditWorkspace } from '@/widgets/audit-workspace'
 import { SlideInspector } from '@/widgets/slide-inspector'
 import { routes } from '@/shared/config'
 import { EmptyState, Skeleton } from '@/shared/ui'
 import { defaultAuditVariant, parseSlideParam } from '../model/defaultVariant'
 import styles from './AuditPage.module.css'
+import { DeckDownloads } from './DeckDownloads'
+import { SlidePanel } from './SlidePanel'
 
 function DefaultVariantRedirect({ projectId, runId }: { projectId: string; runId: string }) {
   const { search } = useLocation()
@@ -24,24 +28,22 @@ function DefaultVariantRedirect({ projectId, runId }: { projectId: string; runId
     return (
       <div className={styles.center}>
         <EmptyState
-          title={variants.isError ? 'Не удалось загрузить варианты' : 'У прогона нет вариантов'}
-          description={variants.error?.message ?? 'Аудит появится, когда будет готов хотя бы один вариант колоды.'}
-          actions={
-            <Link className={styles.link} to={routes.variants(projectId, runId)}>
-              К вариантам
-            </Link>
-          }
+          title={variants.isError ? 'Не удалось загрузить презентацию' : 'Презентация ещё не собрана'}
+          description={variants.error?.message ?? 'Доводка откроется, когда будет готов хотя бы один стиль.'}
         />
       </div>
     )
   }
 
-  return <Navigate replace to={{ pathname: routes.audit(projectId, runId, target.id), search }} />
+  return <Navigate replace to={{ pathname: routes.polish(projectId, runId, target.id), search }} />
 }
 
 export function AuditPage() {
   const { projectId = '', runId = '', variantId } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
+  const variant = useVariant(variantId)
+  const generation = useGeneration(runId)
+  const template = useTemplate(generation.data?.template_id)
 
   if (!variantId) return <DefaultVariantRedirect projectId={projectId} runId={runId} />
 
@@ -55,6 +57,9 @@ export function AuditPage() {
       { replace: true },
     )
 
+  const strategy = variant.data?.strategy ?? 'balanced'
+  const slideCount = generation.data?.deck_plan?.slides.length ?? null
+
   return (
     <AuditWorkspace
       key={variantId}
@@ -63,7 +68,14 @@ export function AuditPage() {
       variantId={variantId}
       slide={parseSlideParam(searchParams.get('slide'))}
       onSlideChange={changeSlide}
+      variantHref={(id) => routes.polish(projectId, runId, id)}
       renderStage={(stage) => <SlideInspector {...stage} />}
+      actions={
+        variant.data ? (
+          <DeckDownloads projectId={projectId} variant={variant.data} templateFile={template.data?.filename ?? null} slideCount={slideCount} />
+        ) : null
+      }
+      renderSlidePanel={({ slideNumber }) => <SlidePanel key={slideNumber} runId={runId} variantId={variantId} strategy={strategy} slideNumber={slideNumber} />}
     />
   )
 }

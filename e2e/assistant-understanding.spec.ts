@@ -31,60 +31,37 @@ async function seedAssistantProject(page: Page): Promise<string> {
   return projectId
 }
 
-test('assistant steps 2–3: understanding review, insight confirmation, questions and plan', async ({ page }) => {
+test('assistant steps 2–3: data insights, insight details, questions and plan', async ({ page }) => {
   test.setTimeout(90_000)
   const projectId = await seedAssistantProject(page)
 
-  await test.step('step 2 shows the summary, dataset insights and semantic blocks', async () => {
+  await test.step('step 2 lays data insights on the table', async () => {
     await gotoClient(page, `/projects/${projectId}/understanding`)
-    await expect(page.getByRole('heading', { level: 1, name: 'Вот что я понял' })).toBeVisible()
-
-    const summary = page.getByRole('region', { name: 'Сводка по материалам' })
-    await expect(summary).toContainText('Материала примерно на')
-    await expect(summary).toContainText('Главное, что я вижу')
-
-    const datasets = page.getByRole('region', { name: 'Выводы по данным' })
-    await expect(datasets).toBeVisible()
-    await expect(datasets).toContainText('purchases.csv')
-    await expect(datasets.getByRole('article', { name: /Вывод:/ }).first()).toContainText('Факт из данных')
-
-    const blocks = page.getByRole('region', { name: 'Смысловые блоки' })
-    await expect(blocks).toBeVisible()
-    await expect(blocks.getByRole('article').first()).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Вот что я нашёл' })).toBeVisible()
+    await expect(page.getByText(/Хватит примерно на/)).toBeVisible()
+    await expect(page.getByRole('list', { name: 'Выводы из данных' }).getByRole('listitem').first()).toBeVisible()
   })
 
-  await test.step('insight confirmation persists through PATCH insights', async () => {
-    const first = page.getByRole('article', { name: /Вывод:/ }).first()
-    await first.getByRole('button', { name: 'Оставить' }).click()
-    await expect(first.getByRole('button', { name: 'Оставлено' })).toBeVisible()
+  await test.step('an insight opens in the side panel with its data', async () => {
+    await page.getByRole('list', { name: 'Выводы из данных' }).getByRole('button', { name: /^Открыть вывод:/ }).first().click()
+    const panel = page.getByRole('complementary', { name: 'Вывод' })
+    await expect(panel.getByRole('heading', { name: 'Данные и график' })).toBeVisible()
+    await expect(panel).toContainText('purchases.csv')
+    await page.keyboard.press('Escape')
+    await expect(panel).toBeHidden()
   })
 
-  await test.step('removing a block updates the list and Ctrl+Z restores it', async () => {
-    const blocks = page.getByRole('region', { name: 'Смысловые блоки' })
-    const before = await blocks.getByRole('article').count()
-    expect(before).toBeGreaterThan(0)
-    await blocks.getByRole('article').first().getByRole('button', { name: /Убрать блок/ }).click()
-    await expect(page.getByRole('region', { name: 'Сводка по материалам' }).getByRole('button', { name: /Отменить/ })).toBeEnabled()
-    await page.keyboard.press('Control+z')
-    await expect(blocks.getByRole('article')).toHaveCount(before)
-  })
-
-  await test.step('step 3 shows questions with a recommended answer and leads to the plan', async () => {
-    await page.getByRole('button', { name: 'Дальше', exact: true }).last().click()
+  await test.step('step 3 asks with a recommended answer and leads to the plan', async () => {
+    await page.getByRole('button', { name: 'Дальше', exact: true }).click()
     await expect(page).toHaveURL(new RegExp(`/projects/${projectId}/questions`))
-    await expect(page.getByRole('heading', { level: 1, name: 'Пара вопросов' })).toBeVisible()
+    const audience = page.getByRole('radio', { name: /Совет директоров/ })
+    await expect(audience).toBeVisible()
+    await expect(page.getByText('советую').first()).toBeVisible()
+    await audience.check()
+    await expect(audience).toBeChecked()
 
-    const question = page.getByRole('region', { name: /Для кого эта презентация/ })
-    await expect(question).toBeVisible()
-    await expect(question).toContainText('Почему спрашиваю')
-    const group = question.getByRole('radiogroup')
-    await expect(group.getByRole('radio', { name: /нейтральный черновик/ })).toHaveAttribute('aria-checked', 'true')
-
-    await group.getByRole('radio', { name: 'Совет директоров' }).click()
-    await expect(group.getByRole('radio', { name: 'Совет директоров' })).toHaveAttribute('aria-checked', 'true')
-
-    await page.getByRole('button', { name: 'Составить план' }).last().click()
+    await page.getByRole('button', { name: 'Составить план', exact: true }).click()
     await expect(page).toHaveURL(new RegExp(`/projects/${projectId}/plan`), { timeout: 30_000 })
-    await expect(page.getByRole('heading', { level: 1, name: 'План колоды' })).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByRole('heading', { level: 1, name: 'План презентации' })).toBeVisible({ timeout: 30_000 })
   })
 })

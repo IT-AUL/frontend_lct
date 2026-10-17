@@ -17,7 +17,7 @@ import {
   parseSlideParam,
   resolvePolishNote,
   taskLabel,
-} from './polishModel'
+} from './slideModel'
 
 const makeVariant = (id: string, strategy: VariantSummary['strategy'], status: VariantSummary['status'] = 'completed'): VariantSummary => ({
   id,

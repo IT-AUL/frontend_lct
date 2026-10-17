@@ -292,3 +292,9 @@
 .spin {
   animation: global(dd-spin) 1s linear infinite;
 }
+
+.trailing {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}

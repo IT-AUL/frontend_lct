@@ -234,7 +234,7 @@ export function GenerationPage() {
   const [selectedKey, setSelectedKey] = useSelectedBuildKey(cards)
   const done = phase === 'completed' && Boolean(generationId)
   const title = lost ? 'Сборка потерялась' : phase === 'completed' ? 'Презентация готова' : phase === 'failed' ? 'Не получилось собрать' : 'Собираю презентацию'
-  const note = lost ? 'Материалы и план сохранены.' : (assistantNote ?? lead(phase, template?.filename ?? null))
+  const note = lost ? 'Материалы и план сохранены.' : phase === 'completed' ? lead(phase, null) : (assistantNote ?? lead(phase, template?.filename ?? null))
 
   return (
     <StepShell

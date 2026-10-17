@@ -1,5 +1,5 @@
 export { AuditWorkspace } from './ui/AuditWorkspace'
-export type { AuditStageProps, StageMode } from './ui/AuditWorkspace'
+export type { AuditStageProps, SlidePanelContext, StageMode } from './ui/AuditWorkspace'
 export { SlideFilmstrip } from './ui/SlideFilmstrip'
 export type { FilmstripSlide } from './ui/SlideFilmstrip'
 export { IssueList } from './ui/IssueList'

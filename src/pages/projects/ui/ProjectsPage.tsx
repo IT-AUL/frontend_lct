@@ -27,7 +27,7 @@ export function ProjectsPage() {
   const openDemo = () => {
     const seeded = seededProject(projects.data)
     if (seeded) {
-      navigate(routes.template(seeded.id))
+      navigate(routes.start(seeded.id))
       return
     }
     createDemo.mutate(defaultProjectName('Демо'), {

@@ -59,8 +59,8 @@ export function projectStatus(project: Project, run: RunLookup): ProjectStatusVi
 }
 
 export function projectHref(project: Pick<Project, 'id'>, runId: string | undefined, run: RunLookup): string {
-  if (runId && run.kind !== 'missing') return routes.variants(project.id, runId)
-  return routes.template(project.id)
+  if (runId && run.kind !== 'missing') return routes.polish(project.id, runId)
+  return routes.start(project.id)
 }
 
 export function sortProjects(projects: readonly Project[]): Project[] {

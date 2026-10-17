@@ -45,47 +45,43 @@ test.beforeEach(async ({ page }) => {
   await page.goto(`/projects/${projectId}/style`)
 })
 
-test('style step: three columns, recommendation, compare lightbox, build one style', async ({ page }) => {
-  await expect(page.getByRole('heading', { level: 1, name: 'Выбери стиль вёрстки' })).toBeVisible()
+test('style step: three styles, recommendation, trial slides, compare, build one style', async ({ page }) => {
+  await expect(page.getByRole('heading', { level: 1, name: 'Как оформить?' })).toBeVisible()
 
   const group = page.getByRole('radiogroup', { name: 'Стиль вёрстки' })
   await expect(group.getByRole('radio')).toHaveCount(3)
 
-  const visual = group.getByRole('radio', { name: 'Визуальный' })
-  await expect(visual).toHaveAttribute('aria-checked', 'true')
-  await expect(visual).toContainText('советую')
-  await expect(visual).toContainText('Больше графиков и схем, меньше текста, смелее группировка.')
-  await expect(group.getByRole('radio', { name: 'Строгий' })).toContainText('Ближе всего к вашему шаблону')
+  const visual = group.getByRole('radio', { name: /Визуальный/ })
+  await expect(visual).toBeChecked()
+  await expect(group.getByText('советую')).toBeVisible()
+  await expect(group).toContainText('Больше графиков и схем, меньше текста')
 
-  await expect(group.getByRole('img')).toHaveCount(9, { timeout: 20_000 })
+  const table = page.getByRole('list', { name: /Пробные слайды/ })
+  await expect(table.locator('img')).toHaveCount(3, { timeout: 20_000 })
 
-  await visual.getByRole('button', { name: /Открыть сравнение слайда 1/ }).click()
+  await table.getByRole('button', { name: 'Сравнить слайд 1 в трёх стилях' }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog.getByRole('heading', { name: /Сравнение трёх стилей · Слайд 01/ })).toBeVisible()
   await expect(dialog.getByRole('region')).toHaveCount(3)
-  await expect(dialog.getByRole('img')).toHaveCount(3)
   await dialog.getByRole('button', { name: 'Следующий слайд' }).click()
   await expect(dialog.getByRole('heading', { name: /Сравнение трёх стилей · Слайд 02/ })).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
-  await group.getByRole('radio', { name: 'Сбалансированный' }).getByRole('heading', { name: 'Сбалансированный' }).click()
-  await expect(group.getByRole('radio', { name: 'Сбалансированный' })).toHaveAttribute('aria-checked', 'true')
-  await expect(page.getByRole('button', { name: 'Собрать в этом стиле' })).toBeEnabled()
+  await group.getByText('Сбалансированный').click()
+  await expect(group.getByRole('radio', { name: /Сбалансированный/ })).toBeChecked()
 
-  await page.getByRole('button', { name: /Собрать в этом стиле/ }).click()
+  await page.getByRole('button', { name: 'Собрать', exact: true }).click()
   await expect(page).toHaveURL(new RegExp(`/projects/${projectId}/runs/`))
-  await expect(page.getByText('Лента слайдов колоды')).toBeVisible({ timeout: 15_000 })
-  await expect(page).toHaveURL(/\/(polish|audit)/, { timeout: 20_000 })
+  await expect(page.getByRole('heading', { level: 1, name: /Собираю презентацию|Презентация готова/ })).toBeVisible({ timeout: 15_000 })
+  await expect(page).toHaveURL(/\/polish/, { timeout: 20_000 })
 })
 
-test('style step: build all three opens run tracker', async ({ page }) => {
+test('style step: build all three opens the build table', async ({ page }) => {
   const group = page.getByRole('radiogroup', { name: 'Стиль вёрстки' })
   await expect(group.getByRole('radio')).toHaveCount(3)
-  await expect(group.getByRole('img')).toHaveCount(9, { timeout: 20_000 })
 
-  await page.getByRole('button', { name: 'Собрать во всех трёх' }).click()
+  await page.getByRole('button', { name: 'Собрать сразу во всех трёх стилях' }).click()
   await expect(page).toHaveURL(new RegExp(`/projects/${projectId}/runs/`))
-  await expect(page.getByText('Лента слайдов колоды')).toBeVisible({ timeout: 15_000 })
-  await expect(page).toHaveURL(/\/(polish|audit)/, { timeout: 20_000 })
+  await expect(page.getByRole('region', { name: 'Слайды презентации' })).toBeVisible({ timeout: 15_000 })
 })

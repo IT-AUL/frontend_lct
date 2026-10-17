@@ -29,10 +29,10 @@ describe('projectStatus', () => {
 })
 
 describe('projectHref', () => {
-  it('opens the variants of the latest run, otherwise the template step', () => {
-    expect(projectHref(draft, 'gen_1', { kind: 'ready', generation })).toBe(`/projects/${draft.id}/runs/gen_1/variants`)
-    expect(projectHref(draft, 'gen_1', { kind: 'missing' })).toBe(`/projects/${draft.id}/template`)
-    expect(projectHref(draft, undefined, { kind: 'none' })).toBe(`/projects/${draft.id}/template`)
+  it('opens the finished deck of the latest run, otherwise the first step', () => {
+    expect(projectHref(draft, 'gen_1', { kind: 'ready', generation })).toBe(`/projects/${draft.id}/runs/gen_1/polish`)
+    expect(projectHref(draft, 'gen_1', { kind: 'missing' })).toBe(`/projects/${draft.id}/start`)
+    expect(projectHref(draft, undefined, { kind: 'none' })).toBe(`/projects/${draft.id}/start`)
   })
 })
 

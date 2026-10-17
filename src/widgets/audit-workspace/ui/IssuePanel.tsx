@@ -1,7 +1,7 @@
 import { useId, type ReactNode } from 'react'
 import styles from './IssuePanel.module.css'
 
-export type PanelTab = 'issues' | 'journal'
+export type PanelTab = 'issues' | 'slide' | 'journal'
 
 interface IssuePanelProps {
   tab: PanelTab
@@ -10,12 +10,14 @@ interface IssuePanelProps {
   journalCount: number
   issues: ReactNode
   journal: ReactNode
+  slide?: ReactNode
 }
 
-export function IssuePanel({ tab, onTabChange, openCount, journalCount, issues, journal }: IssuePanelProps) {
+export function IssuePanel({ tab, onTabChange, openCount, journalCount, issues, journal, slide }: IssuePanelProps) {
   const id = useId()
   const tabs: { value: PanelTab; label: string }[] = [
     { value: 'issues', label: `Проблемы · ${openCount}` },
+    ...(slide ? [{ value: 'slide' as const, label: 'Слайд' }] : []),
     { value: 'journal', label: `Журнал · ${journalCount}` },
   ]
 
@@ -38,7 +40,7 @@ export function IssuePanel({ tab, onTabChange, openCount, journalCount, issues, 
         ))}
       </div>
       <div role="tabpanel" id={`${id}-${tab}-panel`} aria-labelledby={`${id}-${tab}`} className={styles.body}>
-        {tab === 'issues' ? issues : journal}
+        {tab === 'issues' ? issues : tab === 'slide' && slide ? slide : journal}
       </div>
     </aside>
   )

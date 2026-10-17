@@ -98,21 +98,18 @@ describe('GenerationPage', () => {
     vi.mocked(rememberRun).mockClear()
   })
 
-  it('shows the three variants being prepared without a countdown while the request is pending', () => {
+  it('shows the styles being prepared without a countdown while the request is pending', () => {
     useTracker(makeTracker({ trackingId: TRACKING, phase: 'submitting' }))
     renderPage(TRACKING)
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Собираем три варианта' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Собираю презентацию' })).toBeInTheDocument()
     expect(screen.queryByRole('timer')).not.toBeInTheDocument()
     expect(screen.queryByText(/5:00/)).not.toBeInTheDocument()
-    const tabs = within(screen.getByRole('group', { name: 'Варианты колоды' }))
+    const styles = within(screen.getByRole('list', { name: 'Стили сборки' }))
     for (const name of ['Близко к шаблону', 'Сбалансированный', 'Визуальный']) {
-      expect(tabs.getByRole('button', { name: new RegExp(`^${name}`) })).toBeInTheDocument()
+      expect(styles.getByRole('button', { name: new RegExp(`^${name}`) })).toBeInTheDocument()
     }
-    expect(screen.getByRole('region', { name: 'Сборка варианта «Близко к шаблону»' })).toHaveTextContent('Готовим сборку')
-    const cancel = screen.getByRole('button', { name: 'Отменить' })
-    expect(cancel).toBeDisabled()
-    expect(cancel).toHaveAccessibleDescription(/когда сервис примет запуск/)
+    expect(screen.getByRole('button', { name: 'Отменить' })).toBeDisabled()
     expect(screen.queryByText(/%/)).not.toBeInTheDocument()
   })
 
@@ -124,39 +121,31 @@ describe('GenerationPage', () => {
     expect(screen.getByTestId('location')).toHaveTextContent(routes.run(PROJECT, RUN))
   })
 
-  it('shows per-variant statuses and allows cancelling an asynchronous run', () => {
+  it('shows per-style statuses and allows cancelling an asynchronous run', () => {
     useTracker(makeTracker({ generationId: RUN, generation: running, phase: 'running', canCancel: true, job: { ...running, id: 'job', kind: 'generation', stage: 'audit', progress: 0.5, result_ids: {} } }))
     renderPage(RUN)
 
-    const tabs = within(screen.getByRole('group', { name: 'Варианты колоды' }))
-    expect(tabs.getByRole('button', { name: /^Близко к шаблону: Готово/ })).toHaveAttribute('aria-pressed', 'false')
-    expect(tabs.getByRole('button', { name: /^Сбалансированный/ })).toHaveAttribute('aria-pressed', 'true')
-    expect(tabs.getByRole('button', { name: /^Визуальный: В очереди/ })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Сборка варианта «Сбалансированный»' })).toBeInTheDocument()
+    const styles = within(screen.getByRole('list', { name: 'Стили сборки' }))
+    expect(styles.getByRole('button', { name: /^Близко к шаблону.*готово/ })).toHaveAttribute('aria-pressed', 'false')
+    expect(styles.getByRole('button', { name: /^Сбалансированный.*собираю/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(styles.getByRole('button', { name: /^Визуальный.*в очереди/ })).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Слайды презентации' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Отменить' })).toBeEnabled()
     expect(rememberRun).not.toHaveBeenCalled()
   })
 
-  it('reports the total server time and links to the comparison when done', () => {
+  it('offers to open the finished deck when done', async () => {
     const startedAt = Date.parse(completed.created_at)
     useTracker(makeTracker({ generationId: RUN, generation: completed, phase: 'completed', startedAt, finishedAt: startedAt + 8_196 }))
     renderPage(RUN)
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Три варианта готовы' })).toBeInTheDocument()
-    expect(screen.queryByRole('timer')).not.toBeInTheDocument()
-    for (const name of ['Близко к шаблону', 'Сбалансированный', 'Визуальный']) {
-      expect(screen.getByRole('article', { name })).toBeInTheDocument()
-    }
-    const [, balanced] = generationFixture.variants
-    expect(within(screen.getByRole('article', { name: 'Сбалансированный' })).getByRole('link', { name: 'Сбалансированный' })).toHaveAttribute(
-      'href',
-      routes.audit(PROJECT, RUN, balanced?.id),
-    )
-    expect(screen.getByText('рекомендуем')).toBeInTheDocument()
-    expect(screen.queryByRole('group', { name: 'Варианты колоды' })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Сравнить по слайдам' })).toHaveAttribute('href', routes.variants(PROJECT, RUN))
+    expect(screen.getByRole('heading', { level: 1, name: 'Презентация готова' })).toBeInTheDocument()
+    expect(screen.getByText('Проверьте слайды и доработайте то, что нужно.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Отменить' })).not.toBeInTheDocument()
     expect(markEvidence).toHaveBeenCalledWith(PROJECT, 'generated')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Открыть и доработать' }))
+    expect(screen.getByTestId('location')).toHaveTextContent(routes.polish(PROJECT, RUN))
   })
 
   it('explains a failure from the error envelope and retries the same run', async () => {
@@ -175,14 +164,14 @@ describe('GenerationPage', () => {
     const alert = screen.getByRole('alert')
     expect(within(alert).getByText('Модель не вернула план в срок')).toBeInTheDocument()
     expect(within(alert).getByText('LLM_TIMEOUT · этап: план структуры')).toBeInTheDocument()
-    expect(within(alert).getByRole('link', { name: 'Назад к брифу' })).toHaveAttribute('href', routes.brief(PROJECT))
-    expect(screen.getByRole('region', { name: /^Сборка варианта/ })).toHaveTextContent('Вёрстка не завершилась')
+    expect(within(alert).getByRole('link', { name: 'К плану' })).toHaveAttribute('href', routes.planDraft(PROJECT))
+    expect(screen.getByRole('heading', { level: 1, name: 'Не получилось собрать' })).toBeInTheDocument()
     expect(markEvidence).not.toHaveBeenCalled()
 
     await userEvent.click(within(alert).getByRole('button', { name: 'Повторить' }))
     expect(retryMutate).toHaveBeenCalledWith(RUN, expect.anything())
     expect(screen.getByTestId('location')).toHaveTextContent(routes.run(PROJECT, 'local-retry-2'))
-    expect(screen.getByRole('heading', { level: 1, name: 'Собираем три варианта' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Собираю презентацию' })).toBeInTheDocument()
   })
 
   it('keeps the scene and shows a calm banner while the connection is lost', async () => {
@@ -192,8 +181,8 @@ describe('GenerationPage', () => {
     renderPage(RUN)
 
     expect(screen.getByRole('heading', { level: 2, name: 'Нет связи с сервисом — повторяем…' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: 'Собираем три варианта' })).toBeInTheDocument()
-    expect(screen.getByRole('group', { name: 'Варианты колоды' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Собираю презентацию' })).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Стили сборки' })).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Проверить сейчас' }))
@@ -220,7 +209,7 @@ describe('GenerationPage', () => {
     const alert = screen.getByRole('alert')
     expect(within(alert).getByText('Бриф не прошёл проверку')).toBeInTheDocument()
     expect(within(alert).queryByRole('button', { name: 'Повторить' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('group', { name: 'Варианты колоды' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Стили сборки' })).not.toBeInTheDocument()
   })
 
   it('gives a recovery path when the page was reloaded during the synchronous request', () => {
@@ -229,10 +218,10 @@ describe('GenerationPage', () => {
     useTracker(makeTracker({ phase: 'failed', error, startedAt: null }))
     renderPage(TRACKING)
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Статус запуска неизвестен' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Сборка потерялась' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Связь с запуском потеряна' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Открыть последний прогон' })).toHaveAttribute('href', routes.run(PROJECT, 'run_previous'))
-    expect(screen.getByRole('link', { name: 'Назад к брифу' })).toHaveAttribute('href', routes.brief(PROJECT))
+    expect(screen.getByRole('link', { name: 'К плану' })).toHaveAttribute('href', routes.planDraft(PROJECT))
     expect(screen.queryByRole('timer')).not.toBeInTheDocument()
   })
 })

@@ -1,6 +1,5 @@
 import { clsx } from 'clsx'
-import { useId } from 'react'
-import { Link } from 'react-router'
+import { useId, type ReactNode } from 'react'
 import {
   CATEGORY_LABEL,
   CATEGORY_ORDER,
@@ -12,7 +11,7 @@ import {
   type Severity,
 } from '@/entities/audit'
 import { strategyInfo, type VariantSummary } from '@/entities/variant'
-import { ArrowRight, Check, Icon, Mono, RefreshCw } from '@/shared/ui'
+import { Check, Icon, Mono, RefreshCw } from '@/shared/ui'
 import { CHECK_STATUS_LABEL } from '../model/labels'
 import styles from './AuditSummary.module.css'
 
@@ -29,7 +28,6 @@ interface AuditSummaryProps {
   onRunContextual: () => void
   reauditPending: boolean
   onReaudit: () => void
-  exportHref: string
 }
 
 export function AuditSummary(props: AuditSummaryProps) {
@@ -129,10 +127,6 @@ export function AuditSummary(props: AuditSummaryProps) {
           <Icon as={RefreshCw} size={14} className={reauditPending ? styles.spin : undefined} />
           <span className={styles.actionLabel}>{reauditPending ? 'Идёт повторный аудит…' : 'Повторный аудит'}</span>
         </button>
-        <Link to={props.exportHref} className={styles.primary}>
-          Экспорт
-          <Icon as={ArrowRight} size={14} />
-        </Link>
       </div>
     </section>
   )
@@ -143,9 +137,10 @@ interface PolicyStripProps {
   audit: AuditRun
   active: 'all' | RuleCategory
   onToggle: (category: RuleCategory) => void
+  trailing?: ReactNode
 }
 
-export function PolicyStrip({ counts, audit, active, onToggle }: PolicyStripProps) {
+export function PolicyStrip({ counts, audit, active, onToggle, trailing }: PolicyStripProps) {
   return (
     <div className={styles.policies} role="group" aria-label="Категории проверок">
       <span className={styles.policiesLabel}>Категории</span>
@@ -168,6 +163,7 @@ export function PolicyStrip({ counts, audit, active, onToggle }: PolicyStripProp
           </button>
         )
       })}
+      {trailing && <div className={styles.trailing}>{trailing}</div>}
     </div>
   )
 }

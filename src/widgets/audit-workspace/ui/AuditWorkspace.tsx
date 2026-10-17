@@ -38,7 +38,6 @@ import { orderVariants, slidePreviewUrl, useVariants, useVariantSlides } from '@
 import { RepairBar, selectionKey, useRepairPreview, useRepairSelected } from '@/features/repair-issues'
 import { useIssueSelection } from '@/features/select-issues'
 import { useVariantFiles } from '@/features/variant-files'
-import { routes } from '@/shared/config'
 import { pluralize } from '@/shared/lib/format'
 import { Button, EmptyState, Skeleton, useToast } from '@/shared/ui'
 import { shouldIgnoreShortcut } from '../lib/keyboard'
@@ -84,6 +83,16 @@ interface AuditWorkspaceProps {
   slide: number | null
   onSlideChange: (slideNumber: number) => void
   renderStage: (stage: AuditStageProps) => ReactNode
+  variantHref: (variantId: string) => string
+  actions?: ReactNode
+  renderSlidePanel?: (slide: SlidePanelContext) => ReactNode
+}
+
+export interface SlidePanelContext {
+  slideNumber: number
+  slideId: string | null
+  title: string | undefined
+  revision: number
 }
 
 interface ReauditSnapshot {
@@ -105,7 +114,7 @@ function worstSeverity(views: readonly IssueView[]): Severity | null {
 
 const expandedByDefault = (grouping: IssueGrouping) => grouping !== 'rule'
 
-export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChange, renderStage }: AuditWorkspaceProps) {
+export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChange, renderStage, variantHref, actions, renderSlidePanel }: AuditWorkspaceProps) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const toast = useToast()
@@ -198,7 +207,6 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
 
   const stageViews = filterIssueViews(views, { ...filter, status: 'all' }).filter((view) => onSlide(view, currentSlide))
   const stageJournal = journal.filter((entry) => entry.issue.slide_index === currentSlide - 1)
-  const exportHref = routes.export(projectId, runId, variantId)
 
   const setGroupOpen = (groupKey: string, open: boolean) =>
     setGroupOverrides((current) => new Map(current).set(`${grouping}|${groupKey}`, open))
@@ -355,7 +363,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
       <AuditSummary
         variants={orderVariants(variantsQuery.data ?? [])}
         variantId={variantId}
-        onVariantChange={(id) => navigate(routes.audit(projectId, runId, id))}
+        onVariantChange={(id) => navigate(variantHref(id))}
         audit={audit}
         severityCounts={severityCounts}
         kindCounts={kindCounts}
@@ -365,16 +373,14 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
         onRunContextual={runContextual}
         reauditPending={reauditPending}
         onReaudit={() => void runReaudit()}
-        exportHref={exportHref}
       />
-      <PolicyStrip counts={countByCategory(views)} audit={audit} active={filter.category} onToggle={toggleCategory} />
+      <PolicyStrip counts={countByCategory(views)} audit={audit} active={filter.category} onToggle={toggleCategory} trailing={actions} />
       {reaudit && bannerOpen && (
         <ReauditBanner
           revision={revision}
           blockers={severityCounts.blocker}
           errors={{ before: reaudit.errorsBefore, after: severityCounts.error }}
           stats={stats}
-          exportHref={exportHref}
           onClose={() => setBannerOpen(false)}
         />
       )}
@@ -460,6 +466,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
             </>
           }
           journal={<JournalList entries={journal} batches={batches} />}
+          slide={renderSlidePanel?.({ slideNumber: currentSlide, slideId: slideAt(currentSlide)?.id ?? null, title: titleOf(currentSlide), revision })}
         />
       </div>
     </div>

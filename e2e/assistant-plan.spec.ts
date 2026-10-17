@@ -55,65 +55,64 @@ async function openPlan(page: Page) {
     [`deckdna.plan-request.v1:${PROJECT_ID}`, seed],
   )
   await openApp(page, `/projects/${PROJECT_ID}/plan`)
-  await expect(page.getByRole('heading', { level: 1, name: 'План колоды' })).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole('heading', { level: 1, name: 'План презентации' })).toBeVisible({ timeout: 30_000 })
+}
+
+function slideTile(page: Page, number: number) {
+  return page.getByRole('list', { name: 'Слайды' }).getByRole('button', { name: new RegExp(`^Слайд ${number}:`) })
 }
 
 test.describe('plan step', () => {
-  test('edits the key message and keeps it in the banner', async ({ page }) => {
+  test('edits the key message', async ({ page }) => {
     await openPlan(page)
 
-    const banner = page.getByRole('region', { name: 'Главная мысль колоды' })
-    await expect(banner).toContainText(KEY_MESSAGE)
-    await banner.getByRole('button', { name: 'Изменить мысль' }).click()
-    const input = banner.getByRole('textbox', { name: 'Текст главной мысли колоды' })
+    const input = page.getByRole('textbox', { name: 'Главная мысль' })
+    await expect(input).toHaveValue(KEY_MESSAGE)
     await input.fill('Электроника даёт 61% выручки')
-    await input.press('Enter')
-    await expect(banner).toContainText('Электроника даёт 61% выручки')
-    await expect(banner.getByRole('textbox')).toHaveCount(0)
+    await input.blur()
+    await expect(page.getByRole('button', { name: 'Отменить последнее' })).toBeVisible()
   })
 
-  test('explains the chart and switches its type with an optimistic chip', async ({ page }) => {
+  test('opens a slide, explains its chart and switches the chart type', async ({ page }) => {
     await openPlan(page)
 
-    const box = page.locator('div[aria-label="Почему такой график на слайде 03"]')
-    await expect(box).toContainText('Почему такой график')
-    await expect(box).toContainText('24 точки по месяцам')
-    const chips = box.getByRole('group', { name: 'Альтернативы графика слайда 03' })
-    await expect(chips.getByRole('button', { name: '● Линия' })).toHaveAttribute('aria-pressed', 'true')
+    await slideTile(page, 3).click()
+    const editor = page.getByRole('complementary', { name: 'Слайд 3' })
+    await expect(editor.getByRole('textbox', { name: 'Заголовок — вывод слайда' })).toBeVisible()
+    await expect(editor).toContainText('24 точки по месяцам')
+    const chart = editor.getByRole('radiogroup', { name: 'Тип графика' })
+    await expect(chart.getByRole('radio', { name: 'Линия' })).toHaveAttribute('aria-checked', 'true')
 
     const patched = page.waitForResponse((response) => response.url().includes('/slides/slide-2') && response.request().method() === 'PATCH')
-    await chips.getByRole('button', { name: 'Столбцы' }).click()
+    await chart.getByRole('radio', { name: 'Столбцы' }).click()
     await patched
-    await expect(chips.getByRole('button', { name: '● Столбцы' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(chart.getByRole('radio', { name: 'Столбцы' })).toHaveAttribute('aria-checked', 'true')
+
+    await page.keyboard.press('Escape')
+    await expect(editor).toBeHidden()
   })
 
-  test('shows hover quick actions and splits a slide', async ({ page }) => {
+  test('splits a slide from the editor', async ({ page }) => {
     await openPlan(page)
 
-    const row = page.getByRole('listitem').filter({ has: page.getByRole('textbox', { name: 'Заголовок слайда 02' }) })
-    await row.hover()
-    const toolbar = row.getByRole('toolbar', { name: 'Быстрые действия со слайдом 02' })
-    await expect(toolbar.getByRole('button', { name: 'Короче слайд 02' })).toBeVisible()
-    await expect(toolbar.getByRole('button', { name: 'Разбить на два слайд 02' })).toBeVisible()
-    await expect(toolbar.getByRole('button', { name: 'Объединить со следующим слайд 02' })).toBeVisible()
-    await expect(toolbar.getByRole('button', { name: 'Сделать графиком слайд 02' })).toBeVisible()
-
+    const before = await page.getByRole('list', { name: 'Слайды' }).getByRole('button', { name: /^Слайд \d+:/ }).count()
+    await slideTile(page, 2).click()
+    const editor = page.getByRole('complementary', { name: 'Слайд 2' })
     const acted = page.waitForResponse((response) => response.url().includes('/slides/slide-1/actions'))
-    await toolbar.getByRole('button', { name: 'Разбить на два слайд 02' }).click()
+    await editor.getByRole('button', { name: 'Разбить на два' }).click()
     await acted
-    await expect(page.getByRole('textbox', { name: 'Заголовок слайда 03' })).toHaveValue(/продолжение/)
+    await expect(page.getByRole('list', { name: 'Слайды' }).getByRole('button', { name: /^Слайд \d+:/ })).toHaveCount(before + 1)
   })
 
-  test('dims an off-topic slide and keeps it on request', async ({ page }) => {
+  test('flags an off-topic slide and keeps it on request', async ({ page }) => {
     await openPlan(page)
 
-    const hint = page.getByRole('note').filter({ hasText: 'Не про главную мысль — убрать?' })
-    await expect(hint).toBeVisible()
-    await expect(page.locator('li[data-off-topic="true"]')).toHaveCount(1)
-    await expect(page.locator('p[aria-label="Строка помощника"]')).toContainText('главной мысли')
-
-    await hint.getByRole('button', { name: 'Оставить' }).click()
-    await expect(page.locator('li[data-off-topic="true"]')).toHaveCount(0)
+    await expect(page.getByText(/уводят от главной мысли/)).toBeVisible()
+    await slideTile(page, 7).click()
+    const editor = page.getByRole('complementary', { name: 'Слайд 7' })
+    await expect(editor).toContainText('Этот слайд уводит от главной мысли.')
+    await editor.getByRole('button', { name: 'Оставить' }).click()
+    await expect(editor.getByText('Этот слайд уводит от главной мысли.')).toBeHidden()
   })
 
   test('leads to the style step and offers the autopilot escape', async ({ page }) => {
@@ -126,7 +125,7 @@ test.describe('plan step', () => {
     ])
 
     await page.goto(`/projects/${PROJECT_ID}/plan`)
-    await expect(page.getByRole('heading', { level: 1, name: 'План колоды' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'План презентации' })).toBeVisible()
     await page.getByRole('button', { name: 'Сделай сам' }).click()
     await expect(page).toHaveURL(new RegExp(`/projects/${PROJECT_ID}/runs/run_`), { timeout: 20_000 })
   })
