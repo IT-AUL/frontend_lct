@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { clsx } from 'clsx'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import {
   assistantKeys,
   useAssistantSession,
@@ -16,9 +15,9 @@ import { rememberRun, useProject } from '@/entities/project'
 import { DEFAULT_STRATEGY, STRATEGY_ORDER, type CatalogStrategy } from '@/entities/variant'
 import { clearPlanDraft, fetchAndStorePlan, readPlanRequest, requestAndStorePlan, type StoredPlanRequest } from '@/features/edit-deck-plan'
 import { routes } from '@/shared/config'
-import { formatIndex } from '@/shared/lib/format'
 import { readJson } from '@/shared/lib/storage'
-import { ArrowRight, Badge, Button, Check, EmptyState, Icon, Mono, PageHeader, Search, Sparkles } from '@/shared/ui'
+import { Button, SlideGrid, SlideTile } from '@/shared/ui'
+import { StepShell } from '@/widgets/step-shell'
 import {
   buildGenerationPayload,
   buildStyleColumns,
@@ -173,7 +172,6 @@ export function StylePage() {
   const [buildingMode, setBuildingMode] = useState<'single' | 'all' | null>(null)
 
   const autopilot = useStartAutopilot(projectId)
-  const columnRefs = useRef<Partial<Record<CatalogStrategy, HTMLDivElement | null>>>({})
 
   const assistantNote = resolveStyleAssistantNote({
     preview: stylePreview,
@@ -183,11 +181,6 @@ export function StylePage() {
     unsupported,
     hasPlan,
   })
-
-  const readySlotsCount = columns.reduce(
-    (sum, col) => sum + col.slots.filter((slot) => slot.state === 'ready').length,
-    0,
-  )
 
   const handleBuild = (mode: 'single' | 'all') => {
     const strategies: readonly CatalogStrategy[] = mode === 'all' ? STRATEGY_ORDER : [selectedStrategy]
@@ -245,28 +238,17 @@ export function StylePage() {
 
   if (!hasPlan && !sessionQuery.isPending) {
     return (
-      <div className={styles.page}>
-        <PageHeader
-          eyebrow="Стиль"
-          title="Выбери стиль вёрстки"
-          description="Примерил три подхода на ключевых слайдах вашего плана — кликните слайд для сравнения."
-        />
-        <div className={styles.assistantStrip} role="status" aria-live="polite">
-          <p className={styles.assistantNote}>
-            <Icon as={Sparkles} size={15} />
-            <span className={styles.noteText}>{assistantNote}</span>
-          </p>
-        </div>
-        <EmptyState
-          title="Плана пока нет"
-          description="Сначала согласуйте структуру презентации на шаге «План», чтобы примерить стили вёрстки."
-          actions={
-            <Link className={styles.secondaryLink} to={routes.planDraft(projectId)}>
-              Перейти к плану
-            </Link>
-          }
-        />
-      </div>
+      <StepShell
+        title="Как оформить?"
+        note="Сначала согласуйте план — потом примерю стили."
+        canvasLabel="Пробные слайды"
+        canvas={null}
+        actions={
+          <Button variant="primary" size="lg" onClick={() => navigate(routes.planDraft(projectId))}>
+            К плану
+          </Button>
+        }
+      />
     )
   }
 
@@ -281,220 +263,68 @@ export function StylePage() {
     }),
   )
   const isSubmitting = buildingMode !== null || autopilot.isPending
+  const slots = selectedColumn?.slots ?? []
 
   return (
-    <div className={styles.page}>
-      <PageHeader
-        eyebrow="Стиль"
-        title="Выбери стиль вёрстки"
-        description="Примерил три подхода на ключевых слайдах вашего плана — кликните слайд для сравнения."
-        actions={
-          <Button
-            variant="secondary"
-            size="md"
-            disabled={!canBuild || isSubmitting}
-            title="Приму безопасные настройки по умолчанию и соберу колоду по подтверждённым фактам"
-            onClick={() => void handleAutopilot()}
-          >
-            <Icon as={Sparkles} size={14} />
-            {autopilot.isPending ? 'Запускаю сборку…' : 'Сделай сам'}
-          </Button>
-        }
-      />
-
-      <div className={styles.assistantStrip} role="status" aria-live="polite" data-testid="assistant-note">
-        <p className={styles.assistantNote}>
-          <Icon as={Sparkles} size={15} />
-          <span key={assistantNote} className={styles.noteText}>
-            {assistantNote}
-          </span>
-        </p>
-        {stylePreview?.seconds != null && readySlotsCount > 0 && (
-          <Mono className={styles.timingMeta}>
-            Отрендерено {readySlotsCount} пробных слайдов за {stylePreview.seconds.toFixed(1).replace('.', ',')} с
-          </Mono>
-        )}
-      </div>
-
-      {startPreviews.isError && (
-        <div className={styles.errorBanner} role="alert">
-          <span>
-            Не удалось запустить отрисовку превью стилей:{' '}
-            {startPreviews.error instanceof Error ? startPreviews.error.message : 'ошибка связи с сервисом'}. Вы всё равно можете
-            выбрать стиль и собрать презентацию.
-          </span>
-          {planId && (
-            <Button size="sm" variant="secondary" onClick={() => triggerStartPreviews({})}>
-              Повторить превью
-            </Button>
-          )}
-        </div>
-      )}
-
-      <div className={styles.grid} role="radiogroup" aria-label="Стиль вёрстки">
-        {columns.map((column, colIndex) => {
-          const isSelected = column.strategy === selectedStrategy
-          return (
-            <div
-              key={column.strategy}
-              ref={(node) => {
-                columnRefs.current[column.strategy] = node
-              }}
-              role="radio"
-              aria-checked={isSelected}
-              aria-label={column.title}
-              tabIndex={isSelected ? 0 : -1}
-              data-strategy={column.strategy}
-              data-recommended={column.recommended ? 'true' : undefined}
-              className={clsx(styles.column, isSelected && styles.columnSelected)}
-              onClick={() => setUserPickedStrategy(column.strategy)}
-              onKeyDown={(event) => {
-                if (event.target !== event.currentTarget) return
-                if (event.key === ' ' || event.key === 'Enter') {
-                  event.preventDefault()
-                  setUserPickedStrategy(column.strategy)
-                } else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-                  event.preventDefault()
-                  const next = columns[(colIndex + 1) % columns.length]
-                  if (next) {
-                    setUserPickedStrategy(next.strategy)
-                    columnRefs.current[next.strategy]?.focus()
-                  }
-                } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-                  event.preventDefault()
-                  const prev = columns[(colIndex - 1 + columns.length) % columns.length]
-                  if (prev) {
-                    setUserPickedStrategy(prev.strategy)
-                    columnRefs.current[prev.strategy]?.focus()
-                  }
-                }
-              }}
-            >
-              <header className={styles.columnHead}>
-                <div className={styles.titleRow}>
-                  <div className={styles.titleLeft}>
-                    <span className={styles.radioDot} aria-hidden="true">
-                      <Icon as={Check} size={11} strokeWidth={3} />
-                    </span>
-                    <h2 className={styles.columnTitle}>{column.title}</h2>
-                  </div>
-                  <div className={styles.badges}>
-                    {column.recommended && (
-                      <Badge tone="ink">
-                        <span aria-hidden="true">★ </span>
-                        <span>советую</span>
-                      </Badge>
-                    )}
-                    <Badge tone="neutral" mono>
-                      {column.strategy}
-                    </Badge>
-                  </div>
-                </div>
-                <p className={styles.difference}>{column.difference}</p>
-              </header>
-
-              {column.error && (
-                <p className={styles.columnError}>
-                  Не удалось отрисовать превью этого стиля — сама сборка в нём остаётся доступной.
-                </p>
-              )}
-
-              <div className={styles.slots}>
-                {column.slots.map((slot) => (
-                  <div key={slot.slideId} className={styles.slotBox}>
-                    <div className={styles.slotMeta}>
-                      <Mono className={styles.slotIndex}>
-                        Слайд {formatIndex(slot.slideNumber)}
-                        {slot.purposeLabel ? ` · ${slot.purposeLabel}` : ''}
-                      </Mono>
-                      <button
-                        type="button"
-                        className={styles.zoomBtn}
-                        aria-label={`Увеличить слайд ${slot.slideNumber} (${column.title})`}
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          setCompareSlideId(slot.slideId)
-                        }}
-                      >
-                        <Icon as={Search} size={11} />
-                        <span>Сравнить</span>
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      className={styles.canvasButton}
-                      aria-label={`Открыть сравнение слайда ${slot.slideNumber}: ${slot.title} (${column.title})`}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        setCompareSlideId(slot.slideId)
-                      }}
-                    >
-                      {slot.state === 'ready' && slot.imageUrl ? (
-                        <img
-                          className={styles.previewImage}
-                          src={slot.imageUrl}
-                          alt={`${column.title} — слайд ${slot.slideNumber}: ${slot.title}`}
-                        />
-                      ) : slot.state === 'loading' ? (
-                        <div className={styles.loadingFrame}>
-                          <span className={styles.slotPlanTitle}>{slot.title}</span>
-                          <div className={styles.loadingBars} aria-hidden="true">
-                            <span className={styles.loadingBar} />
-                            <span className={styles.loadingBarShort} />
-                          </div>
-                          <span className={styles.loadingCaption}>{slot.loadingCaption}</span>
-                        </div>
-                      ) : (
-                        <div className={styles.draftFrame}>
-                          <span className={styles.slotPlanTitle}>{slot.title}</span>
-                          <span className={styles.loadingCaption}>
-                            {slot.state === 'error' ? 'Превью недоступно' : 'По структуре вашего плана'}
-                          </span>
-                        </div>
-                      )}
-                    </button>
-
-                    <div className={styles.slotFooter}>
-                      <Mono>{slot.exemplar ?? 'Макет по правилам шаблона'}</Mono>
-                    </div>
-                  </div>
-                ))}
+    <StepShell
+      title="Как оформить?"
+      note={assistantNote}
+      canvasLabel="Пробные слайды"
+      canvas={
+        <div className={styles.table}>
+          <SlideGrid columns={slots.length > 3 ? 3 : 2} label={`Пробные слайды: ${selectedColumn?.title ?? ''}`}>
+            {slots.map((slot) => (
+              <div role="listitem" key={slot.slideId}>
+                <SlideTile
+                  title={slot.title}
+                  image={slot.state === 'ready' ? slot.imageUrl : null}
+                  pending={slot.state === 'loading'}
+                  onOpen={() => setCompareSlideId(slot.slideId)}
+                  openLabel={`Сравнить слайд ${slot.slideNumber} в трёх стилях`}
+                  caption={slot.state === 'error' ? 'Не удалось показать' : null}
+                />
               </div>
-            </div>
+            ))}
+          </SlideGrid>
+          {slots.some((slot) => slot.state === 'ready') && <p className={styles.hint}>Нажмите на слайд, чтобы сравнить его в трёх стилях.</p>}
+        </div>
+      }
+      actions={
+        <>
+          <Button variant="primary" size="lg" disabled={!canBuild || isSubmitting} onClick={() => handleBuild('single')}>
+            {buildingMode === 'single' ? 'Запускаю…' : 'Собрать'}
+          </Button>
+          <Button variant="ghost" size="lg" disabled={!canBuild || isSubmitting} onClick={() => void handleAutopilot()}>
+            {autopilot.isPending ? 'Запускаю…' : 'Сделай сам'}
+          </Button>
+        </>
+      }
+    >
+      <div className={styles.options} role="radiogroup" aria-label="Стиль вёрстки">
+        {columns.map((column) => {
+          const checked = column.strategy === selectedStrategy
+          return (
+            <label key={column.strategy} className={styles.option} data-checked={checked || undefined}>
+              <input type="radio" name="style" checked={checked} onChange={() => setUserPickedStrategy(column.strategy)} />
+              <span className={styles.optionText}>
+                <span className={styles.optionLabel}>
+                  {column.title}
+                  {column.recommended && <span className={styles.recommended}>советую</span>}
+                </span>
+                {column.difference && <span className={styles.optionNote}>{column.difference}</span>}
+              </span>
+            </label>
           )
         })}
       </div>
-
-      <footer className={styles.footer}>
-        <div className={styles.footerMeta}>
-          <span>
-            Выбран стиль: <strong>{selectedColumn?.title}</strong>
-          </span>
-          <span>·</span>
-          <span>Образцы превью сохранятся при полной сборке</span>
-        </div>
-        <div className={styles.footerActions}>
-          <Button
-            variant="secondary"
-            size="lg"
-            disabled={!canBuild || isSubmitting}
-            onClick={() => handleBuild('all')}
-          >
-            {buildingMode === 'all' ? 'Запускаю сборку…' : 'Собрать во всех трёх'}
-          </Button>
-          <Button
-            variant="primary"
-            size="lg"
-            disabled={!canBuild || isSubmitting}
-            onClick={() => handleBuild('single')}
-          >
-            {buildingMode === 'single' ? 'Запускаю сборку…' : 'Собрать в этом стиле'}
-            <Icon as={ArrowRight} size={16} />
-          </Button>
-        </div>
-      </footer>
-
+      <button type="button" className={styles.link} disabled={!canBuild || isSubmitting} onClick={() => handleBuild('all')}>
+        {buildingMode === 'all' ? 'Запускаю…' : 'Собрать сразу во всех трёх стилях'}
+      </button>
+      {startPreviews.isError && (
+        <p className={styles.error} role="alert">
+          Не получилось показать пробные слайды. Стиль всё равно можно выбрать и собрать.
+        </p>
+      )}
       <StyleCompareDialog
         open={compareSlideId !== null}
         slideId={compareSlideId}
@@ -508,6 +338,6 @@ export function StylePage() {
         onBuildSelected={() => handleBuild('single')}
         buildDisabled={!canBuild || isSubmitting}
       />
-    </div>
+    </StepShell>
   )
 }
