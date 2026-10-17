@@ -308,7 +308,11 @@ async function runOne(file) {
     rec.total_ms = Math.round(performance.now() - t0);
     if (projectId) {
       try {
-        const del = await http('DELETE', `/projects/${projectId}`, { timeoutMs: 30_000 });
+        let del = await http('DELETE', `/projects/${projectId}`, { timeoutMs: 30_000 });
+        if (del.status !== 204 && del.status !== 200 && del.status !== 404) {
+          await sleep(5_000);
+          del = await http('DELETE', `/projects/${projectId}`, { timeoutMs: 30_000 });
+        }
         rec.cleanup = del.status;
       } catch {
         rec.cleanup = 'error';
