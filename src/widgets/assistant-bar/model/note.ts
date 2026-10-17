@@ -4,7 +4,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 const noteKey = (projectId: string) => ['assistant', 'bar-note', projectId] as const
 
 export function useAssistantBarNote(projectId: string): string | null {
-  const query = useQuery<string | null>({ queryKey: noteKey(projectId), enabled: false, staleTime: Infinity, gcTime: Infinity })
+  const client = useQueryClient()
+  const query = useQuery<string | null>({
+    queryKey: noteKey(projectId),
+    queryFn: () => client.getQueryData<string | null>(noteKey(projectId)) ?? null,
+    enabled: false,
+    staleTime: Infinity,
+    gcTime: Infinity,
+  })
   return query.data ?? null
 }
 
