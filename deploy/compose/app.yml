@@ -22,6 +22,7 @@ services:
       DECKDNA_MOCK_PROVIDER: ${DECKDNA_MOCK_PROVIDER:-true}
       DECKDNA_PROVIDER_BASE_URL: ${DECKDNA_PROVIDER_BASE_URL:-}
       DECKDNA_PROVIDER_API_KEY: ${DECKDNA_PROVIDER_API_KEY:-}
+      DECKDNA_PROVIDER_PROJECT_ID: ${DECKDNA_PROVIDER_PROJECT_ID:-}
       DECKDNA_MODEL_TEXT: ${DECKDNA_MODEL_TEXT:-}
       DECKDNA_MODEL_VISION: ${DECKDNA_MODEL_VISION:-}
       DECKDNA_PROVIDER_EXTRA_BODY: ${DECKDNA_PROVIDER_EXTRA_BODY:-{}}
@@ -60,35 +61,6 @@ services:
     labels:
       com.deckdna.stack: deckdna
       com.deckdna.role: api
-    logging: *logging
-    networks:
-      - deckdna
-
-  vk-gateway:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    environment:
-      VK_PROJECT_ID: ${VK_PROJECT_ID:-}
-      VK_INFERENCE_ORIGIN: ${VK_INFERENCE_ORIGIN:-https://ai-demo.platformpreview.ru}
-    volumes:
-      - ${CONFIG_DIR:-../config}/vk-gateway/Caddyfile:/etc/caddy/Caddyfile:ro
-    read_only: true
-    tmpfs:
-      - /data:size=8m
-      - /config:size=8m
-    mem_limit: 64m
-    cpus: 0.5
-    pids_limit: 64
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_BIND_SERVICE
-    labels:
-      com.deckdna.stack: deckdna
-      com.deckdna.role: vk-gateway
-      com.deckdna.config-hash: ${CONFIG_HASH:-none}
     logging: *logging
     networks:
       - deckdna
