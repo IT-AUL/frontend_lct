@@ -92,4 +92,14 @@ describe('plan request storage', () => {
     expect(next.result.proposals).toHaveLength(1)
     expect(next.keyMessage).toBe('Рост вдвое за счёт Москвы')
   })
+
+  it('fetches and stores an existing server plan without overwriting it', async () => {
+    const projectId = 'prj-fetch'
+    const fallback = stored().request
+    const fetched = await mod.fetchAndStorePlan(projectId, planId, fallback)
+    expect(fetched).not.toBeNull()
+    expect(fetched?.result.planId).toBe(planId)
+    expect(fetched?.result.proposals).toHaveLength(1)
+    expect(mod.readPlanRequest(projectId)?.result.planId).toBe(planId)
+  })
 })

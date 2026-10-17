@@ -449,7 +449,7 @@ export function addSlide(plan: DeckPlan, title = 'Новый слайд'): DeckP
 }
 
 function unitSignature(slide: SlidePlan): unknown[] {
-  return slide.content_units.map((unit) => [unit.kind, unit.text ?? null])
+  return slide.content_units.map((unit) => [unit.kind, unit.text ?? null, unit.chart_spec?.chart_type ?? null])
 }
 
 function slideSignature(slide: SlidePlan): unknown[] {
@@ -497,13 +497,45 @@ export interface BuildOptions {
 export function prepareForBuild(plan: DeckPlan, { lockAll = false }: BuildOptions = {}): DeckPlan {
   const evidence = fallbackEvidence(plan)
   const slides = ordered(plan).map((slide) => {
+    const chartInfo = parseSlideChart(slide.chart)
+    const desiredVisual: SlidePlan['desired_visual'] =
+      chartInfo?.type === 'table'
+        ? 'table'
+        : chartInfo?.type && slide.desired_visual === 'table'
+          ? 'chart'
+          : slide.desired_visual
     const units = slide.content_units
       .filter((unit) => !(isEditableUnit(unit) && (unit.text ?? '').trim() === ''))
-      .map((unit) => (lockAll && isEditableUnit(unit) ? { ...unit, locked: true } : unit))
+      .map((unit) => {
+        const lockedUnit = lockAll && isEditableUnit(unit) ? { ...unit, locked: true } : unit
+        if (!chartInfo?.type || (lockedUnit.kind !== 'chart' && lockedUnit.kind !== 'table')) return lockedUnit
+        if (chartInfo.type === 'table') {
+          return lockedUnit.kind === 'table' && lockedUnit.chart_spec === null
+            ? lockedUnit
+            : { ...lockedUnit, role: 'table', kind: 'table' as const, chart_spec: null }
+        }
+        const nextChartType = chartInfo.type as NonNullable<ContentUnit['chart_spec']>['chart_type']
+        if (lockedUnit.kind === 'chart' && lockedUnit.chart_spec?.chart_type === nextChartType) return lockedUnit
+        return {
+          ...lockedUnit,
+          role: 'chart',
+          kind: 'chart' as const,
+          chart_spec: {
+            ...(lockedUnit.chart_spec ?? { series_count: 1, has_axis_labels: true, has_units: true, has_legend: false }),
+            chart_type: nextChartType,
+          },
+        }
+      })
     const missingEvidence = slide.evidence_ids.length === 0 && evidence !== null
     const unitsChanged = units.length !== slide.content_units.length || units.some((unit, index) => unit !== slide.content_units[index])
-    if (!missingEvidence && !unitsChanged) return slide
-    return { ...slide, content_units: units, evidence_ids: missingEvidence ? [evidence] : slide.evidence_ids }
+    const visualChanged = desiredVisual !== slide.desired_visual
+    if (!missingEvidence && !unitsChanged && !visualChanged) return slide
+    return {
+      ...slide,
+      desired_visual: desiredVisual,
+      content_units: units,
+      evidence_ids: missingEvidence ? [evidence] : slide.evidence_ids,
+    }
   })
   return withSlides(plan, slides)
 }

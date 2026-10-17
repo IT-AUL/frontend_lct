@@ -386,6 +386,8 @@ export function buildGenerationPayload({
   const preparedPlan = plan ? prepareForBuild(plan, { lockAll: stored?.contentFill === 'keep' }) : null
   const slideCount = preparedPlan?.slides.length ?? project?.target_slide_count ?? 8
   const brief = normalizeBrief(preparedPlan?.brief, stored?.request.brief, session?.brief, slideCount)
+  const syncedPlan = preparedPlan ? { ...preparedPlan, brief } : null
+  const planId = stored?.result.planId ?? session?.artifacts.plan_id ?? null
   const chosenStrategies = strategies.length > 0 ? strategies : [DEFAULT_STRATEGY]
 
   return {
@@ -395,7 +397,7 @@ export function buildGenerationPayload({
     brief,
     variants: chosenStrategies.map((strategy) => ({ strategy })),
     use_llm: stored?.request.use_llm ?? false,
-    ...(preparedPlan ? { deck_plan: preparedPlan } : {}),
+    ...(syncedPlan ? { deck_plan: syncedPlan } : planId ? { deck_plan_id: planId } : {}),
     ...(previewId ? { preview_id: previewId } : {}),
     ...(session?.artifacts.brandbook_id ? { brandbook_id: session.artifacts.brandbook_id } : {}),
   }

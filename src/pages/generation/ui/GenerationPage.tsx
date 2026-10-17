@@ -201,6 +201,8 @@ export function GenerationPage() {
     (isJobRun ? 1 : 3)
 
   const lost = !isJobRun && isTrackingLost(tracker.error)
+  const { data: project } = useProject(projectId)
+  const serverLatestRunId = project?.latest_run_id ?? null
   const { data: template } = useTemplate(tracker.generation?.template_id)
 
   const storedPlan = useMemo(() => readPlanRequest(projectId), [projectId])
@@ -220,6 +222,12 @@ export function GenerationPage() {
     rememberRun(projectId, generationId)
     navigate(routes.run(projectId, generationId), { replace: true, state: location.state })
   }, [tracking, isJobRun, generationId, projectId, navigate, location.state])
+
+  useEffect(() => {
+    if (!lost || !serverLatestRunId || serverLatestRunId === runId) return
+    rememberRun(projectId, serverLatestRunId)
+    navigate(routes.run(projectId, serverLatestRunId), { replace: true, state: location.state })
+  }, [lost, serverLatestRunId, runId, projectId, navigate, location.state])
 
   useEffect(() => {
     if (phase === 'completed') markEvidence(projectId, 'generated')

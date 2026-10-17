@@ -8,6 +8,7 @@ import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
 import { DEFAULT_STRATEGY, STRATEGY_ORDER, strategyInfo, type CatalogStrategy } from '@/entities/variant'
 import {
   applyServerPlanSet,
+  fetchAndStorePlan,
   isAbortError,
   PlanBuildProgress,
   readPlanRequest,
@@ -109,33 +110,56 @@ export function PlanDraftPage() {
   const draftKey = `draft:${projectId}:${proposal?.deckPlan.id ?? 'empty'}`
   const fallbackBuild = useBuildFromPlan(projectId, draftKey)
 
-  const canAutoBuild = Boolean(!stored && sessionQuery.data?.artifacts.template_id && sessionQuery.data?.artifacts.content_pack_id)
+  const sessionPlanId = sessionQuery.data?.artifacts.plan_id ?? null
+  const canAutoBuild = Boolean(!stored && (sessionPlanId || (sessionQuery.data?.artifacts.template_id && sessionQuery.data?.artifacts.content_pack_id)))
 
   useEffect(() => {
     if (stored || rebuilding || autoBuildAttempted.current) return
     const session = sessionQuery.data
     const templateId = session?.artifacts.template_id
     const contentPackId = session?.artifacts.content_pack_id
-    if (!templateId || !contentPackId) return
+    const existingPlanId = session?.artifacts.plan_id ?? null
+    if (!existingPlanId && (!templateId || !contentPackId)) return
     autoBuildAttempted.current = true
-    const brief = sessionBriefToGenerationBrief(session.brief)
+    const brief = sessionBriefToGenerationBrief(session?.brief ?? {})
+    const fallbackRequest = {
+      template_id: templateId ?? '',
+      content_pack_id: contentPackId ?? '',
+      brief,
+      strategies: [DEFAULT_STRATEGY],
+      use_llm: false,
+    }
     queueMicrotask(() => {
       const options = planBuild.begin()
       planBuild.enterPhase('plan')
       setRebuilding(true)
       setRebuildError(null)
-      void requestAndStorePlan(
-        projectId,
-        {
-          template_id: templateId,
-          content_pack_id: contentPackId,
-          brief,
-          strategies: [DEFAULT_STRATEGY],
-          use_llm: false,
-        },
-        { keyMessage: brief.key_message ?? null },
-        options,
-      )
+      const loadPlan = async () => {
+        if (existingPlanId) {
+          const fetched = await fetchAndStorePlan(
+            projectId,
+            existingPlanId,
+            fallbackRequest,
+            { keyMessage: brief.key_message ?? null },
+            { signal: options.signal },
+          )
+          if (fetched) return fetched
+        }
+        if (!templateId || !contentPackId) {
+          throw new Error('План не найден')
+        }
+        return requestAndStorePlan(
+          projectId,
+          {
+            ...fallbackRequest,
+            template_id: templateId,
+            content_pack_id: contentPackId,
+          },
+          { keyMessage: brief.key_message ?? null },
+          options,
+        )
+      }
+      void loadPlan()
         .then((next) => {
           setStored(next)
           setSelected(defaultProposal(next.result.proposals))
@@ -270,8 +294,12 @@ export function PlanDraftPage() {
       onAutopilot={(plan) => void handleAutopilot(plan)}
       autopilotPending={autopilot.isPending || fallbackBuild.isPending}
       showDirectBuild={showDirectBuild}
-      onServerPlanSet={(planSet) => {
-        setStored((current) => (current ? applyServerPlanSet(projectId, current, planSet) : current))
+      onServerPlanSet={(planSet, optimisticPlan) => {
+        setStored((current) => {
+          if (!current) return current
+          const applied = applyServerPlanSet(projectId, current, planSet)
+          return optimisticPlan ? syncPlanDraftToStorage(projectId, applied, optimisticPlan, proposal.strategy) : applied
+        })
       }}
       onKeyMessageCommit={(_, nextPlan) => {
         setStored((current) => (current ? syncPlanDraftToStorage(projectId, current, nextPlan, proposal.strategy) : current))

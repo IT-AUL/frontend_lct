@@ -220,6 +220,8 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
       mark(projectId, 5, [1, 2, 3, 4])
       return json(result)
     }),
+    route('get', '/plans/:planId', ({ param }) => json(plan(param('planId')))),
+    route('get', '/projects/:projectId/plans/:planId', ({ param }) => json(plan(param('planId')))),
     ...(['patch', 'post'] as const).map((method) => route(method, `/plans/:planId/slides/:slideId${method === 'post' ? '/actions' : ''}`, async ({ request, param }) => {
       const current = plan(param('planId'))
       const body = await readJson(request)
@@ -232,6 +234,12 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
         const allowed = [chart.type, ...objects(chart.alternatives).map((item) => item.type), 'table']
         if (!allowed.includes(body.chart_type)) throw validationError('chart_type', 'Этот тип не подходит данным')
         slide.chart = { ...chart, type: body.chart_type }
+        slide.desired_visual = body.chart_type === 'table' ? 'table' : 'chart'
+        slide.content_units = objects(slide.content_units).map((unit) => {
+          if (unit.kind !== 'chart' && unit.kind !== 'table') return unit
+          if (body.chart_type === 'table') return { ...unit, role: 'table', kind: 'table', chart_spec: null }
+          return { ...unit, role: 'chart', kind: 'chart', chart_spec: { ...object(unit.chart_spec), chart_type: body.chart_type } }
+        })
       } else if (body.action === 'remove') deck.slides = slides.filter((item) => item !== slide)
       else if (body.action === 'shorten') {
         slide.content_units = objects(slide.content_units).slice(0, Math.max(1, Math.ceil(objects(slide.content_units).length / 2)))

@@ -114,6 +114,7 @@ export function QuestionsPage() {
 
   const runBuildPlan = useCallback(
     async (answersPayload: Record<string, string | number>, notesToSubmit: readonly string[]) => {
+      autoSkippedRef.current = true
       setActionError(null)
       setBuildingPlan(true)
       const options = planBuild.begin()
@@ -205,6 +206,8 @@ export function QuestionsPage() {
     if (
       !projectLoading &&
       !sessionLoading &&
+      !buildingPlan &&
+      !submitAnswers.isPending &&
       questionsQuery.isSuccess &&
       questionsQuery.data !== null &&
       questionsQuery.data.questions.length === 0 &&
@@ -224,6 +227,8 @@ export function QuestionsPage() {
   }, [
     projectLoading,
     sessionLoading,
+    buildingPlan,
+    submitAnswers.isPending,
     questionsQuery.isSuccess,
     questionsQuery.data,
     session,

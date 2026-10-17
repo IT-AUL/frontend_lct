@@ -14,7 +14,7 @@ import {
 import { startGeneration, whenGenerationAccepted, type DeckPlan } from '@/entities/generation'
 import { rememberRun, useProject } from '@/entities/project'
 import { DEFAULT_STRATEGY, STRATEGY_ORDER, type CatalogStrategy } from '@/entities/variant'
-import { clearPlanDraft, readPlanRequest, requestAndStorePlan, type StoredPlanRequest } from '@/features/edit-deck-plan'
+import { clearPlanDraft, fetchAndStorePlan, readPlanRequest, requestAndStorePlan, type StoredPlanRequest } from '@/features/edit-deck-plan'
 import { routes } from '@/shared/config'
 import { formatIndex } from '@/shared/lib/format'
 import { readJson } from '@/shared/lib/storage'
@@ -79,9 +79,9 @@ export function StylePage() {
   const contentPackId = stored?.request.content_pack_id ?? session?.artifacts.content_pack_id ?? project?.content_pack_id ?? null
 
   useEffect(() => {
-    if (stored || !templateId || !contentPackId) return
+    if (stored || (!planId && (!templateId || !contentPackId))) return
     if (sessionQuery.isPending) return
-    const key = `${projectId}:${templateId}:${contentPackId}`
+    const key = `${projectId}:${planId ?? ''}:${templateId ?? ''}:${contentPackId ?? ''}`
     if (autoPlanAttemptedRef.current === key) return
     autoPlanAttemptedRef.current = key
     setAutoPlanning(true)
@@ -90,9 +90,9 @@ export function StylePage() {
     const audience = typeof rawBrief.audience === 'string' ? rawBrief.audience : ''
     const language = typeof rawBrief.language === 'string' && rawBrief.language.trim() ? rawBrief.language : 'ru'
     const targetSlideCount = typeof rawBrief.target_slide_count === 'number' ? rawBrief.target_slide_count : (project?.target_slide_count ?? 8)
-    requestAndStorePlan(projectId, {
-      template_id: templateId,
-      content_pack_id: contentPackId,
+    const fallbackRequest = {
+      template_id: templateId ?? '',
+      content_pack_id: contentPackId ?? '',
       strategies: [DEFAULT_STRATEGY],
       brief: {
         purpose,
@@ -101,15 +101,28 @@ export function StylePage() {
         target_slide_count: targetSlideCount,
       },
       use_llm: false,
-    })
+    }
+    const loadPlan = async () => {
+      if (planId) {
+        const fetched = await fetchAndStorePlan(projectId, planId, fallbackRequest)
+        if (fetched) return fetched
+      }
+      if (!templateId || !contentPackId) return null
+      return requestAndStorePlan(projectId, {
+        ...fallbackRequest,
+        template_id: templateId,
+        content_pack_id: contentPackId,
+      })
+    }
+    void loadPlan()
       .then((nextStored) => {
-        setStoredOverride({ projectId, value: nextStored })
+        if (nextStored) setStoredOverride({ projectId, value: nextStored })
       })
       .catch(() => undefined)
       .finally(() => {
         setAutoPlanning(false)
       })
-  }, [stored, templateId, contentPackId, sessionQuery.isPending, projectId, session?.brief, project?.target_slide_count])
+  }, [stored, planId, templateId, contentPackId, sessionQuery.isPending, projectId, session?.brief, project?.target_slide_count])
 
   const startPreviews = useStartStylePreviews(planId ?? '')
   const { mutate: triggerStartPreviews } = startPreviews

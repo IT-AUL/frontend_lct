@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { parsePlanDraft, requestPlans, type ContentFillMode, type DeckPlan, type PlanDraftResult, type PlanRequest, type PlanRequestOptions, type VariantRequest } from '@/entities/generation'
-import { api, isUnsupportedEndpoint, unwrap } from '@/shared/api'
+import { api, isUnsupportedEndpoint, requestOptionalJson, unwrap } from '@/shared/api'
 import { readJson, writeJson } from '@/shared/lib/storage'
 
 const STORAGE_PREFIX = 'deckdna.plan-request.v1:'
@@ -86,6 +86,37 @@ export function applyServerPlanSet(projectId: string, stored: StoredPlanRequest,
     },
   }
   return writePlanRequest(projectId, next)
+}
+
+export async function fetchAndStorePlan(
+  projectId: string,
+  planId: string,
+  fallbackRequest: StoredRequest,
+  extras: PlanRequestExtras = {},
+  options?: { signal?: AbortSignal },
+): Promise<StoredPlanRequest | null> {
+  if (!projectId || !planId) return null
+  const payload =
+    (await requestOptionalJson<unknown>(`/projects/${encodeURIComponent(projectId)}/plans/${encodeURIComponent(planId)}`, { signal: options?.signal })) ??
+    (await requestOptionalJson<unknown>(`/plans/${encodeURIComponent(planId)}`, { signal: options?.signal }))
+  if (!payload) return null
+  const parsed = parsePlanDraft(payload)
+  if (parsed.proposals.length === 0) return null
+  const record = typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>) : {}
+  const packId = typeof record.content_pack_id === 'string' && record.content_pack_id ? record.content_pack_id : fallbackRequest.content_pack_id
+  const templateId = typeof record.template_id === 'string' && record.template_id ? record.template_id : fallbackRequest.template_id
+  const deckBrief = parsed.proposals[0]?.deckPlan.brief
+  const keyMessage = typeof record.key_message === 'string' ? record.key_message : (extras.keyMessage ?? deckBrief?.key_message ?? fallbackRequest.brief.key_message ?? null)
+  const assistantNote = typeof record.assistant_note === 'string' ? record.assistant_note : (extras.assistantNote ?? null)
+  const request: StoredRequest = {
+    ...fallbackRequest,
+    template_id: templateId,
+    content_pack_id: packId,
+    brief: deckBrief ? { ...fallbackRequest.brief, ...deckBrief } : fallbackRequest.brief,
+  }
+  const result: PlanDraftResult = { ...parsed, planId: parsed.planId ?? planId }
+  const stored: StoredPlanRequest = { request, result, ...extras, keyMessage, assistantNote, createdAt: new Date().toISOString() }
+  return writePlanRequest(projectId, stored)
 }
 
 export async function requestAndStorePlan(projectId: string, request: StoredRequest, extras: PlanRequestExtras = {}, options?: PlanRequestOptions): Promise<StoredPlanRequest> {

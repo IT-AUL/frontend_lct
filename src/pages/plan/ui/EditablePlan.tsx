@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { usePatchPlanSlide, usePlanSlideAction } from '@/entities/assistant'
 import { hasChartData, type DeckPlan, type GenerationCreate, type ResearchSource } from '@/entities/generation'
-import { changeSlideChart, editSummary, useBuildFromPlan, usePlanDraft, useResearchPlanSlide, type QuickSlideAction } from '@/features/edit-deck-plan'
+import { applyQuickAction, changeSlideChart, editSummary, useBuildFromPlan, usePlanDraft, useResearchPlanSlide, type QuickSlideAction } from '@/features/edit-deck-plan'
 import { DeckPlanView } from '@/widgets/deck-plan'
 import { pluralize } from '@/shared/lib/format'
 import { ArrowRight, Button, Icon, PageHeader, Sparkles } from '@/shared/ui'
@@ -146,13 +146,14 @@ export function EditablePlan(props: EditablePlanProps) {
 
   const handleQuickAction = (slideId: string, action: QuickSlideAction) => {
     setMutationError(null)
+    const optimistic = applyQuickAction(draft.plan, slideId, action)
     draft.quickAction(slideId, action)
     if (!planId) return
     slideAction.mutate(
       { slideId, action, ...(strategy ? { strategy } : {}) },
       {
         onSuccess: (planSet) => {
-          if (planSet) onServerPlanSet?.(planSet, draft.plan)
+          if (planSet) onServerPlanSet?.(planSet, optimistic)
         },
         onError: (error) => {
           draft.undo()
