@@ -1,0 +1,76 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
+import { useCreateProject } from '@/entities/project'
+import { readIntakeHandoff } from '@/shared/lib/intake-handoff'
+import { Composer } from './Composer'
+import type * as ProjectModule from '@/entities/project'
+
+vi.mock('@/entities/project', async (importOriginal) => ({
+  ...(await importOriginal<typeof ProjectModule>()),
+  useCreateProject: vi.fn(),
+}))
+
+function StartProbe() {
+  const location = useLocation()
+  const handoff = readIntakeHandoff(location.state)
+  return (
+    <p data-testid="start">
+      {location.pathname}|{handoff?.idea}|{handoff?.files.map((file) => file.name).join(',')}
+    </p>
+  )
+}
+
+function renderComposer() {
+  const client = new QueryClient()
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<Composer />} />
+          <Route path="/projects/:projectId/start" element={<StartProbe />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
+describe('Composer', () => {
+  const mutate = vi.fn()
+
+  beforeEach(() => {
+    mutate.mockReset()
+    vi.mocked(useCreateProject).mockReturnValue({ mutate, isPending: false, error: null } as unknown as ReturnType<typeof useCreateProject>)
+  })
+
+  it('keeps the start button disabled until there is a topic or a file', async () => {
+    renderComposer()
+    const start = screen.getByRole('button', { name: 'Начать' })
+    expect(start).toBeDisabled()
+    await userEvent.type(screen.getByRole('textbox', { name: 'О чём презентация' }), 'Итоги года')
+    expect(start).toBeEnabled()
+  })
+
+  it('names the project after the topic and hands topic and files to step 1', async () => {
+    mutate.mockImplementation((_name: string, options: { onSuccess: (project: { id: string }) => void }) => options.onSuccess({ id: 'prj_new' }))
+    const { container } = renderComposer()
+    await userEvent.type(screen.getByRole('textbox', { name: 'О чём презентация' }), 'Итоги продаж за год')
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [new File(['x'], 'brand.pptx'), new File(['x'], 'virus.exe')] } })
+    expect(screen.getByRole('list', { name: 'Прикреплённые файлы' })).toHaveTextContent('brand.pptxШаблон')
+    expect(screen.getByRole('alert')).toHaveTextContent('Не подходит формат: virus.exe')
+    await userEvent.click(screen.getByRole('button', { name: 'Начать' }))
+    expect(mutate).toHaveBeenCalledWith('Итоги продаж за год', expect.any(Object))
+    await waitFor(() => expect(screen.getByTestId('start')).toHaveTextContent('/projects/prj_new/start|Итоги продаж за год|brand.pptx'))
+  })
+
+  it('removes an attached file', async () => {
+    const { container } = renderComposer()
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [new File(['x'], 'sales.csv')] } })
+    await userEvent.click(screen.getByRole('button', { name: 'Убрать sales.csv' }))
+    expect(screen.queryByRole('list', { name: 'Прикреплённые файлы' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Начать' })).toBeDisabled()
+  })
+})

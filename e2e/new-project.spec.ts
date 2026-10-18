@@ -26,6 +26,24 @@ test('new project: create lands on intake and accepts a template', async ({ page
   await expect(page.getByRole('combobox', { name: 'Что это за файл: minimal-template.pptx' })).toHaveValue('template')
 })
 
+test('home: a topic and a template start a named project on step 1', async ({ page }) => {
+  const topic = `Итоги продаж за год ${Date.now()}`
+  await openApp(page)
+
+  const start = page.getByRole('button', { name: 'Начать' })
+  await expect(start).toBeDisabled()
+  await page.getByRole('textbox', { name: 'О чём презентация' }).fill(topic)
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: 'Прикрепить шаблон и материалы' }).click()])
+  await chooser.setFiles(TEMPLATE)
+  await expect(page.getByRole('list', { name: 'Прикреплённые файлы' })).toContainText('minimal-template.pptx')
+  await start.click()
+
+  await expect(page).toHaveURL(/\/projects\/[^/]+\/start$/)
+  await expect(page.getByRole('navigation', { name: 'Навигация' })).toContainText(topic)
+  await expect(page.getByRole('textbox', { name: 'О чём презентация' })).toHaveValue(topic)
+  await expect(page.getByRole('list', { name: 'Файлы' })).toContainText('minimal-template.pptx')
+})
+
 test('old addresses lead to the single page of their step', async ({ page }) => {
   await openApp(page)
   const link = page.getByRole('list', { name: 'Проекты' }).getByRole('link', { name: new RegExp(SEEDED_PROJECT) })

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router'
 import { useAssistantSession, useBrandbookSummary, useIntake, useJobEvents, useSetBrandPriority, useSetIntakeKind, useStartAutopilot, useTemplateSummary } from '@/entities/assistant'
 import type { BrandPriority, IntakeFile, IntakeKind, IntakeResult } from '@/entities/assistant'
 import { uploadContentPack, useContentPack } from '@/entities/content-pack'
@@ -7,6 +7,7 @@ import { useInvalidateProject, useProject } from '@/entities/project'
 import { buildDesignSystem, uploadTemplate, useDesignDna, useTemplate } from '@/entities/template'
 import { isApiError } from '@/shared/api'
 import { routes } from '@/shared/config'
+import { readIntakeHandoff } from '@/shared/lib/intake-handoff'
 import { Button, ChoiceListSkeleton, EmptyState, PassportSkeleton, Segmented, useToast } from '@/shared/ui'
 import { DesignDnaSkeleton } from '@/widgets/design-dna'
 import { guessKind, IntakeDropzone, isContentFile, isIntakeFile, mergeIntakeFiles } from '@/widgets/intake-board'
@@ -41,6 +42,8 @@ function localNote(state: { files: IntakeFile[]; templateId: string | null; hasC
 export function IntakePage() {
   const { projectId = '' } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const handoff = useRef(readIntakeHandoff(location.state))
   const toast = useToast()
   const invalidateProject = useInvalidateProject()
 
@@ -112,7 +115,7 @@ export function IntakePage() {
     }
   }
 
-  const sendFiles = (picked: File[]) => {
+  const sendFiles = (picked: File[], ideaOverride?: string) => {
     if (!picked.length || upload.isPending) return
     setLegacyError(null)
     if (intakeMissing.current) {
@@ -121,7 +124,7 @@ export function IntakePage() {
     }
     setPendingFiles(picked.map((file) => ({ name: file.name, size: file.size })))
     upload.mutate(
-      { files: picked, idea: ideaText.trim() || undefined },
+      { files: picked, idea: (ideaOverride ?? ideaText).trim() || undefined },
       {
         onSuccess: (data) => {
           setPendingFiles([])
@@ -135,6 +138,24 @@ export function IntakePage() {
       },
     )
   }
+
+  const consumeHandoff = useEffectEvent(() => {
+    const pending = handoff.current
+    if (!pending) return
+    handoff.current = null
+    navigate(location.pathname, { replace: true, state: null })
+    const text = pending.idea.trim()
+    if (text) setIdea(text)
+    if (pending.files.length) {
+      sendFiles(pending.files, text)
+      return
+    }
+    upload.mutate({ files: [], idea: text }, { onSuccess: (data) => (data ? applyIntake(data) : undefined) })
+  })
+
+  useEffect(() => {
+    consumeHandoff()
+  }, [])
 
   const changeKind = (name: string, kind: IntakeKind) => {
     const previous = files

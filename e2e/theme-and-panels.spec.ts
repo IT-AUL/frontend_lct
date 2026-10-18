@@ -13,7 +13,7 @@ test('dark theme survives a reload', async ({ page }) => {
   const darkBackground = await page.evaluate(() => getComputedStyle(document.body).backgroundColor)
 
   await page.reload()
-  await expect(page.getByRole('heading', { level: 1, name: 'Проекты' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Новая презентация' })).toBeVisible()
   await expect(html).toHaveAttribute('data-theme', 'dark')
   expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(darkBackground)
 

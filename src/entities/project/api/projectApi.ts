@@ -49,6 +49,20 @@ export function useCreateProject() {
   })
 }
 
+export function useDeleteProject() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (projectId: string) => {
+      await unwrap(api.DELETE('/api/v1/projects/{project_id}', { params: { path: { project_id: projectId } } }))
+      return projectId
+    },
+    onSuccess: (projectId) => {
+      queryClient.setQueryData<Project[]>(projectKeys.list(), (projects) => projects?.filter((project) => project.id !== projectId))
+      queryClient.removeQueries({ queryKey: projectKeys.detail(projectId) })
+    },
+  })
+}
+
 export function useInvalidateProject() {
   const queryClient = useQueryClient()
   return (projectId: string) =>
