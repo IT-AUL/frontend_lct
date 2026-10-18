@@ -6,81 +6,23 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .column {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  padding: 14px 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  padding: 14px 12px 12px;
   background: var(--surface);
-  cursor: pointer;
-  transition: border-color 0.16s ease, background-color 0.16s ease;
-}
-
-.column:hover {
-  border-color: var(--line-2);
-}
-
-.column[data-recommended] {
-  border-color: var(--line-2);
-}
-
-.column[data-selected] {
-  border-color: var(--ink);
-}
-
-.columnHead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  cursor: pointer;
-}
-
-.columnHead input {
-  flex: none;
-  width: 15px;
-  height: 15px;
-  margin: 0;
-  accent-color: var(--ink);
-}
-
-.columnHead input:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 3px;
-}
-
-.columnName {
-  color: var(--ink);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.recommended {
-  margin-left: auto;
-  color: var(--ink-2);
-  font-size: 11px;
-  white-space: nowrap;
 }
 
 .difference {
   min-height: calc(2 * 1.4em);
-  margin: 8px 0 14px;
-  color: var(--ink-2);
-  font-size: 12px;
-  line-height: 1.4;
+  margin: var(--space-2) 0 var(--space-3);
 }
 
 .slides {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-3);
   margin-top: auto;
 }
 
@@ -93,10 +35,10 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 5px;
+  gap: var(--space-1);
   margin-bottom: 5px;
   color: var(--ink-3);
-  font-family: var(--font-mono);
+  font: var(--type-mono);
   font-size: 10px;
 }
 
@@ -114,6 +56,7 @@
   border-radius: var(--radius-xs);
   background: var(--stage);
   cursor: zoom-in;
+  transition: border-color var(--motion-fast);
 }
 
 .slideButton:hover {
@@ -140,7 +83,7 @@
   gap: 10px;
   width: 100%;
   height: 100%;
-  padding: 16px;
+  padding: var(--space-4);
   background: var(--surface-2);
 }
 
@@ -163,92 +106,39 @@
   display: grid;
   place-items: center;
   height: 100%;
-  padding: 8px;
+  padding: var(--space-2);
   color: var(--ink-3);
+  font: var(--type-caption);
   font-size: 11px;
 }
 
 .leftPanel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .modeSection {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .sectionLabel {
   color: var(--ink-3);
-  font-size: 11px;
-  font-weight: 500;
+  font: var(--type-caption);
 }
 
 .modeSwitch {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
-
-.modeButton {
-  height: 28px;
-  padding: 0 10px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-xs);
-  background: transparent;
-  color: var(--ink-2);
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 500;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-
-.modeButton:hover {
-  color: var(--ink);
-}
-
-.modeButton[data-active] {
-  border-color: var(--line-2);
-  background: var(--surface);
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.modeButton:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 1px;
-}
-
-.modeSummary {
-  margin: 0;
-  padding: 6px 9px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  color: var(--ink-2);
-  font-size: 11px;
-  line-height: 1.35;
-}
-
-
-
-
-
-
-
-
-
 
 .actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   width: 100%;
 }
 
@@ -259,16 +149,16 @@
 .error {
   margin: 0;
   color: var(--error);
-  font-size: 14px;
+  font: var(--type-body);
 }
 
 @media (max-width: 1360px) {
   .grid {
-    gap: 8px;
+    gap: var(--space-2);
   }
 
   .column {
-    padding: 12px 8px;
+    padding: 12px 10px;
   }
 
   .difference {

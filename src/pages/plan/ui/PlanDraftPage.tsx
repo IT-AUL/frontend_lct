@@ -18,7 +18,7 @@ import {
 } from '@/features/edit-deck-plan'
 import { requestOptionalJson, humanError } from '@/shared/api'
 import { API_BASE, routes } from '@/shared/config'
-import { Button, Skeleton } from '@/shared/ui'
+import { Button, PlanBoardSkeleton } from '@/shared/ui'
 import { resolveDeckKeyMessage } from '@/widgets/deck-plan'
 import { StepShell } from '@/widgets/step-shell'
 import { PlanExtras, type PlanAdjustment } from './PlanExtras'
@@ -300,7 +300,7 @@ export function PlanDraftPage() {
 
   if (rebuilding) {
     return (
-      <StepShell title="Составляю план" note="Собираю структуру из ваших материалов…" canvasLabel="План презентации" canvas={<Skeleton style={{ height: 320, borderRadius: 6 }} />}>
+      <StepShell title="Составляю план" note="Собираю структуру из ваших материалов…" canvasLabel="План презентации" canvas={<PlanBoardSkeleton />}>
         <PlanBuildProgress progress={planBuild.progress} phase={planBuild.phase} startedAt={planBuild.startedAt} onCancel={planBuild.cancel} />
       </StepShell>
     )
@@ -313,7 +313,7 @@ export function PlanDraftPage() {
         title="План презентации"
         note={waiting ? 'Загружаю план…' : (rebuildError ?? 'Плана пока нет. Вернитесь к материалам и нажмите «Дальше».')}
         canvasLabel="План презентации"
-        canvas={waiting ? <Skeleton style={{ height: 320, borderRadius: 6 }} /> : null}
+        canvas={waiting ? <PlanBoardSkeleton /> : null}
         actions={
           waiting ? undefined : (
             <Button variant="primary" size="lg" onClick={() => navigate(routes.start(projectId))}>

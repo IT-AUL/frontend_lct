@@ -7,7 +7,7 @@ import { useInvalidateProject, useProject } from '@/entities/project'
 import { buildDesignSystem, uploadTemplate, useDesignDna, useTemplate } from '@/entities/template'
 import { isApiError } from '@/shared/api'
 import { routes } from '@/shared/config'
-import { Button, EmptyState, Segmented, Skeleton, useToast } from '@/shared/ui'
+import { Button, ChoiceListSkeleton, EmptyState, PassportSkeleton, Segmented, useToast } from '@/shared/ui'
 import { DesignDnaSkeleton } from '@/widgets/design-dna'
 import { guessKind, IntakeDropzone, isContentFile, isIntakeFile, mergeIntakeFiles } from '@/widgets/intake-board'
 import type { PendingFile } from '@/widgets/intake-board'
@@ -229,8 +229,8 @@ export function IntakePage() {
 
   if (project.isPending) {
     return (
-      <StepShell title="Что у вас есть?" canvasLabel="Презентация" canvas={<Skeleton style={{ height: 320, borderRadius: 6 }} />}>
-        <Skeleton style={{ height: 96, borderRadius: 8 }} />
+      <StepShell title="Что у вас есть?" canvasLabel="Презентация" canvas={<PassportSkeleton />}>
+        <ChoiceListSkeleton count={2} />
       </StepShell>
     )
   }
@@ -295,11 +295,11 @@ export function IntakePage() {
       }
       actions={
         <>
-          <Button variant="primary" size="lg" disabled={!canContinue || busy} onClick={goNext}>
-            {advancing ? 'Открываю…' : 'Дальше'}
+          <Button variant="primary" size="lg" pending={advancing} disabled={!canContinue || busy} onClick={goNext}>
+            Дальше
           </Button>
-          <Button variant="ghost" size="lg" disabled={!canContinue || busy || autopilotRunning} onClick={runAutopilot}>
-            {autopilotRunning ? 'Собираю…' : 'Сделай сам'}
+          <Button variant="ghost" size="lg" pending={autopilotRunning} disabled={!canContinue || busy || autopilotRunning} onClick={runAutopilot}>
+            Сделай сам
           </Button>
         </>
       }

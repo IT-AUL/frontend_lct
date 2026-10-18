@@ -4,7 +4,7 @@ import { hasChartData, slidePurposeLabel, type DeckPlan, type GenerationCreate, 
 import { applyQuickAction, changeSlideChart, usePlanDraft, useResearchPlanSlide, type QuickSlideAction } from '@/features/edit-deck-plan'
 import { humanError } from '@/shared/api'
 import { pluralize } from '@/shared/lib/format'
-import { Button, Segmented } from '@/shared/ui'
+import { Button, LinkButton, Segmented } from '@/shared/ui'
 import { PlanCard, resolveDeckKeyMessage } from '@/widgets/deck-plan'
 import { StepShell } from '@/widgets/step-shell'
 import styles from './PlanPage.module.css'
@@ -304,8 +304,8 @@ export function PlanStep(props: PlanStepProps) {
           <Button variant="primary" size="lg" disabled={disabled} onClick={() => onSelectStyle(planWithCurrentMessage())}>
             Выбрать стиль
           </Button>
-          <Button variant="ghost" size="lg" disabled={disabled} onClick={() => onAutopilot(planWithCurrentMessage())}>
-            {autopilotPending ? 'Запускаю…' : 'Сделай сам'}
+          <Button variant="ghost" size="lg" pending={autopilotPending} disabled={disabled} onClick={() => onAutopilot(planWithCurrentMessage())}>
+            Сделай сам
           </Button>
         </>
       }
@@ -325,14 +325,14 @@ export function PlanStep(props: PlanStepProps) {
       {(draft.canUndo || draft.edited) && (
         <div className={styles.links}>
           {draft.canUndo && (
-            <button type="button" className={styles.link} onClick={draft.undo}>
+            <LinkButton onClick={draft.undo}>
               Отменить последнее
-            </button>
+            </LinkButton>
           )}
           {draft.edited && (
-            <button type="button" className={styles.link} onClick={draft.reset}>
+            <LinkButton onClick={draft.reset}>
               Вернуть исходный план
-            </button>
+            </LinkButton>
           )}
         </div>
       )}

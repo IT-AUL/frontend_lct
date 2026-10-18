@@ -16,14 +16,13 @@ import { DEFAULT_STRATEGY, STRATEGY_ORDER, type CatalogStrategy } from '@/entiti
 import { clearPlanDraft, fetchAndStorePlan, readPlanRequest, requestAndStorePlan, type StoredPlanRequest } from '@/features/edit-deck-plan'
 import { routes } from '@/shared/config'
 import { readJson } from '@/shared/lib/storage'
-import { Button, Skeleton } from '@/shared/ui'
+import { Badge, Button, ChoiceCard, Skeleton } from '@/shared/ui'
 import { formatIndex } from '@/shared/lib/format'
 import { StepShell } from '@/widgets/step-shell'
 import {
   BUILD_MODE_OPTIONS,
   buildGenerationPayload,
   buildStyleColumns,
-  resolveBuildModeSummary,
   resolveRecommendedStrategy,
   resolveStyleAssistantNote,
   type BuildExecutionMode,
@@ -282,26 +281,27 @@ export function StylePage() {
               const checked = column.strategy === selectedStrategy
               const radioAlias = column.strategy === 'visual' ? ' (Визуальный)' : ''
               return (
-                <section
+                <ChoiceCard
                   key={column.strategy}
+                  as="section"
+                  radioName="style"
                   className={styles.column}
+                  descriptionClassName={styles.difference}
+                  title={column.title}
+                  description={column.difference}
+                  checked={checked}
+                  recommended={column.recommended}
+                  badge={
+                    column.recommended ? (
+                      <Badge tone={checked ? 'ok' : 'ink'} shape="tag">
+                        советую
+                      </Badge>
+                    ) : null
+                  }
+                  ariaLabel={`${column.title}${radioAlias}${column.recommended ? ', советую' : ''}. ${column.difference}`}
                   data-strategy={column.strategy}
-                  data-selected={checked || undefined}
-                  data-recommended={column.recommended || undefined}
-                  onClick={() => setUserPickedStrategy(column.strategy)}
+                  onSelect={() => setUserPickedStrategy(column.strategy)}
                 >
-                  <label className={styles.columnHead}>
-                    <input
-                      type="radio"
-                      name="style"
-                      checked={checked}
-                      onChange={() => setUserPickedStrategy(column.strategy)}
-                      aria-label={`${column.title}${radioAlias}${column.recommended ? ', советую' : ''}. ${column.difference}`}
-                    />
-                    <span className={styles.columnName}>{column.title}</span>
-                    {column.recommended && <span className={styles.recommended}>советую</span>}
-                  </label>
-                  <p className={styles.difference} title={column.difference}>{column.difference}</p>
                   <div className={styles.slides}>
                     {column.slots.map((slot) => (
                       <div key={slot.slideId} className={styles.slide}>
@@ -337,7 +337,7 @@ export function StylePage() {
                       </div>
                     ))}
                   </div>
-                </section>
+                </ChoiceCard>
               )
             })}
           </div>
@@ -345,14 +345,32 @@ export function StylePage() {
       }
       actions={
         <div className={styles.actions}>
-          <Button variant="primary" size="lg" disabled={!canBuild || isSubmitting} onClick={() => handleBuild('all')}>
-            {buildingMode === 'all' ? 'Запускаю…' : 'Собрать все три'}
+          <Button
+            variant="primary"
+            size="lg"
+            pending={buildingMode === 'all'}
+            disabled={!canBuild || isSubmitting}
+            onClick={() => handleBuild('all')}
+          >
+            Собрать все три
           </Button>
-          <Button variant="secondary" size="lg" disabled={!canBuild || isSubmitting} onClick={() => handleBuild('single')}>
-            {buildingMode === 'single' ? 'Запускаю…' : 'Собрать только выбранный'}
+          <Button
+            variant="secondary"
+            size="lg"
+            pending={buildingMode === 'single'}
+            disabled={!canBuild || isSubmitting}
+            onClick={() => handleBuild('single')}
+          >
+            Собрать только выбранный
           </Button>
-          <Button variant="ghost" size="lg" disabled={!canBuild || isSubmitting} onClick={() => void handleAutopilot()}>
-            {autopilot.isPending ? 'Запускаю…' : 'Сделай сам'}
+          <Button
+            variant="ghost"
+            size="lg"
+            pending={autopilot.isPending}
+            disabled={!canBuild || isSubmitting}
+            onClick={() => void handleAutopilot()}
+          >
+            Сделай сам
           </Button>
         </div>
       }
@@ -364,23 +382,17 @@ export function StylePage() {
             {BUILD_MODE_OPTIONS.map((option) => {
               const active = option.mode === buildExecutionMode
               return (
-                <button
+                <ChoiceCard
                   key={option.mode}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  className={styles.modeButton}
-                  data-active={active || undefined}
-                  onClick={() => setBuildExecutionMode(option.mode)}
-                >
-                  {option.label}
-                </button>
+                  title={option.label}
+                  description={option.summary}
+                  ariaLabel={option.label}
+                  checked={active}
+                  onSelect={() => setBuildExecutionMode(option.mode)}
+                />
               )
             })}
           </div>
-          <p className={styles.modeSummary} aria-live="polite">
-            {resolveBuildModeSummary(buildExecutionMode)}
-          </p>
         </div>
 
         {startPreviews.isError && (

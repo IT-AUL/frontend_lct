@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import type { Question } from '@/entities/assistant'
-import { Badge, Check, Icon } from '@/shared/ui'
+import { Badge, ChoiceCard } from '@/shared/ui'
 import {
   CONTENT_SHORT_META,
   defaultOptionValue,
@@ -69,66 +69,39 @@ export function Choices({
           const note = meta?.description ?? resolveOptionNote(question, option)
           const keyNumber = index < 5 ? index + 1 : null
           return (
-            <button
+            <ChoiceCard
               key={option.value || '__empty__'}
-              type="button"
-              role="radio"
-              aria-checked={checked}
+              title={title}
+              description={note}
+              checked={checked}
+              recommended={option.recommended}
               disabled={isDisabled}
-              className={styles.optionCard}
-              data-checked={checked || undefined}
-              data-recommended={option.recommended || undefined}
-              onClick={() => onOption(option.value)}
-            >
-              <span className={styles.optionTop}>
-                <span className={styles.radioDot} data-checked={checked || undefined} aria-hidden="true">
-                  {checked && <Icon as={Check} size={11} />}
-                </span>
-                <span className={styles.optionLabel}>{title}</span>
-                {option.recommended && (
+              shortcut={keyNumber}
+              badge={
+                option.recommended ? (
                   <Badge tone={checked ? 'ok' : 'ink'} shape="tag">
                     советую
                   </Badge>
-                )}
-                {!option.recommended && meta?.badge && (
+                ) : meta?.badge ? (
                   <Badge tone="warn" shape="tag">
                     {meta.badge}
                   </Badge>
-                )}
-                {keyNumber !== null && (
-                  <kbd className={styles.keyCap} aria-hidden="true">
-                    {keyNumber}
-                  </kbd>
-                )}
-              </span>
-              {note && <span className={styles.optionNote}>{note}</span>}
-            </button>
+                ) : null
+              }
+              onSelect={() => onOption(option.value)}
+            />
           )
         })}
         {question.allow_custom && (
-          <div className={styles.customCard} data-checked={custom || undefined}>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={custom}
-              disabled={isDisabled}
-              className={styles.customTrigger}
-              data-checked={custom || undefined}
-              onClick={handleActivateCustom}
-            >
-              <span className={styles.optionTop}>
-                <span className={styles.radioDot} data-checked={custom || undefined} aria-hidden="true">
-                  {custom && <Icon as={Check} size={11} />}
-                </span>
-                <span className={styles.optionLabel}>Свой вариант</span>
-                {customKeyNumber !== null && (
-                  <kbd className={styles.keyCap} aria-hidden="true">
-                    {customKeyNumber}
-                  </kbd>
-                )}
-              </span>
-              <span className={styles.optionNote}>Сформулируйте своими словами — учту в плане</span>
-            </button>
+          <ChoiceCard
+            as="div"
+            title="Свой вариант"
+            description="Сформулируйте своими словами — учту в плане"
+            checked={custom}
+            disabled={isDisabled}
+            shortcut={customKeyNumber}
+            onSelect={handleActivateCustom}
+          >
             {custom && (
               <div className={styles.customFieldWrap}>
                 <input
@@ -149,7 +122,7 @@ export function Choices({
                 />
               </div>
             )}
-          </div>
+          </ChoiceCard>
         )}
       </div>
       {short && !custom && selection?.value === 'notes' && (

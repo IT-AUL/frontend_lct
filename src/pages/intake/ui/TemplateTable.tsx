@@ -3,7 +3,7 @@ import type { BrandbookSummary, BrandPriority, TemplateSummary } from '@/entitie
 import type { DesignSystem } from '@/entities/template'
 import { artifactUrl } from '@/shared/api'
 import { formatPercent, pluralize } from '@/shared/lib/format'
-import { Button, SlideTile } from '@/shared/ui'
+import { Button, PassportSkeleton, SlideTile } from '@/shared/ui'
 import { colorName, normalizeHex, passportColors, passportConflicts, passportFonts, passportRoles } from '../lib/passport'
 import type { PassportConflict } from '../lib/passport'
 import styles from './IntakePage.module.css'
@@ -70,10 +70,17 @@ function ConflictValue({ conflict, side }: { conflict: PassportConflict; side: '
 
 export function TemplateTable({ summary, system, previews, aspectRatio, analyzing, brandbook, priority, priorityControl, onOpenDetails, onDownload }: TemplateTableProps) {
   if (!summary) {
+    if (analyzing) {
+      return (
+        <div className={styles.tableEmpty}>
+          <PassportSkeleton label="Читаю шаблон" />
+        </div>
+      )
+    }
     return (
       <div className={styles.tableEmpty}>
-        <SlideTile pending={analyzing} fill>
-          <span className={styles.ghost}>{analyzing ? 'Читаю шаблон' : 'Здесь появится паспорт вашего шаблона'}</span>
+        <SlideTile pending={false} fill>
+          <span className={styles.ghost}>Здесь появится паспорт вашего шаблона</span>
         </SlideTile>
       </div>
     )

@@ -23,7 +23,7 @@ import { useActiveProviderSession } from '@/entities/provider-session'
 import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
 import { isAbortError, PlanBuildProgress, requestAndStorePlan, usePlanBuild } from '@/features/edit-deck-plan'
 import { routes } from '@/shared/config'
-import { Button, EmptyState, Skeleton } from '@/shared/ui'
+import { Button, EmptyState, InsightBoardSkeleton, LinkButton } from '@/shared/ui'
 import { StepShell } from '@/widgets/step-shell'
 import { applyOptimisticBlockOps, applyOptimisticInsightPatch, applyOptimisticNotes, DraftDeck, fallbackUnderstandingFromContentPack, stepNote, type Selection } from '@/widgets/draft-deck'
 import { SelectionDetails } from './SelectionDetails'
@@ -353,7 +353,7 @@ export function UnderstandingPage() {
       canvasLabel="Черновик презентации"
       canvas={
         isLoading || !understanding ? (
-          <Skeleton style={{ height: 320, borderRadius: 6 }} />
+          <InsightBoardSkeleton />
         ) : (
           <DraftDeck
             understanding={understanding}
@@ -393,11 +393,11 @@ export function UnderstandingPage() {
       }
       actions={
         <>
-          <Button variant="primary" size="lg" disabled={busy || !understanding} onClick={() => void handleContinue()}>
-            {buildingPlan ? 'Составляю план…' : 'Дальше'}
+          <Button variant="primary" size="lg" pending={buildingPlan} disabled={busy || !understanding} onClick={() => void handleContinue()}>
+            Дальше
           </Button>
-          <Button variant="ghost" size="lg" disabled={busy || !understanding} onClick={() => void handleStartAutopilot()}>
-            {autopilot.isPending ? 'Запускаю…' : 'Сделай сам'}
+          <Button variant="ghost" size="lg" pending={autopilot.isPending} disabled={busy || !understanding} onClick={() => void handleStartAutopilot()}>
+            Сделай сам
           </Button>
         </>
       }
@@ -428,14 +428,14 @@ export function UnderstandingPage() {
               </div>
             </div>
           ) : (
-            <button type="button" className={styles.link} onClick={() => setNoteOpen(true)}>
+            <LinkButton onClick={() => setNoteOpen(true)}>
               Добавить свой тезис
-            </button>
+            </LinkButton>
           )}
           {undoStack.length > 0 && (
-            <button type="button" className={styles.link} onClick={handleUndo}>
+            <LinkButton onClick={handleUndo}>
               Отменить последнее изменение
-            </button>
+            </LinkButton>
           )}
           {(actionError || errorMessage(understandingQuery.error)) && (
             <p className={styles.error} role="alert">

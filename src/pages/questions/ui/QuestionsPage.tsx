@@ -17,7 +17,7 @@ import { useActiveProviderSession } from '@/entities/provider-session'
 import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
 import { isAbortError, PlanBuildProgress, requestAndStorePlan, usePlanBuild } from '@/features/edit-deck-plan'
 import { routes } from '@/shared/config'
-import { Button, EmptyState, Skeleton } from '@/shared/ui'
+import { Button, ChoiceListSkeleton, DeckSpecSkeleton, EmptyState, LinkButton } from '@/shared/ui'
 import { StepShell } from '@/widgets/step-shell'
 import {
   buildAnswersPayload,
@@ -379,25 +379,25 @@ export function QuestionsPage() {
       title={title}
       note={note}
       canvasLabel="Спецификация колоды"
-      canvas={
-        loading ? (
-          <Skeleton style={{ height: 320, borderRadius: 6 }} />
-        ) : (
-          <DeckSpec spec={deckSpec} />
-        )
-      }
+      canvas={loading ? <DeckSpecSkeleton /> : <DeckSpec spec={deckSpec} />}
       actions={
         <>
-          <Button variant="primary" size="lg" disabled={busy || loading} onClick={handleSubmit}>
-            {buildingPlan ? 'Составляю…' : 'Составить план'}
+          <Button variant="primary" size="lg" pending={buildingPlan} disabled={busy || loading} onClick={handleSubmit}>
+            Составить план
           </Button>
-          <Button variant="ghost" size="lg" disabled={busy || loading} onClick={() => void handleStartAutopilot()}>
-            {autopilot.isPending ? 'Запускаю…' : 'Сделай сам'}
+          <Button
+            variant="ghost"
+            size="lg"
+            pending={autopilot.isPending}
+            disabled={busy || loading}
+            onClick={() => void handleStartAutopilot()}
+          >
+            Сделай сам
           </Button>
         </>
       }
     >
-      {loading && <Skeleton style={{ height: 160, borderRadius: 8 }} />}
+      {loading && <ChoiceListSkeleton count={4} />}
       {buildingPlan && <PlanBuildProgress progress={planBuild.progress} phase={planBuild.phase} startedAt={planBuild.startedAt} onCancel={planBuild.cancel} />}
       {!loading &&
         !buildingPlan &&
@@ -419,9 +419,9 @@ export function QuestionsPage() {
           />
         ))}
       {!loading && !buildingPlan && questions.length > 0 && (
-        <button type="button" className={styles.link} onClick={handleSkipAll} disabled={busy}>
+        <LinkButton onClick={handleSkipAll} disabled={busy}>
           Пропустить и составить план
-        </button>
+        </LinkButton>
       )}
       {actionError && (
         <p className={styles.error} role="alert">

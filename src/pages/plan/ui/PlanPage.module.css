@@ -1,7 +1,7 @@
 .canvas {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--space-5);
   max-width: 1180px;
 }
 
@@ -13,18 +13,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .canvasCount {
   color: var(--ink-2);
-  font-size: 14px;
+  font: var(--type-body);
 }
 
 .cards {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  gap: var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -51,12 +51,14 @@
   width: 100%;
   min-height: 64px;
   border: 1px dashed var(--line-2);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-card);
   background: transparent;
   color: var(--ink-2);
-  font: inherit;
-  font-size: 14px;
+  font: var(--type-body);
   cursor: pointer;
+  transition:
+    border-color var(--motion-fast),
+    color var(--motion-fast);
 }
 
 .addSlide:hover {
@@ -73,9 +75,9 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   color: var(--ink);
-  font-size: 14px;
+  font: var(--type-body);
   font-weight: 500;
 }
 
@@ -84,14 +86,13 @@
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--line-2);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--ink);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 400;
+  font: var(--type-body);
   line-height: 1.5;
   resize: vertical;
+  transition: border-color var(--motion-fast);
 }
 
 .message:focus-visible,
@@ -104,42 +105,19 @@
 .links {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-}
-
-.link {
-  align-self: flex-start;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--ink-2);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 400;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-
-.link:hover {
-  color: var(--ink);
-}
-
-.link:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
+  gap: var(--space-2);
 }
 
 .error {
   margin: 0;
   color: var(--error);
-  font-size: 14px;
+  font: var(--type-body);
 }
 
 .editor {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--space-6);
 }
 
 .offTopic {
@@ -147,10 +125,10 @@
   flex-direction: column;
   gap: 10px;
   padding: 14px 16px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-card);
   background: var(--surface-2);
   color: var(--ink);
-  font-size: 14px;
+  font: var(--type-body);
 }
 
 .offTopic p {
@@ -160,13 +138,13 @@
 .inline {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .units {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -190,6 +168,9 @@
   background: transparent;
   color: var(--ink-3);
   cursor: pointer;
+  transition:
+    background-color var(--motion-fast),
+    color var(--motion-fast);
 }
 
 .iconButton:hover {
@@ -208,15 +189,20 @@
 }
 
 .chip {
-  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
   border: 1px solid var(--line-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface);
   color: var(--ink-2);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 400;
+  font: var(--type-caption);
   cursor: pointer;
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast),
+    color var(--motion-fast);
 }
 
 .chip:hover {
@@ -238,7 +224,7 @@
 .hint {
   margin: 0;
   color: var(--ink-2);
-  font-size: 14px;
+  font: var(--type-body);
   font-weight: 400;
   line-height: 1.5;
 }
@@ -252,7 +238,7 @@
 .extraText {
   margin: 0;
   color: var(--ink);
-  font-size: 14px;
+  font: var(--type-body);
   line-height: 1.5;
 }
 
@@ -268,8 +254,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  font-size: 14px;
+  gap: var(--space-2);
+  font: var(--type-body);
 }
 
 .source a {

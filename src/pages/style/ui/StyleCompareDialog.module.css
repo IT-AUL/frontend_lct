@@ -3,7 +3,7 @@
   inset: 0;
   z-index: 40;
   background: var(--overlay);
-  animation: global(dd-fade) 0.16s ease-out;
+  animation: global(dd-fade) var(--motion-fast);
 }
 
 .content {
@@ -13,7 +13,7 @@
   z-index: 41;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
   width: min(1240px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
   padding: 20px 24px;
@@ -29,31 +29,31 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .titleGroup {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .title {
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
   color: var(--ink);
+  font: var(--type-step-title);
+  font-size: 18px;
+  letter-spacing: -0.01em;
 }
 
 .description {
-  font-size: 13px;
   color: var(--ink-2);
+  font: var(--type-body);
 }
 
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .closeButton {
@@ -62,9 +62,12 @@
   width: 32px;
   height: 32px;
   border: 1px solid var(--line-2);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--ink-2);
+  transition:
+    background-color var(--motion-fast),
+    color var(--motion-fast);
 }
 
 .closeButton:hover {
@@ -76,8 +79,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--line);
   border-radius: var(--radius-xl);
   background: var(--surface-2);
@@ -94,14 +97,17 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 30px;
+  height: 28px;
   padding: 0 12px;
   border: 1px solid var(--line-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface);
   color: var(--ink-2);
-  font-size: 12px;
-  font-weight: 500;
+  font: var(--type-caption);
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast),
+    color var(--motion-fast);
 }
 
 .slidePill:hover {
@@ -128,7 +134,7 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: var(--space-3);
 }
 
 .card {
@@ -136,28 +142,31 @@
   flex-direction: column;
   gap: 10px;
   padding: 14px;
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius-2xl);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
   background: var(--surface-2);
+  transition:
+    border-color var(--motion-fast),
+    background-color var(--motion-fast),
+    box-shadow var(--motion-fast);
 }
 
 .cardSelected {
   border-color: var(--ink);
+  box-shadow: var(--ring-selected);
   background: var(--surface);
-  box-shadow: var(--shadow-stage);
 }
 
 .cardHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .cardTitle {
-  font-size: 16px;
-  font-weight: 600;
   color: var(--ink);
+  font: var(--type-card-title);
 }
 
 .badges {
@@ -167,21 +176,22 @@
 }
 
 .cardDifference {
-  font-size: 12px;
-  color: var(--ink-2);
   min-height: 34px;
+  color: var(--ink-2);
+  font: var(--type-caption);
+  font-weight: 400;
 }
 
 .stageFrame {
   position: relative;
-  aspect-ratio: 16 / 9;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--stage);
-  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--stage);
 }
 
 .stageImage {
@@ -198,41 +208,42 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 16px;
-  text-align: center;
+  padding: var(--space-4);
   color: var(--ink-2);
-  font-size: 12px;
+  font: var(--type-caption);
+  font-weight: 400;
+  text-align: center;
 }
 
 .cardFooter {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-2);
   margin-top: auto;
 }
 
 .exemplar {
-  font-size: 11px;
   color: var(--ink-3);
+  font: var(--type-mono);
 }
 
 .footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding-top: 12px;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
   border-top: 1px solid var(--line);
 }
 
 .footerMeta {
-  font-size: 13px;
   color: var(--ink-2);
+  font: var(--type-body);
 }
 
 .footerActions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }

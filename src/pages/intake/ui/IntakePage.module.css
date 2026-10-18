@@ -1,9 +1,9 @@
 .ideaLabel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   color: var(--ink);
-  font-size: 14px;
+  font: var(--type-body);
   font-weight: 500;
 }
 
@@ -11,14 +11,13 @@
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--line-2);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--ink);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 400;
+  font: var(--type-body);
   line-height: 1.5;
   resize: vertical;
+  transition: border-color var(--motion-fast);
 }
 
 .idea::placeholder {
@@ -43,10 +42,10 @@
 .file {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   min-height: 44px;
   border-bottom: 1px solid var(--line);
-  font-size: 14px;
+  font: var(--type-body);
 }
 
 .fileName {
@@ -60,14 +59,14 @@
 
 .kind {
   flex: none;
-  padding: 4px 6px;
+  padding: var(--space-1) 6px;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--ink-2);
-  font: inherit;
-  font-size: 14px;
+  font: var(--type-body);
   cursor: pointer;
+  transition: background-color var(--motion-fast);
 }
 
 .kind:hover {
@@ -81,12 +80,12 @@
 .fileError {
   flex: none;
   color: var(--error);
-  font-size: 13px;
+  font: var(--type-caption);
 }
 
 .filePending {
   color: var(--ink-3);
-  font-size: 13px;
+  font: var(--type-caption);
 }
 
 .remove {
@@ -100,6 +99,9 @@
   background: transparent;
   color: var(--ink-3);
   cursor: pointer;
+  transition:
+    background-color var(--motion-fast),
+    color var(--motion-fast);
 }
 
 .remove:hover {
@@ -114,17 +116,18 @@
 .error {
   margin: 0;
   color: var(--error);
-  font-size: 14px;
+  font: var(--type-body);
 }
 
 .hint {
   margin: 0;
   color: var(--ink-3);
-  font-size: 14px;
+  font: var(--type-caption);
+  font-weight: 400;
 }
 
 .tableEmpty {
-  max-width: 640px;
+  max-width: 880px;
 }
 
 .ghost {
@@ -132,13 +135,13 @@
   place-items: center;
   height: 100%;
   color: var(--ink-3);
-  font-size: 15px;
+  font: var(--type-body);
 }
 
 .fileKind {
   flex: none;
   color: var(--ink-3);
-  font-size: 13px;
+  font: var(--type-caption);
 }
 
 .passport {
@@ -148,16 +151,16 @@
   max-width: 880px;
   padding: 28px 32px 32px;
   border: 1px solid var(--line-2);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-card);
   background: var(--surface);
 }
 
 .passportHead {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: var(--space-4);
 }
 
 .passportTitle {
@@ -168,28 +171,28 @@
   margin: 0;
   overflow-wrap: anywhere;
   color: var(--ink);
+  font: var(--type-step-title);
   font-size: 20px;
-  font-weight: 600;
   line-height: 1.3;
 }
 
 .passportFacts {
-  margin: 4px 0 0;
+  margin: var(--space-1) 0 0;
   color: var(--ink-2);
-  font-size: 14px;
+  font: var(--type-body);
 }
 
 .passportActions {
   display: flex;
-  align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .previews {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
+  gap: var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -218,7 +221,7 @@
 .block {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
   min-width: 0;
   padding-top: 20px;
   border-top: 1px solid var(--line);
@@ -227,21 +230,21 @@
 .blockTitle {
   margin: 0;
   color: var(--ink);
-  font-size: 15px;
-  font-weight: 600;
+  font: var(--type-card-title);
 }
 
 .blockNote {
   margin: 0;
   color: var(--ink-3);
-  font-size: 13px;
+  font: var(--type-caption);
+  font-weight: 400;
   line-height: 1.5;
 }
 
 .blockWarn {
   margin: 0;
   color: var(--warn);
-  font-size: 14px;
+  font: var(--type-body);
   line-height: 1.5;
 }
 
@@ -267,13 +270,12 @@
   width: 48px;
   height: 48px;
   border: 1px solid var(--line-2);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
 }
 
 .paletteShare {
   color: var(--ink-2);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
+  font: var(--type-mono);
 }
 
 .fontList {
@@ -291,14 +293,14 @@
 
 .fontRow dt {
   color: var(--ink-3);
-  font-size: 13px;
+  font: var(--type-caption);
+  font-weight: 400;
 }
 
 .fontRow dd {
   margin: 0;
   color: var(--ink);
-  font-size: 15px;
-  line-height: 1.4;
+  font: var(--type-body);
 }
 
 .roles {
@@ -309,14 +311,14 @@
   padding: 0;
   list-style: none;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
 }
 
 .role {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 12px 16px;
+  padding: var(--space-3) var(--space-4);
   border-left: 1px solid var(--line);
 }
 
@@ -326,22 +328,20 @@
 
 .roleCount {
   color: var(--ink);
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 1.2;
+  font: var(--type-step-title);
   font-variant-numeric: tabular-nums;
 }
 
 .roleLabel {
   color: var(--ink-2);
-  font-size: 13px;
+  font: var(--type-caption);
+  font-weight: 400;
 }
 
 .brandText {
   margin: 0;
   color: var(--ink);
-  font-size: 15px;
-  line-height: 1.5;
+  font: var(--type-body);
 }
 
 .conflicts {
@@ -357,10 +357,10 @@
   display: grid;
   grid-template-columns: minmax(120px, 1fr) minmax(0, 1.2fr) minmax(0, 1.2fr);
   align-items: start;
-  gap: 16px;
-  padding: 12px 0;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
   border-bottom: 1px solid var(--line);
-  font-size: 14px;
+  font: var(--type-body);
 }
 
 .conflictLabel {
@@ -371,7 +371,7 @@
 .conflictSide {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
   color: var(--ink-3);
 }
 
@@ -380,20 +380,19 @@
 }
 
 .conflictSideLabel {
-  font-size: 12px;
+  font: var(--type-caption);
 }
 
 .conflictValue {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: var(--space-2);
+  font: var(--type-body);
 }
 
 .conflictChosen {
   color: var(--ok);
-  font-size: 12px;
-  font-weight: 500;
+  font: var(--type-caption);
 }
 
 .swatch {

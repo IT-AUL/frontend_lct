@@ -3,7 +3,7 @@ import { useAssistantSession, useUnderstanding } from '@/entities/assistant'
 import { useContentPack } from '@/entities/content-pack'
 import { isEditableUnit, type DeckPlan, type SlidePlan } from '@/entities/generation'
 import type { QuickSlideAction, SlidePatch } from '@/features/edit-deck-plan'
-import { Button, Icon, X } from '@/shared/ui'
+import { Button, Icon, LinkButton, X } from '@/shared/ui'
 import {
   availableQuickActions,
   contentPackSourceMap,
@@ -146,9 +146,9 @@ export function SlideEditor(props: SlideEditorProps) {
             </li>
           ))}
         </ul>
-        <button type="button" className={styles.link} onClick={onUnitAdd}>
+        <LinkButton onClick={onUnitAdd}>
           Добавить пункт
-        </button>
+        </LinkButton>
       </div>
 
       <div className={styles.field}>
@@ -181,8 +181,8 @@ export function SlideEditor(props: SlideEditorProps) {
       {visual === 'chart' && !chart && canResearch && (
         <div className={styles.field}>
           <span>Для графика нужны числа</span>
-          <Button variant="secondary" size="sm" disabled={researching} onClick={onResearch}>
-            {researching ? 'Ищу…' : 'Найти цифры'}
+          <Button variant="secondary" size="sm" pending={researching} disabled={researching} onClick={onResearch}>
+            Найти цифры
           </Button>
         </div>
       )}
