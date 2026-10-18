@@ -325,7 +325,6 @@ export function StylePage() {
                             <span className={styles.unavailable}>Превью недоступно</span>
                           )}
                         </button>
-                        <span className={styles.slideTitle} title={slot.title}>{slot.title}</span>
                       </div>
                     ))}
                   </div>

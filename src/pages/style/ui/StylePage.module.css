@@ -69,13 +69,15 @@
 }
 
 .difference {
+  display: -webkit-box;
   overflow: hidden;
+  min-height: calc(2 * 1.4em);
   margin: 8px 0 14px;
   color: var(--ink-2);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .slides {
@@ -171,15 +173,6 @@
   font-size: 11px;
 }
 
-.slideTitle {
-  display: block;
-  overflow: hidden;
-  margin-top: 5px;
-  color: var(--ink-2);
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .actions {
   display: flex;
