@@ -122,15 +122,7 @@ export function StyleCompareDialog({
                   <div className={styles.cardHead}>
                     <h3 className={styles.cardTitle}>{column.title}</h3>
                     <div className={styles.badges}>
-                      {column.recommended && (
-                        <Badge tone="ink">
-                          <span aria-hidden="true">★ </span>
-                          <span>советую</span>
-                        </Badge>
-                      )}
-                      <Badge tone="neutral" mono>
-                        {column.strategy}
-                      </Badge>
+                      {column.recommended && <Badge tone="ink">советую</Badge>}
                     </div>
                   </div>
                   <p className={styles.cardDifference}>{column.difference}</p>
@@ -149,7 +141,7 @@ export function StyleCompareDialog({
                     ) : (
                       <div className={styles.stagePlaceholder}>
                         <strong>{slot?.title}</strong>
-                        <span>{column.error ?? 'Эскиз по плану'}</span>
+                        <span>Превью недоступно</span>
                       </div>
                     )}
                   </div>

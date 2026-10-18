@@ -16,7 +16,8 @@ import { DEFAULT_STRATEGY, STRATEGY_ORDER, type CatalogStrategy } from '@/entiti
 import { clearPlanDraft, fetchAndStorePlan, readPlanRequest, requestAndStorePlan, type StoredPlanRequest } from '@/features/edit-deck-plan'
 import { routes } from '@/shared/config'
 import { readJson } from '@/shared/lib/storage'
-import { Button, SlideGrid, SlideTile } from '@/shared/ui'
+import { Button, Skeleton } from '@/shared/ui'
+import { formatIndex } from '@/shared/lib/format'
 import { StepShell } from '@/widgets/step-shell'
 import {
   buildGenerationPayload,
@@ -170,8 +171,6 @@ export function StylePage() {
   const recommendedStrategy = useMemo(() => resolveRecommendedStrategy(columns), [columns])
   const [userPickedStrategy, setUserPickedStrategy] = useState<CatalogStrategy | null>(null)
   const selectedStrategy: CatalogStrategy = userPickedStrategy ?? recommendedStrategy
-  const selectedColumn = columns.find((col) => col.strategy === selectedStrategy) ?? columns[0]
-
   const [compareSlideId, setCompareSlideId] = useState<string | null>(null)
   const [buildingMode, setBuildingMode] = useState<'single' | 'all' | null>(null)
 
@@ -267,8 +266,6 @@ export function StylePage() {
     }),
   )
   const isSubmitting = buildingMode !== null || autopilot.isPending
-  const slots = selectedColumn?.slots ?? []
-
   return (
     <StepShell
       title="Как оформить?"
@@ -276,54 +273,82 @@ export function StylePage() {
       canvasLabel="Пробные слайды"
       canvas={
         <div className={styles.table}>
-          <SlideGrid columns={slots.length > 3 ? 3 : 2} label={`Пробные слайды: ${selectedColumn?.title ?? ''}`}>
-            {slots.map((slot) => (
-              <div role="listitem" key={slot.slideId}>
-                <SlideTile
-                  title={slot.title}
-                  image={slot.state === 'ready' ? slot.imageUrl : null}
-                  pending={slot.state === 'loading'}
-                  onOpen={() => setCompareSlideId(slot.slideId)}
-                  openLabel={`Сравнить слайд ${slot.slideNumber} в трёх стилях`}
-                  caption={slot.state === 'error' ? 'Не удалось показать' : null}
-                />
-              </div>
-            ))}
-          </SlideGrid>
-          {slots.some((slot) => slot.state === 'ready') && <p className={styles.hint}>Нажмите на слайд, чтобы сравнить его в трёх стилях.</p>}
+          <div className={styles.grid} role="radiogroup" aria-label="Стиль вёрстки">
+            {columns.map((column) => {
+              const checked = column.strategy === selectedStrategy
+              return (
+                <section
+                  key={column.strategy}
+                  className={styles.column}
+                  data-strategy={column.strategy}
+                  data-selected={checked || undefined}
+                  data-recommended={column.recommended || undefined}
+                  onClick={() => setUserPickedStrategy(column.strategy)}
+                >
+                  <label className={styles.columnHead}>
+                    <input
+                      type="radio"
+                      name="style"
+                      checked={checked}
+                      onChange={() => setUserPickedStrategy(column.strategy)}
+                      aria-label={`${column.title}${column.recommended ? ', советую' : ''}. ${column.difference}`}
+                    />
+                    <span className={styles.columnName}>{column.title}</span>
+                    {column.recommended && <span className={styles.recommended}>советую</span>}
+                  </label>
+                  <p className={styles.difference} title={column.difference}>{column.difference}</p>
+                  <div className={styles.slides}>
+                    {column.slots.map((slot) => (
+                      <div key={slot.slideId} className={styles.slide}>
+                        <div className={styles.slideMeta}>
+                          <span>Слайд {formatIndex(slot.slideNumber)}</span>
+                          {slot.purposeLabel && <span className={styles.purpose}>{slot.purposeLabel}</span>}
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.slideButton}
+                          aria-label={`Сравнить слайд ${slot.slideNumber} в трёх стилях (${column.title})`}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            setCompareSlideId(slot.slideId)
+                          }}
+                        >
+                          {slot.state === 'ready' && slot.imageUrl ? (
+                            <img className={styles.slideImage} src={slot.imageUrl} alt="" />
+                          ) : slot.state === 'loading' ? (
+                            <span className={styles.skeleton} role="status" aria-label={slot.loadingCaption}>
+                              <Skeleton className={styles.skeletonTitle} />
+                              <Skeleton className={styles.skeletonLine} />
+                              <Skeleton className={styles.skeletonLineShort} />
+                            </span>
+                          ) : (
+                            <span className={styles.unavailable}>Превью недоступно</span>
+                          )}
+                        </button>
+                        <span className={styles.slideTitle} title={slot.title}>{slot.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
         </div>
       }
       actions={
-        <>
-          <Button variant="primary" size="lg" disabled={!canBuild || isSubmitting} onClick={() => handleBuild('single')}>
-            {buildingMode === 'single' ? 'Запускаю…' : 'Собрать'}
+        <div className={styles.actions}>
+          <Button variant="primary" size="lg" disabled={!canBuild || isSubmitting} onClick={() => handleBuild('all')}>
+            {buildingMode === 'all' ? 'Запускаю…' : 'Собрать все три'}
+          </Button>
+          <Button variant="secondary" size="lg" disabled={!canBuild || isSubmitting} onClick={() => handleBuild('single')}>
+            {buildingMode === 'single' ? 'Запускаю…' : 'Собрать только выбранный'}
           </Button>
           <Button variant="ghost" size="lg" disabled={!canBuild || isSubmitting} onClick={() => void handleAutopilot()}>
             {autopilot.isPending ? 'Запускаю…' : 'Сделай сам'}
           </Button>
-        </>
+        </div>
       }
     >
-      <div className={styles.options} role="radiogroup" aria-label="Стиль вёрстки">
-        {columns.map((column) => {
-          const checked = column.strategy === selectedStrategy
-          return (
-            <label key={column.strategy} className={styles.option} data-checked={checked || undefined}>
-              <input type="radio" name="style" checked={checked} onChange={() => setUserPickedStrategy(column.strategy)} />
-              <span className={styles.optionText}>
-                <span className={styles.optionLabel}>
-                  {column.title}
-                  {column.recommended && <span className={styles.recommended}>советую</span>}
-                </span>
-                {column.difference && <span className={styles.optionNote}>{column.difference}</span>}
-              </span>
-            </label>
-          )
-        })}
-      </div>
-      <button type="button" className={styles.link} disabled={!canBuild || isSubmitting} onClick={() => handleBuild('all')}>
-        {buildingMode === 'all' ? 'Запускаю…' : 'Собрать сразу во всех трёх стилях'}
-      </button>
       {startPreviews.isError && (
         <p className={styles.error} role="alert">
           Не получилось показать пробные слайды. Стиль всё равно можно выбрать и собрать.

@@ -48,7 +48,8 @@ test.beforeEach(async ({ page }) => {
 test('style step: three styles, recommendation, trial slides, compare, build one style', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'Как оформить?' })).toBeVisible()
 
-  const group = page.getByRole('radiogroup', { name: 'Стиль вёрстки' })
+  const table = page.getByRole('region', { name: 'Пробные слайды' })
+  const group = table.getByRole('radiogroup', { name: 'Стиль вёрстки' })
   await expect(group.getByRole('radio')).toHaveCount(3)
 
   const visual = group.getByRole('radio', { name: /Визуальный/ })
@@ -56,10 +57,17 @@ test('style step: three styles, recommendation, trial slides, compare, build one
   await expect(group.getByText('советую')).toBeVisible()
   await expect(group).toContainText('Больше графиков и схем, меньше текста')
 
-  const table = page.getByRole('list', { name: /Пробные слайды/ })
-  await expect(table.locator('img')).toHaveCount(3, { timeout: 20_000 })
+  await expect(table.locator('img')).toHaveCount(9, { timeout: 20_000 })
+  for (const strategy of ['faithful', 'balanced', 'visual']) {
+    await expect(group.locator(`[data-strategy="${strategy}"]`).getByRole('button', { name: /Сравнить слайд/ })).toHaveCount(3)
+  }
+  await expect.poll(() => table.locator('img').evaluateAll((images) => images.every((image) => (image as HTMLImageElement).naturalWidth > 0))).toBe(true)
+  const strictOverview = await group.locator('[data-strategy="faithful"] img').nth(1).getAttribute('src')
+  const visualOverview = await group.locator('[data-strategy="visual"] img').nth(1).getAttribute('src')
+  expect(visualOverview).not.toBe(strictOverview)
+  await expect(group.locator('[data-recommended]')).toHaveAttribute('data-strategy', 'visual')
 
-  await table.getByRole('button', { name: 'Сравнить слайд 1 в трёх стилях' }).click()
+  await table.getByRole('button', { name: 'Сравнить слайд 1 в трёх стилях (Визуальный)' }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog.getByRole('heading', { name: /Сравнение трёх стилей · Слайд 01/ })).toBeVisible()
   await expect(dialog.getByRole('region')).toHaveCount(3)
@@ -71,7 +79,7 @@ test('style step: three styles, recommendation, trial slides, compare, build one
   await group.getByText('Сбалансированный').click()
   await expect(group.getByRole('radio', { name: /Сбалансированный/ })).toBeChecked()
 
-  await page.getByRole('button', { name: 'Собрать', exact: true }).click()
+  await page.getByRole('button', { name: 'Собрать только выбранный' }).click()
   await expect(page).toHaveURL(new RegExp(`/projects/${projectId}/runs/`))
   await expect(page.getByRole('heading', { level: 1, name: /Собираю презентацию|Презентация готова/ })).toBeVisible({ timeout: 15_000 })
   await expect(page).toHaveURL(/\/polish/, { timeout: 20_000 })
@@ -81,7 +89,7 @@ test('style step: build all three opens the build table', async ({ page }) => {
   const group = page.getByRole('radiogroup', { name: 'Стиль вёрстки' })
   await expect(group.getByRole('radio')).toHaveCount(3)
 
-  await page.getByRole('button', { name: 'Собрать сразу во всех трёх стилях' }).click()
+  await page.getByRole('button', { name: 'Собрать все три' }).click()
   await expect(page).toHaveURL(new RegExp(`/projects/${projectId}/runs/`))
   await expect(page.getByRole('region', { name: 'Слайды презентации' })).toBeVisible({ timeout: 15_000 })
 })

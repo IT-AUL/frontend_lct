@@ -162,7 +162,7 @@ describe('StylePage', () => {
     vi.mocked(whenGenerationAccepted).mockReturnValue(undefined)
   })
 
-  it('starts style previews, lists three styles as radios, and selects the recommended style by default', () => {
+  it('shows three preview columns with the same slides and selects the recommended style by default', () => {
     renderStylePage()
 
     expect(startPreviewsMutate).toHaveBeenCalledWith({})
@@ -180,9 +180,19 @@ describe('StylePage', () => {
     expect(visual).toHaveAccessibleName(/советую/)
     expect(faithful).toHaveAccessibleName(/Ближе всего к вашему шаблону/)
     expect(visual).toHaveAccessibleName(/Больше графиков и схем, меньше текста/)
+    const table = screen.getByRole('region', { name: 'Пробные слайды' })
+    const columns = within(table).getByRole('radiogroup', { name: 'Стиль вёрстки' })
+    expect(columns.querySelectorAll('img')).toHaveLength(9)
+    for (const strategy of ['faithful', 'balanced', 'visual']) {
+      const column = columns.querySelector(`[data-strategy="${strategy}"]`)
+      expect(column).not.toBeNull()
+      expect(within(column as HTMLElement).getAllByRole('button', { name: /Сравнить слайд/ })).toHaveLength(3)
+    }
+    expect(columns.querySelector('[data-recommended]')).toHaveAttribute('data-strategy', 'visual')
+    expect(screen.getByRole('button', { name: 'Собрать все три' })).toBeEnabled()
   })
 
-  it('shows trial slides of the chosen style on the table as they arrive', () => {
+  it('shows a ready slide alongside slide-shaped skeletons while the other previews arrive', () => {
     const events: JobEvent[] = [
       {
         sequence: 1,
@@ -211,15 +221,16 @@ describe('StylePage', () => {
 
     renderStylePage()
 
-    const table = screen.getByRole('list', { name: /Пробные слайды/ })
-    expect(within(table).getAllByRole('listitem').length).toBeGreaterThan(0)
-    expect(within(table).getByRole('button', { name: 'Сравнить слайд 1 в трёх стилях' })).toBeInTheDocument()
+    const table = screen.getByRole('region', { name: 'Пробные слайды' })
+    expect(within(table).getAllByRole('button', { name: /Сравнить слайд/ })).toHaveLength(9)
+    expect(within(table).getAllByRole('status', { name: /Верстаю/ })).toHaveLength(8)
+    expect(within(table).getByRole('button', { name: 'Сравнить слайд 1 в трёх стилях (Визуальный)' }).querySelector('img')).not.toBeNull()
   })
 
   it('opens the comparison when clicking a slide and allows switching slides and styles', async () => {
     renderStylePage()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Сравнить слайд 1 в трёх стилях' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Сравнить слайд 1 в трёх стилях (Визуальный)' }))
 
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).getByRole('heading', { name: /Сравнение трёх стилей · Слайд 01/ })).toBeInTheDocument()
@@ -233,10 +244,23 @@ describe('StylePage', () => {
     expect(screen.getByRole('radio', { name: /Строгий/, hidden: true })).toBeChecked()
   })
 
+  it('selects a column without opening the comparison and supports keyboard radio navigation', async () => {
+    renderStylePage()
+
+    const group = screen.getByRole('radiogroup', { name: 'Стиль вёрстки' })
+    await userEvent.click(within(group).getByText('Сбалансированный'))
+    expect(within(group).getByRole('radio', { name: /Сбалансированный/ })).toBeChecked()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    within(group).getByRole('radio', { name: /Сбалансированный/ }).focus()
+    await userEvent.keyboard('{ArrowLeft}')
+    expect(within(group).getByRole('radio', { name: /Строгий/ })).toBeChecked()
+  })
+
   it('starts generation in the chosen style with deck_plan and preview_id, or in all three styles', async () => {
     const { unmount } = renderStylePage()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Собрать' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Собрать только выбранный' }))
     expect(startGeneration).toHaveBeenCalledWith(
       PROJECT_ID,
       expect.objectContaining({
@@ -253,7 +277,7 @@ describe('StylePage', () => {
     vi.mocked(startGeneration).mockClear()
     renderStylePage()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Собрать сразу во всех трёх стилях' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Собрать все три' }))
     expect(startGeneration).toHaveBeenCalledWith(
       PROJECT_ID,
       expect.objectContaining({
@@ -316,8 +340,8 @@ describe('StylePage', () => {
     renderStylePage()
 
     expect(screen.getByRole('radiogroup', { name: 'Стиль вёрстки' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Собрать' })).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Собрать сразу во всех трёх стилях' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Собрать только выбранный' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Собрать все три' })).toBeEnabled()
   })
 
   it('sends back to the plan when no plan or materials exist yet', async () => {
