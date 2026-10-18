@@ -57,7 +57,7 @@ export function IntakeDropzone({ onFiles, disabled, compact }: IntakeDropzonePro
         <span className={styles.subtitle}>или нажмите, чтобы выбрать — можно сразу несколько</span>
         {!compact && (
           <span className={styles.formats} id={hintId}>
-            Шаблон (<span className={styles.mono}>.pptx, .potx</span>) · Данные (<span className={styles.mono}>.csv, .xlsx, .json</span>) · Текст и старые слайды (<span className={styles.mono}>.docx, .pdf, .md</span>) · Брендбук (<span className={styles.mono}>tokens.json, .pdf, логотипы</span>)
+            Шаблон (<span className={styles.mono}>.pptx, .potx</span>) · Данные (<span className={styles.mono}>.csv, .xlsx, .json</span>) · Текст и старые слайды (<span className={styles.mono}>.docx, .pdf, .md</span>) · Брендбук (<span className={styles.mono}>tokens.json, .pdf, .png, .jpg, .webp</span>)
           </span>
         )}
       </button>

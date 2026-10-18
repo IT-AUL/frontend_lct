@@ -34,6 +34,25 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
   const previewProjects = new Map<string, string>()
   const jobs = new Map<string, { scenario: Scenario; label: string; projectId: string }>()
   const priorities = new Map<string, string>()
+  const analyzedBrandbooks = new Set<string>()
+  function enrichAnalyzedBrandbook(summary: Object): Object {
+    const palette = objects(summary.palette).map((item, idx) => {
+      if (idx === 0) return { ...item, source: 'brand.pdf:page=2:vision: Основной акцент для заголовков и ключевых метрик' }
+      if (idx === 1) return { ...item, source: 'brand.pdf:page=3:vision: Глубокий синий для карточек и плашек' }
+      return item
+    })
+    const fonts = objects(summary.fonts).map((item, idx) => {
+      if (idx === 0) return { ...item, source: 'brand.pdf:page=4:vision: Заголовки набираются антиквой DejaVu Serif' }
+      if (idx === 1) return { ...item, source: 'brand.pdf:page=5:vision: Основной текст и подписи — Liberation Sans' }
+      return item
+    })
+    return {
+      ...summary,
+      palette,
+      fonts,
+      analysis: { pages: ['brand.pdf:page=2', 'brand.pdf:page=3', 'brand.pdf:page=4', 'brand.pdf:page=5'], status: 'completed' },
+    }
+  }
   for (const scenario of ['idea', 'data'] as const) {
     const project = fixture(scenario, 'project')
     const intake = fixture(scenario, 'intake')
@@ -201,8 +220,17 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
       const intake = fixture(scenario, 'intake')
       intake.project_id = projectId
       intake.files = files.map((file) => {
-        const supported = /\.(pptx|potx|md|txt|docx|pdf|csv|xlsx|json|png|jpe?g|svg)$/i.test(file.name)
-        const kind = !supported ? 'unknown' : /\.(pptx|potx)$/i.test(file.name) ? 'template' : /\.(csv|xlsx)$/i.test(file.name) ? 'data' : /brand|бренд|tokens/i.test(file.name) ? 'brandbook' : 'content'
+        const supported = /\.(pptx|potx|md|txt|docx|pdf|csv|xlsx|json|png|jpe?g|webp|svg)$/i.test(file.name)
+        const isImg = /\.(png|jpe?g|webp|svg)$/i.test(file.name)
+        const kind = !supported
+          ? 'unknown'
+          : /\.(pptx|potx)$/i.test(file.name)
+            ? 'template'
+            : /\.(csv|xlsx)$/i.test(file.name)
+              ? 'data'
+              : isImg || /brand|бренд|tokens|logo|логотип/i.test(file.name)
+                ? 'brandbook'
+                : 'content'
         const example = objects(intake.files).find((f) => f.kind === kind) ?? objects(fixture('data', 'brand-intake').files).find((f) => f.kind === kind) ?? {}
         return { ...example, name: file.name, kind, detected_kind: kind, accepted: supported, reason: supported ? (example.reason ?? null) : 'формат не поддерживается', size_bytes: file.size }
       })
@@ -238,18 +266,42 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
       if (!['template', 'content', 'data', 'brandbook', 'unknown'].includes(String(body.kind))) throw validationError('kind', 'Неизвестный тип файла')
       const file = objects(current.intake.files).find((file) => file.name === param('name'))
       if (!file) throw notFound('Intake file', param('name'))
-      file.kind = body.kind
-      file.reason = 'тип выбран вручную'
+      const fileName = String(file.name)
+      const isImg = /\.(png|jpe?g|webp|svg)$/i.test(fileName)
+      const extMatch = /\.[^.]+$/.exec(fileName)
+      const ext = extMatch ? extMatch[0].toLowerCase() : ''
+      if (isImg && body.kind !== 'brandbook') {
+        file.kind = body.kind
+        file.accepted = false
+        file.reason = `Формат ${ext} не подходит для роли «${String(body.kind)}»`
+      } else {
+        file.kind = body.kind
+        file.accepted = true
+        file.reason = 'тип выбран вручную'
+      }
       return json(current.intake)
     }),
     route('get', '/templates/:templateId/summary', ({ param }) => json({ ...fixture('data', 'template-summary'), template_id: param('templateId') })),
     route('get', '/brandbooks/:brandbookId', ({ param }) => json({ ...fixture('data', 'brandbook'), id: param('brandbookId') })),
-    route('get', '/brandbooks/:brandbookId/summary', ({ param }) => json({ ...fixture('data', 'brand-summary'), id: param('brandbookId'), priority: priorities.get(param('brandbookId')) ?? 'brandbook' })),
+    route('get', '/brandbooks/:brandbookId/summary', ({ param }) => {
+      const id = param('brandbookId')
+      const base = { ...fixture('data', 'brand-summary'), id, priority: priorities.get(id) ?? 'brandbook' }
+      return json(analyzedBrandbooks.has(id) ? enrichAnalyzedBrandbook(base) : base)
+    }),
     route('patch', '/brandbooks/:brandbookId', async ({ request, param }) => {
+      const id = param('brandbookId')
       const body = await readJson(request)
+      if (body.analyze === true) {
+        const nextPriority = body.priority === 'template' || body.priority === 'brandbook' ? body.priority : (priorities.get(id) ?? 'brandbook')
+        priorities.set(id, nextPriority)
+        analyzedBrandbooks.add(id)
+        const base = { ...fixture('data', nextPriority === 'template' ? 'brand-priority' : 'brand-summary'), id, priority: nextPriority }
+        return json(enrichAnalyzedBrandbook(base))
+      }
       if (body.priority !== 'template' && body.priority !== 'brandbook') throw validationError('priority', 'Неизвестный приоритет')
-      priorities.set(param('brandbookId'), body.priority)
-      return json({ ...fixture('data', body.priority === 'template' ? 'brand-priority' : 'brand-summary'), id: param('brandbookId') })
+      priorities.set(id, body.priority)
+      const base = { ...fixture('data', body.priority === 'template' ? 'brand-priority' : 'brand-summary'), id }
+      return json(analyzedBrandbooks.has(id) ? enrichAnalyzedBrandbook(base) : base)
     }),
     route('get', '/content-packs/:packId/understanding', ({ param }) => {
       const current = pack(param('packId'))

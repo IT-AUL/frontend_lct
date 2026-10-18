@@ -14,6 +14,7 @@ import type { PendingFile } from '@/widgets/intake-board'
 import { StepShell } from '@/widgets/step-shell'
 import { existingFiles, topicFromBrief, withoutColorCodes } from '../lib/existing'
 import { dnaFileName, downloadJson, previewIds } from '../lib/passport'
+import { useAnalyzeBrandbook } from '../model/useAnalyzeBrandbook'
 import { ExistingRows, FileRows } from './FileRows'
 import { TemplateRules } from './TemplateRules'
 import { TemplateTable } from './TemplateTable'
@@ -48,6 +49,7 @@ export function IntakePage() {
   const upload = useIntake(projectId)
   const patchKind = useSetIntakeKind(projectId)
   const autopilot = useStartAutopilot(projectId)
+  const analyzeBrandbook = useAnalyzeBrandbook()
 
   const [idea, setIdea] = useState<string | null>(null)
   const [files, setFiles] = useState<IntakeFile[]>([])
@@ -143,8 +145,14 @@ export function IntakePage() {
         onSuccess: (data) => {
           if (data) applyIntake(data)
         },
-        onError: () => {
-          setFiles(previous)
+        onError: (err) => {
+          setFiles(
+            previous.map((file) =>
+              file.name === name
+                ? { ...file, kind, accepted: false, reason: errorText(err, 'Этот тип не подходит для файла') }
+                : file,
+            ),
+          )
           toast.show('Не удалось поменять тип файла')
         },
       },
@@ -168,6 +176,21 @@ export function IntakePage() {
           toast.show('Не удалось поменять приоритет')
         },
         onSettled: () => setPriorityOverride(null),
+      },
+    )
+  }
+
+  const runBrandbookAnalysis = () => {
+    if (!brandbookId || analyzeBrandbook.isPending) return
+    analyzeBrandbook.mutate(
+      { brandbookId, priority: priorityOverride ?? brandbookSummary.data?.priority ?? 'brandbook' },
+      {
+        onSuccess: (data) => {
+          if (data?.assistant_note) setNote(data.assistant_note)
+        },
+        onError: () => {
+          toast.show('Не удалось разобрать брендбук')
+        },
       },
     )
   }
@@ -269,6 +292,8 @@ export function IntakePage() {
           priority={priorityValue}
           onOpenDetails={templateId ? () => setDnaOpen(true) : undefined}
           onDownload={dna.data ? () => downloadJson(dnaFileName(templateSummary.data?.filename ?? null), dna.data) : undefined}
+          onAnalyzeBrandbook={brandbookId ? runBrandbookAnalysis : undefined}
+          analyzingBrandbook={analyzeBrandbook.isPending}
           priorityControl={
             brandbookId ? (
               <Segmented

@@ -49,7 +49,11 @@ function stored(): PlanRequestModule.StoredPlanRequest {
 }
 
 describe('useResearchPlanSlide', () => {
-  it('returns the researched slide and the updated plan set', async () => {
+  beforeEach(() => {
+    mod.clearSlideResearchOutcomes()
+  })
+
+  it('returns the researched slide and records the found numbers outcome', async () => {
     const { result } = setup(() => mod.useResearchPlanSlide(planId))
     await act(async () => {
       await result.current.mutateAsync({ slideId, focus: 'numbers' })
@@ -58,9 +62,29 @@ describe('useResearchPlanSlide', () => {
     expect(result.current.data?.added_units).toBe(2)
     expect(result.current.data?.slide.content_units.length).toBeGreaterThan(deckPlan.slides[1]?.content_units.length ?? 0)
     expect(result.current.data?.plan_set.plan_id).toBe(planId)
+    expect(mod.getSlideResearchOutcome(slideId)?.message).toMatch(/^Нашёл и добавил: /)
   })
 
-  it('degrades quietly when the endpoint is missing', async () => {
+  it('records the empty outcome when the backend returns zero added units', async () => {
+    server.use(
+      http.post('*/api/v1/plans/:planId/slides/:slideId/research', () =>
+        HttpResponse.json({
+          slide: deckPlan.slides[1],
+          added_units: 0,
+          note: null,
+          plan_set: planFixture.body,
+        }),
+      ),
+    )
+    const { result } = setup(() => mod.useResearchPlanSlide(planId))
+    await act(async () => {
+      await result.current.mutateAsync({ slideId, focus: 'numbers' })
+    })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(mod.getSlideResearchOutcome(slideId)?.message).toBe('Новых цифр в материалах не нашлось')
+  })
+
+  it('degrades quietly when the endpoint is missing and still records the empty outcome', async () => {
     server.use(http.all('*/api/v1/plans/:planId/slides/:slideId/research', () => new HttpResponse(null, { status: 404 })))
     const { result } = setup(() => mod.useResearchPlanSlide(planId))
     await act(async () => {
@@ -68,6 +92,7 @@ describe('useResearchPlanSlide', () => {
     })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data).toBeNull()
+    expect(mod.getSlideResearchOutcome(slideId)?.message).toBe('Новых цифр в материалах не нашлось')
   })
 })
 

@@ -1,5 +1,6 @@
 import type { IntakeFile, IntakeKind } from '@/entities/assistant'
 import { FileChip, Skeleton } from '@/shared/ui'
+import { guessKind } from '../lib/kinds'
 import styles from './IntakeFileList.module.css'
 
 export interface PendingFile {
@@ -24,7 +25,7 @@ export function IntakeFileList({ files, onKindChange, onRemove, pending, uploadi
           <FileChip
             name={file.name}
             sizeBytes={file.size_bytes}
-            kind={file.kind}
+            kind={file.kind === 'unknown' ? guessKind(file.name) : file.kind}
             accepted={file.accepted}
             reason={file.reason}
             disabled={pending}

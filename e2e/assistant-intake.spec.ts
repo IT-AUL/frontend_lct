@@ -34,6 +34,7 @@ test('assistant step 1: upload files, check their types, see the template on the
     TEMPLATE_PAYLOAD,
     { name: 'sales.csv', mimeType: 'text/csv', buffer: Buffer.from('month,sales\n1,10\n') },
     { name: 'brand_tokens.json', mimeType: 'application/json', buffer: Buffer.from('{"color":{"primary":"#E4572E"}}') },
+    { name: 'brand_guide.webp', mimeType: 'image/webp', buffer: Buffer.from('RIFF') },
     { name: 'raw_scan.tiff', mimeType: 'image/tiff', buffer: Buffer.from('II') },
   ])
 
@@ -41,9 +42,12 @@ test('assistant step 1: upload files, check their types, see the template on the
   await expect(list).toContainText('minimal-template.pptx')
   await expect(list).toContainText('sales.csv')
   await expect(list).toContainText('brand_tokens.json')
+  await expect(list).toContainText('brand_guide.webp')
 
   const kind = page.getByRole('combobox', { name: 'Что это за файл: sales.csv' })
   await expect(kind).toHaveValue('data')
+  const imageKind = page.getByRole('combobox', { name: 'Что это за файл: brand_guide.webp' })
+  await expect(imageKind).toHaveValue('brandbook')
 
   await page.getByRole('button', { name: 'Убрать raw_scan.tiff' }).click()
   await expect(list).not.toContainText('raw_scan.tiff')
@@ -62,6 +66,10 @@ test('assistant step 1: upload files, check their types, see the template on the
   await expect(priority.getByRole('radio', { name: 'Брендбук' })).toHaveAttribute('aria-checked', 'true')
   const brand = passport.getByRole('region', { name: /Брендбук/ })
   await expect(brand.locator('[data-chosen]').first()).toContainText('Брендбук')
+  await brand.getByRole('button', { name: 'Разобрать брендбук' }).click()
+  await expect(brand.getByRole('list', { name: 'Цвета брендбука' })).toContainText('стр. 2')
+  await expect(brand.getByRole('list', { name: 'Шрифты брендбука' })).toContainText('стр. 4')
+  expect(await passport.textContent()).not.toMatch(/#[0-9a-f]{6}/i)
   await priority.getByRole('radio', { name: 'Шаблон' }).click()
   await expect(priority.getByRole('radio', { name: 'Шаблон' })).toHaveAttribute('aria-checked', 'true')
   await expect(brand.locator('[data-chosen]').first()).toContainText('Шаблон')

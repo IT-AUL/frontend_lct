@@ -24,8 +24,22 @@ export {
   updateUnit,
 } from './lib/editPlan'
 export type { BuildOptions, EditableUnit, QuickSlideAction, SlideChartAlternative, SlideChartInfo, SlidePatch } from './lib/editPlan'
-export { applyServerPlanSet, fetchAndStorePlan, readPlanRequest, requestAndStorePlan, syncPlanDraftToStorage, useRequestPlan, useResearchPlanSlide, writePlanRequest } from './model/planRequest'
-export type { PlanRequestExtras, StoredPlanRequest, StoredRequest } from './model/planRequest'
+export {
+  applyServerPlanSet,
+  clearSlideResearchOutcomes,
+  fetchAndStorePlan,
+  formatSlideResearchOutcome,
+  getSlideResearchOutcome,
+  readPlanRequest,
+  requestAndStorePlan,
+  setSlideResearchOutcome,
+  syncPlanDraftToStorage,
+  useRequestPlan,
+  useResearchPlanSlide,
+  useSlideResearchOutcome,
+  writePlanRequest,
+} from './model/planRequest'
+export type { PlanRequestExtras, SlideResearchOutcome, StoredPlanRequest, StoredRequest } from './model/planRequest'
 export { useBuildFromPlan } from './model/useBuildFromPlan'
 export type { BuildFromPlan } from './model/useBuildFromPlan'
 export { isAbortError, usePlanBuild } from './model/usePlanBuild'

@@ -403,3 +403,84 @@
   border: 1px solid var(--line-2);
   border-radius: var(--radius-xs);
 }
+
+.brandHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.brandGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.brandGroupTitle {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.brandReadings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.brandReading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--sunken);
+  font-size: 14px;
+}
+
+.brandReadingMain {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brandReadingName {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.brandReadingRole {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.brandReadingMeta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.brandQuote {
+  color: var(--ink-2);
+  font-style: italic;
+}
+
+.brandPage {
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--ink-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+

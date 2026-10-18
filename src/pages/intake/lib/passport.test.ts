@@ -2,7 +2,20 @@ import { describe, expect, it } from 'vitest'
 import type { BrandbookSummary, TemplateSummary } from '@/entities/assistant'
 import { buildDesignSystem } from '@/entities/template'
 import { designDnaFixture, templateDetailFixture } from '@/shared/api/mocks'
-import { cleanLayoutName, colorName, dnaFileName, normalizeHex, passportColors, passportConflicts, passportFonts, passportRoles, previewIds } from './passport'
+import {
+  cleanLayoutName,
+  colorName,
+  dnaFileName,
+  extractBrandPage,
+  extractBrandQuote,
+  normalizeHex,
+  passportBrandDetails,
+  passportColors,
+  passportConflicts,
+  passportFonts,
+  passportRoles,
+  previewIds,
+} from './passport'
 
 const summary: TemplateSummary = {
   template_id: 'tpl',
@@ -107,6 +120,39 @@ describe('passportConflicts', () => {
 
   it('is empty without a brandbook', () => {
     expect(passportConflicts(null, 'brandbook')).toEqual([])
+  })
+})
+
+describe('passportBrandDetails', () => {
+  it('extracts colors and fonts with page and clean quote without hex codes', () => {
+    const brandbook = {
+      palette: [
+        { hex: '#E4572E', name: 'Медный', role: 'primary', source: 'brandbook.pdf:page=3:vision: Основной цвет бренда — медный #E4572E' },
+      ],
+      fonts: [
+        { family: 'DejaVu Serif', role: 'heading', source: 'brandbook.pdf:page=7:vision: Заголовки набираются гарнитурой DejaVu Serif', fallback: 'Georgia' },
+      ],
+    } as unknown as BrandbookSummary
+    const details = passportBrandDetails(brandbook)
+    expect(details.colors).toEqual([
+      {
+        hex: '#E4572E',
+        name: 'красный',
+        role: 'Главный цвет',
+        quote: 'Основной цвет бренда — медный',
+        page: 'стр. 3',
+      },
+    ])
+    expect(details.fonts).toEqual([
+      {
+        family: 'DejaVu Serif',
+        role: 'заголовки',
+        quote: 'Заголовки набираются гарнитурой DejaVu Serif',
+        page: 'стр. 7',
+      },
+    ])
+    expect(extractBrandPage({ source: 'brand.pdf:page=12:vision:test' })).toBe('стр. 12')
+    expect(extractBrandQuote({ quote: '«Фирменный синий #0077FF»' })).toBe('Фирменный синий')
   })
 })
 

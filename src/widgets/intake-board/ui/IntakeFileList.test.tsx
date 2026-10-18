@@ -43,4 +43,17 @@ describe('IntakeFileList', () => {
     render(<IntakeFileList files={[file('corp.pptx', 'template')]} onKindChange={vi.fn()} onRemove={vi.fn()} pending />)
     expect(screen.getByRole('list', { name: 'Загруженные файлы' })).toHaveAttribute('aria-busy', 'true')
   })
+
+  it('proposes brandbook role for image files (.png, .jpg, .webp) when kind is unknown', () => {
+    render(
+      <IntakeFileList
+        files={[file('palette.png', 'unknown'), file('cover.jpg', 'unknown'), file('guide.webp', 'unknown')]}
+        onKindChange={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('combobox', { name: 'Роль файла palette.png' })).toHaveValue('brandbook')
+    expect(screen.getByRole('combobox', { name: 'Роль файла cover.jpg' })).toHaveValue('brandbook')
+    expect(screen.getByRole('combobox', { name: 'Роль файла guide.webp' })).toHaveValue('brandbook')
+  })
 })

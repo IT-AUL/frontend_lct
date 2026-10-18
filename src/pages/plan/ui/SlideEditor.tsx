@@ -1,8 +1,9 @@
+import { useState } from 'react'
 import { useParams } from 'react-router'
 import { useAssistantSession, useUnderstanding } from '@/entities/assistant'
 import { useContentPack } from '@/entities/content-pack'
 import { isEditableUnit, type DeckPlan, type SlidePlan } from '@/entities/generation'
-import type { QuickSlideAction, SlidePatch } from '@/features/edit-deck-plan'
+import { useSlideResearchOutcome, type QuickSlideAction, type SlidePatch } from '@/features/edit-deck-plan'
 import { Button, Icon, LinkButton, X } from '@/shared/ui'
 import {
   availableQuickActions,
@@ -63,6 +64,7 @@ interface SlideEditorProps {
   last: boolean
   researching: boolean
   canResearch: boolean
+  researchResult?: string | null
   contentPack?: SourcePackLike | null
   onUpdate: (patch: SlideEditorPatch) => void
   onUnitChange: (position: number, text: string) => void
@@ -76,7 +78,7 @@ interface SlideEditorProps {
 }
 
 export function SlideEditor(props: SlideEditorProps) {
-  const { plan, slide, first, last, researching, canResearch, contentPack: packProp, onUpdate, onUnitChange, onUnitAdd, onUnitRemove, onMove, onChart, onAction, onResearch, onKeep } = props
+  const { plan, slide, first, last, researching, canResearch, researchResult, contentPack: packProp, onUpdate, onUnitChange, onUnitAdd, onUnitRemove, onMove, onChart, onAction, onResearch, onKeep } = props
   const { projectId } = useParams<{ projectId: string }>()
   const session = useAssistantSession(packProp !== undefined ? null : projectId)
   const packId = packProp !== undefined ? null : (session.data?.artifacts.content_pack_id ?? findPlanPackId(plan))
@@ -89,6 +91,19 @@ export function SlideEditor(props: SlideEditorProps) {
   const actions = availableQuickActions(plan, slide.id).filter((action) => ACTION_LABEL[action as QuickSlideAction])
   const visual = slide.desired_visual ?? 'none'
   const activePurpose = resolveEditorPurpose(slide.purpose)
+  const storedOutcome = useSlideResearchOutcome(slide.id)
+  const [localRequested, setLocalRequested] = useState<{ slideId: string; baselineTexts: string[] } | null>(null)
+  const currentTexts = units.map(({ unit }) => unit.text?.trim() ?? '').filter(Boolean)
+  const localOutcomeMessage = (() => {
+    if (!localRequested || localRequested.slideId !== slide.id) return null
+    const added = currentTexts.slice(localRequested.baselineTexts.length)
+    return added.length > 0 ? `Нашёл и добавил: ${added.join(', ')}` : 'Новых цифр в материалах не нашлось'
+  })()
+  const outcomeMessage = researchResult ?? storedOutcome?.message ?? localOutcomeMessage
+  const handleResearch = () => {
+    setLocalRequested({ slideId: slide.id, baselineTexts: currentTexts })
+    onResearch()
+  }
 
   return (
     <div className={styles.editor}>
@@ -149,6 +164,11 @@ export function SlideEditor(props: SlideEditorProps) {
         <LinkButton onClick={onUnitAdd}>
           Добавить пункт
         </LinkButton>
+        {!researching && outcomeMessage && (
+          <p className={styles.hint} role="status">
+            {outcomeMessage}
+          </p>
+        )}
       </div>
 
       <div className={styles.field}>
@@ -181,7 +201,7 @@ export function SlideEditor(props: SlideEditorProps) {
       {visual === 'chart' && !chart && canResearch && (
         <div className={styles.field}>
           <span>Для графика нужны числа</span>
-          <Button variant="secondary" size="sm" pending={researching} disabled={researching} onClick={onResearch}>
+          <Button variant="secondary" size="sm" pending={researching} disabled={researching} onClick={handleResearch}>
             Найти цифры
           </Button>
         </div>
@@ -193,6 +213,11 @@ export function SlideEditor(props: SlideEditorProps) {
             {ACTION_LABEL[action as QuickSlideAction]}
           </Button>
         ))}
+        {canResearch && !(visual === 'chart' && !chart) && (
+          <Button variant="secondary" size="sm" disabled={researching} onClick={handleResearch}>
+            {researching ? 'Ищу…' : 'Поискать в материалах'}
+          </Button>
+        )}
       </div>
 
       <div className={styles.inline}>

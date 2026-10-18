@@ -1,8 +1,10 @@
 import type { IntakeFile, IntakeKind } from '@/entities/assistant'
 
-export const INTAKE_ACCEPT = '.pptx,.potx,.md,.txt,.docx,.pdf,.csv,.xlsx,.json,.png,.jpg,.jpeg,.svg'
+export const INTAKE_ACCEPT = '.pptx,.potx,.md,.txt,.docx,.pdf,.csv,.xlsx,.json,.png,.jpg,.jpeg,.webp,.svg'
 
-export const INTAKE_FORMATS: readonly string[] = ['.pptx', '.potx', '.md', '.txt', '.docx', '.pdf', '.csv', '.xlsx', '.json', '.png', '.jpg', '.svg']
+export const INTAKE_FORMATS: readonly string[] = ['.pptx', '.potx', '.md', '.txt', '.docx', '.pdf', '.csv', '.xlsx', '.json', '.png', '.jpg', '.webp', '.svg']
+
+const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.svg'])
 
 const ROLE_LABEL: Record<string, string> = {
   title: 'Обложки',
@@ -21,6 +23,10 @@ export function fileExtension(name: string): string {
   return dot > 0 ? name.slice(dot).toLowerCase() : ''
 }
 
+export function isImageFile(name: string): boolean {
+  return IMAGE_EXTENSIONS.has(fileExtension(name))
+}
+
 export function isIntakeFile(name: string): boolean {
   const ext = fileExtension(name)
   return ext !== '' && INTAKE_ACCEPT.split(',').includes(ext)
@@ -30,7 +36,7 @@ export function guessKind(name: string): IntakeKind {
   const ext = fileExtension(name)
   if (ext === '.pptx' || ext === '.potx') return 'template'
   if (ext === '.csv' || ext === '.xlsx') return 'data'
-  if (/brand|бренд|tokens/i.test(name)) return 'brandbook'
+  if (IMAGE_EXTENSIONS.has(ext) || /brand|бренд|tokens|logo|логотип/i.test(name)) return 'brandbook'
   return 'content'
 }
 

@@ -1,8 +1,10 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { BrandbookSummary, TemplateSummary } from '@/entities/assistant'
 import { buildDesignSystem } from '@/entities/template'
 import { designDnaFixture, templateDetailFixture } from '@/shared/api/mocks'
+import { FileRows } from './FileRows'
 import { TemplateTable } from './TemplateTable'
 
 const summary: TemplateSummary = {
@@ -122,6 +124,33 @@ describe('TemplateTable passport', () => {
     expect(screen.getByRole('region', { name: /Брендбук/ }).querySelector('[data-chosen]')).toHaveTextContent('Шаблон')
   })
 
+  it('renders the analyze brandbook button and displays extracted colors and fonts with quotes and pages', () => {
+    const onAnalyzeBrandbook = vi.fn()
+    const analyzedBrandbook = {
+      ...brandbook,
+      palette: [
+        { hex: '#E4572E', name: 'Медный север', role: 'primary', source: 'brandbook.pdf:page=3:vision: Основной цвет бренда — медный север #E4572E' },
+      ],
+      fonts: [
+        { family: 'DejaVu Serif', role: 'heading', source: 'brandbook.pdf:page=7:vision: Заголовки слайдов набираются гарнитурой DejaVu Serif', fallback: 'Georgia' },
+      ],
+    } as unknown as BrandbookSummary
+
+    renderTable({ brandbook: analyzedBrandbook, onAnalyzeBrandbook })
+    const analyzeButton = screen.getByRole('button', { name: 'Разобрать брендбук' })
+    fireEvent.click(analyzeButton)
+    expect(onAnalyzeBrandbook).toHaveBeenCalledOnce()
+
+    const brand = screen.getByRole('region', { name: /Брендбук/ })
+    expect(within(brand).getByRole('list', { name: 'Цвета брендбука' })).toHaveTextContent('Главный цвет')
+    expect(within(brand).getByRole('list', { name: 'Цвета брендбука' })).toHaveTextContent('стр. 3')
+    expect(within(brand).getByRole('list', { name: 'Цвета брендбука' })).toHaveTextContent('«Основной цвет бренда — медный север»')
+    expect(within(brand).getByRole('list', { name: 'Шрифты брендбука' })).toHaveTextContent('DejaVu Serif')
+    expect(within(brand).getByRole('list', { name: 'Шрифты брендбука' })).toHaveTextContent('стр. 7')
+    expect(within(brand).getByRole('list', { name: 'Шрифты брендбука' })).toHaveTextContent('«Заголовки слайдов набираются гарнитурой DejaVu Serif»')
+    expect(brand.textContent).not.toMatch(/#[0-9a-f]{6}/i)
+  })
+
   it('offers the rules download only when the analysis can be exported', () => {
     const onDownload = vi.fn()
     const { rerender } = renderTable()
@@ -134,5 +163,31 @@ describe('TemplateTable passport', () => {
   it('shows a waiting tile before there is a summary', () => {
     renderTable({ summary: null, analyzing: true })
     expect(screen.getByText('Читаю шаблон')).toBeInTheDocument()
+  })
+})
+
+describe('FileRows', () => {
+  it('proposes brandbook for .png, .jpg, and .webp files and shows clear rejection reason near the file', () => {
+    const onKindChange = vi.fn()
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <FileRows
+          files={[
+            { name: 'brand-sheet.webp', kind: 'unknown', detected_kind: 'unknown', accepted: true, reason: null, size_bytes: 2048 },
+            { name: 'scan.png', kind: 'brandbook', detected_kind: 'brandbook', accepted: false, reason: 'Не удалось прочитать картинку как брендбук', size_bytes: 1024 },
+          ]}
+          pending={[]}
+          datasets={[]}
+          onKind={onKindChange}
+          onRemove={vi.fn()}
+        />
+      </QueryClientProvider>,
+    )
+    const webpSelect = screen.getByRole('combobox', { name: 'Что это за файл: brand-sheet.webp' })
+    expect(webpSelect).toHaveValue('brandbook')
+    const pngSelect = screen.getByRole('combobox', { name: 'Что это за файл: scan.png' })
+    expect(pngSelect).toHaveValue('brandbook')
+    expect(screen.getByRole('alert')).toHaveTextContent('Не удалось прочитать картинку как брендбук')
   })
 })

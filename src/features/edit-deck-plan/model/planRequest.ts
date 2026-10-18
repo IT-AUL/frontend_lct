@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { parsePlanDraft, requestPlans, type ContentFillMode, type DeckPlan, type PlanDraftResult, type PlanRequest, type PlanRequestOptions, type VariantRequest } from '@/entities/generation'
 import { api, isUnsupportedEndpoint, requestOptionalJson, unwrap } from '@/shared/api'
@@ -133,12 +134,98 @@ export function useRequestPlan(projectId: string) {
   })
 }
 
+export interface SlideResearchOutcome {
+  added: string[]
+  message: string
+}
+
+const slideResearchStore = new Map<string, SlideResearchOutcome>()
+const slideResearchListeners = new Set<() => void>()
+
+function emitSlideResearchChange() {
+  for (const listener of slideResearchListeners) listener()
+}
+
+function subscribeSlideResearch(listener: () => void) {
+  slideResearchListeners.add(listener)
+  return () => {
+    slideResearchListeners.delete(listener)
+  }
+}
+
+export function setSlideResearchOutcome(slideId: string, outcome: SlideResearchOutcome | null): void {
+  if (!slideId) return
+  if (outcome === null) {
+    slideResearchStore.delete(slideId)
+  } else {
+    slideResearchStore.set(slideId, outcome)
+  }
+  emitSlideResearchChange()
+}
+
+export function clearSlideResearchOutcomes(): void {
+  if (slideResearchStore.size === 0) return
+  slideResearchStore.clear()
+  emitSlideResearchChange()
+}
+
+export function getSlideResearchOutcome(slideId: string): SlideResearchOutcome | null {
+  return slideResearchStore.get(slideId) ?? null
+}
+
+export function useSlideResearchOutcome(slideId: string): SlideResearchOutcome | null {
+  return useSyncExternalStore(
+    subscribeSlideResearch,
+    () => slideResearchStore.get(slideId) ?? null,
+    () => null,
+  )
+}
+
+export function formatSlideResearchOutcome(result: unknown): SlideResearchOutcome {
+  if (!result || typeof result !== 'object') {
+    return { added: [], message: 'Новых цифр в материалах не нашлось' }
+  }
+  const record = result as Record<string, unknown>
+  if (Array.isArray(record.added_metrics)) {
+    const metrics = record.added_metrics
+      .filter((item): item is string => typeof item === 'string' && Boolean(item.trim()))
+      .map((item) => item.trim())
+    if (metrics.length > 0) {
+      return { added: metrics, message: `Нашёл и добавил: ${metrics.join(', ')}` }
+    }
+    return { added: [], message: 'Новых цифр в материалах не нашлось' }
+  }
+  const addedCount = typeof record.added_units === 'number' && Number.isFinite(record.added_units) ? record.added_units : 0
+  if (addedCount <= 0) {
+    return { added: [], message: 'Новых цифр в материалах не нашлось' }
+  }
+  const slide = typeof record.slide === 'object' && record.slide !== null ? (record.slide as Record<string, unknown>) : null
+  const units = Array.isArray(slide?.content_units) ? slide.content_units : []
+  const tail = units.slice(-addedCount)
+  const items: string[] = []
+  for (const rawUnit of tail) {
+    if (!rawUnit || typeof rawUnit !== 'object') continue
+    const unit = rawUnit as Record<string, unknown>
+    if (typeof unit.text === 'string' && unit.text.trim()) {
+      items.push(unit.text.trim())
+    } else if (unit.kind === 'chart') {
+      items.push('график')
+    } else if (unit.kind === 'table') {
+      items.push('таблица')
+    }
+  }
+  if (items.length > 0) {
+    return { added: items, message: `Нашёл и добавил: ${items.join(', ')}` }
+  }
+  return { added: [`${addedCount}`], message: `Нашёл и добавил: ${addedCount}` }
+}
+
 export function useResearchPlanSlide(planId: string) {
   return useMutation({
     mutationFn: async ({ slideId, strategy, focus = 'numbers', useLlm, providerSessionId }: { slideId: string; strategy?: string | null; focus?: 'facts' | 'numbers'; useLlm?: boolean | null; providerSessionId?: string | null }) => {
       if (!planId) return null
       try {
-        return await unwrap(
+        const result = await unwrap(
           api.POST('/api/v1/plans/{plan_id}/slides/{slide_id}/research', {
             params: { path: { plan_id: planId, slide_id: slideId } },
             body: {
@@ -149,10 +236,16 @@ export function useResearchPlanSlide(planId: string) {
             },
           }),
         )
+        setSlideResearchOutcome(slideId, formatSlideResearchOutcome(result))
+        return result
       } catch (error) {
-        if (isUnsupportedEndpoint(error)) return null
+        if (isUnsupportedEndpoint(error)) {
+          setSlideResearchOutcome(slideId, formatSlideResearchOutcome(null))
+          return null
+        }
         throw error
       }
     },
   })
 }
+

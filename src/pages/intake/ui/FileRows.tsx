@@ -3,9 +3,27 @@ import { useAssistantSession, useUnderstanding, type IntakeFile, type IntakeKind
 import { useContentPack } from '@/entities/content-pack'
 import { useProject } from '@/entities/project'
 import { FILE_KIND_LABEL, FILE_KIND_OPTIONS, Icon, X } from '@/shared/ui'
-import type { PendingFile } from '@/widgets/intake-board'
+import { guessKind, isIntakeFile, type PendingFile } from '@/widgets/intake-board'
 import { datasetDimensionsForFile, type DatasetMetaInput, type ExistingFile } from '../lib/existing'
 import styles from './IntakePage.module.css'
+
+const ROLE_REASON_LABEL: Record<string, string> = {
+  template: 'шаблон',
+  content: 'материалы',
+  data: 'данные',
+  brandbook: 'брендбук',
+}
+
+function formatFileReason(reason: string | null | undefined): string {
+  if (!reason) return 'Не читаю такой формат'
+  return reason.replace(/«(template|content|data|brandbook)»/g, (_, role: string) => `«${ROLE_REASON_LABEL[role] ?? role}»`)
+}
+
+function suggestedKind(file: IntakeFile): IntakeKind {
+  if (file.kind !== 'unknown') return file.kind
+  const guessed = guessKind(file.name)
+  return guessed === 'unknown' ? 'content' : guessed
+}
 
 interface FileRowsProps {
   files: readonly IntakeFile[]
@@ -32,6 +50,8 @@ export function FileRows({ files, pending, datasets: datasetsProp, onKind, onRem
     <ul className={styles.files} aria-label="Файлы">
       {files.map((file) => {
         const meta = file.accepted && file.kind === 'data' ? datasetDimensionsForFile(file.name, datasets, dataFileCount) : null
+        const canChooseKind = file.accepted || isIntakeFile(file.name)
+        const selectedKind = suggestedKind(file)
         return (
           <li key={file.name} className={styles.file} data-broken={!file.accepted || undefined}>
             <span className={styles.fileName} title={file.name}>
@@ -43,10 +63,15 @@ export function FileRows({ files, pending, datasets: datasetsProp, onKind, onRem
                 </>
               )}
             </span>
-            {file.accepted ? (
+            {!file.accepted && (
+              <span className={styles.fileError} role="alert">
+                {formatFileReason(file.reason)}
+              </span>
+            )}
+            {canChooseKind && (
               <select
                 className={styles.kind}
-                value={file.kind}
+                value={selectedKind}
                 aria-label={`Что это за файл: ${file.name}`}
                 onChange={(event) => onKind(file.name, event.target.value as IntakeKind)}
               >
@@ -56,8 +81,6 @@ export function FileRows({ files, pending, datasets: datasetsProp, onKind, onRem
                   </option>
                 ))}
               </select>
-            ) : (
-              <span className={styles.fileError}>{file.reason ?? 'Не читаю такой формат'}</span>
             )}
             <button type="button" className={styles.remove} onClick={() => onRemove(file.name)} aria-label={`Убрать ${file.name}`}>
               <Icon as={X} size={14} />

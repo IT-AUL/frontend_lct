@@ -122,6 +122,18 @@ test.describe('plan step', () => {
     await expect(page.getByRole('list', { name: 'Слайды' }).getByRole('button', { name: /^Подробнее о слайде \d+$/ })).toHaveCount(before + 1)
   })
 
+  test('searches materials for numbers and displays the outcome message', async ({ page }) => {
+    await openPlan(page)
+
+    await slideTile(page, 2).click()
+    const editor = page.getByRole('complementary', { name: 'Слайд 2' })
+    await editor.getByRole('radiogroup', { name: 'Что показать на слайде' }).getByRole('radio', { name: 'График' }).click()
+    const findNumbers = editor.getByRole('button', { name: 'Найти цифры' })
+    await expect(findNumbers).toBeVisible()
+    await findNumbers.click()
+    await expect(editor.getByRole('status')).toContainText(/Нашёл и добавил:|Новых цифр в материалах не нашлось/)
+  })
+
   test('flags an off-topic slide and keeps it on request', async ({ page }) => {
     await openPlan(page)
 

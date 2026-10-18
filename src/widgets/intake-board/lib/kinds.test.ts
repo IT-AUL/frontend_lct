@@ -1,4 +1,4 @@
-import { fileExtension, guessKind, isContentFile, isIntakeFile, mergeIntakeFiles, roleLabel } from './kinds'
+import { fileExtension, guessKind, isContentFile, isImageFile, isIntakeFile, mergeIntakeFiles, roleLabel } from './kinds'
 
 describe('fileExtension', () => {
   it('returns the lowercase extension', () => {
@@ -9,8 +9,8 @@ describe('fileExtension', () => {
 })
 
 describe('isIntakeFile', () => {
-  it('accepts all supported formats', () => {
-    for (const name of ['a.pptx', 'a.potx', 'a.md', 'a.txt', 'a.docx', 'a.pdf', 'a.csv', 'a.xlsx', 'a.json', 'a.png', 'a.jpg', 'a.jpeg', 'a.svg']) {
+  it('accepts all supported formats including .png, .jpg and .webp', () => {
+    for (const name of ['a.pptx', 'a.potx', 'a.md', 'a.txt', 'a.docx', 'a.pdf', 'a.csv', 'a.xlsx', 'a.json', 'a.png', 'a.jpg', 'a.jpeg', 'a.webp', 'a.svg']) {
       expect(isIntakeFile(name)).toBe(true)
     }
   })
@@ -33,15 +33,18 @@ describe('guessKind', () => {
     expect(guessKind('sales.xlsx')).toBe('data')
   })
 
-  it('maps brand files to brandbook', () => {
+  it('maps brand files and images (.png, .jpg, .webp) to brandbook', () => {
     expect(guessKind('tokens.json')).toBe('brandbook')
     expect(guessKind('brand-guide.pdf')).toBe('brandbook')
+    expect(guessKind('logo.png')).toBe('brandbook')
+    expect(guessKind('palette.jpg')).toBe('brandbook')
+    expect(guessKind('slide-page.webp')).toBe('brandbook')
+    expect(isImageFile('slide-page.webp')).toBe(true)
   })
 
   it('maps everything else to content', () => {
     expect(guessKind('notes.md')).toBe('content')
     expect(guessKind('report.docx')).toBe('content')
-    expect(guessKind('logo.png')).toBe('content')
   })
 })
 

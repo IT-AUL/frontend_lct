@@ -133,6 +133,103 @@ export function passportConflicts(brandbook: BrandbookSummary | null, priority: 
   })
 }
 
+const FONT_ROLE_LABEL: Record<string, string> = {
+  heading: 'заголовки',
+  body: 'текст',
+  accent: 'акцент',
+  mono: 'моноширинный',
+}
+
+export interface PassportBrandColorItem {
+  hex: string
+  name: string
+  role: string | null
+  quote: string | null
+  page: string | null
+}
+
+export interface PassportBrandFontItem {
+  family: string
+  role: string | null
+  quote: string | null
+  page: string | null
+}
+
+export interface PassportBrandDetails {
+  colors: PassportBrandColorItem[]
+  fonts: PassportBrandFontItem[]
+  analyzed: boolean
+}
+
+function cleanBrandQuote(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  const stripped = raw
+    .replace(/^[«"'\s]+|[»"'\s]+$/g, '')
+    .replace(/\s*#[0-9a-f]{3,8}\b/gi, '')
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/[,:;—–-]\s*$/, '')
+    .replace(/^[«"'\s]+|[»"'\s]+$/g, '')
+    .trim()
+  return stripped || null
+}
+
+export function extractBrandPage(item: Record<string, unknown>): string | null {
+  if (typeof item.page === 'number' && Number.isFinite(item.page)) return `стр. ${item.page}`
+  if (typeof item.page === 'string' && item.page.trim()) {
+    const trimmed = item.page.trim()
+    return /^\d+$/.test(trimmed) ? `стр. ${trimmed}` : trimmed
+  }
+  const source = typeof item.source === 'string' ? item.source : ''
+  const match = /(?:page=|#p|стр\.?\s*)(\d+)/i.exec(source)
+  return match?.[1] ? `стр. ${match[1]}` : null
+}
+
+export function extractBrandQuote(item: Record<string, unknown>, fallbackName?: string | null): string | null {
+  if (typeof item.quote === 'string' && item.quote.trim()) {
+    return cleanBrandQuote(item.quote)
+  }
+  const source = typeof item.source === 'string' ? item.source : ''
+  const visionMatch = /(?::vision:|#p\d+:)\s*(.+)$/i.exec(source)
+  if (visionMatch?.[1]) {
+    return cleanBrandQuote(visionMatch[1])
+  }
+  if (fallbackName && !/^#[0-9a-f]{3,8}$/i.test(fallbackName.trim()) && !/^[a-z0-9_]+(\.[a-z0-9_]+)+$/i.test(fallbackName.trim())) {
+    return cleanBrandQuote(fallbackName)
+  }
+  return null
+}
+
+export function passportBrandDetails(brandbook: BrandbookSummary | null): PassportBrandDetails {
+  if (!brandbook) return { colors: [], fonts: [], analyzed: false }
+  const colors: PassportBrandColorItem[] = []
+  for (const color of brandbook.palette ?? []) {
+    const hex = normalizeHex(color.hex)
+    if (!hex) continue
+    const record = color as Record<string, unknown>
+    const page = extractBrandPage(record)
+    const quote = extractBrandQuote(record, color.name)
+    const role = typeof color.role === 'string' && color.role ? (FIELD_LABEL[`color.${color.role}`] ?? color.role) : null
+    colors.push({ hex, name: colorName(hex), role, quote, page })
+  }
+  const fonts: PassportBrandFontItem[] = []
+  for (const font of brandbook.fonts ?? []) {
+    const family = typeof font.family === 'string' ? font.family.trim() : ''
+    if (!family) continue
+    const record = font as Record<string, unknown>
+    const page = extractBrandPage(record)
+    const quote = extractBrandQuote(record, null)
+    const role = typeof font.role === 'string' && font.role ? (FONT_ROLE_LABEL[font.role] ?? font.role) : null
+    fonts.push({ family, role, quote, page })
+  }
+  const rawRecord = brandbook as unknown as Record<string, unknown>
+  const analyzed =
+    Boolean(rawRecord.analysis) ||
+    colors.some((item) => Boolean(item.quote || item.page)) ||
+    fonts.some((item) => Boolean(item.quote || item.page))
+  return { colors, fonts, analyzed }
+}
+
 export function cleanLayoutName(raw: string | null | undefined): string {
   if (!raw) return ''
   const trimmed = raw.trim()
