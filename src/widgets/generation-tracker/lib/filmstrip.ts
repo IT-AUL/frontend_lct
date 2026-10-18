@@ -450,16 +450,19 @@ export function latestAssistantNote(
 ): string | null {
   if (events.length === 0) return null
 
-  const readySlots = new Set<string>()
+  const readyByVariant = new Map<string, Set<string>>()
   for (const event of events) {
     if (event.type !== 'slide.ready') continue
     if (!matchesVariant(event, variantId)) continue
     const previewArtifactId = readString(event, 'preview_artifact_id') ?? readString(event, 'image_artifact_id')
     if (!previewArtifactId) continue
     const key = readString(event, 'slide_key') ?? readString(event, 'slide_id') ?? String(readNumber(event, 'index') ?? event.sequence)
-    readySlots.add(key)
+    const variantKey = readString(event, 'variant_id') ?? (key.includes(':') ? key.slice(0, key.indexOf(':')) : '')
+    const slots = readyByVariant.get(variantKey) ?? new Set<string>()
+    slots.add(key)
+    readyByVariant.set(variantKey, slots)
   }
-  const readyCount = readySlots.size
+  const readyCount = Math.max(0, ...[...readyByVariant.values()].map((slots) => slots.size))
 
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const event = events[index]
@@ -469,7 +472,7 @@ export function latestAssistantNote(
     if (note) return note
     if (event.type === 'slide.ready' && readyCount > 0) {
       const total = totalSlides && totalSlides > 0 ? totalSlides : readyCount
-      return `Собираю ${readyCount} из ${total}…`
+      return `Собираю ${Math.min(readyCount, total)} из ${total}…`
     }
   }
 

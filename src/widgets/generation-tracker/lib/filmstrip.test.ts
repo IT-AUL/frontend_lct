@@ -1,6 +1,6 @@
 import type { JobEvent } from '@/entities/assistant'
 import type { DeckPlan, SlideDraftItem } from '@/entities/generation'
-import { buildFilmstripSlots, buildStageSummary } from './filmstrip'
+import { buildFilmstripSlots, buildStageSummary, latestAssistantNote } from './filmstrip'
 
 const plan: DeckPlan = {
   id: 'plan_1',
@@ -258,5 +258,22 @@ describe('buildStageSummary', () => {
     expect(completedSummary.stages[0]?.state).toBe('done')
     expect(completedSummary.stages[1]).toEqual({ id: 'slides', label: 'Слайды 3 из 3', statusLabel: 'готово', state: 'done' })
     expect(completedSummary.stages[2]).toEqual({ id: 'audit', label: 'Проверка', statusLabel: 'готово', state: 'done' })
+  })
+})
+
+describe('latestAssistantNote', () => {
+  it('counts ready slides per deck when all three variants build together', () => {
+    const events: JobEvent[] = []
+    let sequence = 1
+    for (const variant of ['var_a', 'var_b', 'var_c']) {
+      for (let index = 0; index < 3; index += 1) {
+        events.push(makeEvent(sequence, 'slide.ready', { variant_id: variant, slide_key: `${variant}:${index}`, preview_artifact_id: `art_${sequence}` }))
+        sequence += 1
+      }
+    }
+
+    expect(latestAssistantNote(events, null, 3)).toBe('Собираю 3 из 3…')
+    expect(latestAssistantNote(events.slice(0, 4), null, 3)).toBe('Собираю 3 из 3…')
+    expect(latestAssistantNote(events.slice(0, 2), 'var_a', 3)).toBe('Собираю 2 из 3…')
   })
 })
