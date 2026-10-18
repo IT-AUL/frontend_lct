@@ -10,8 +10,21 @@ import { routes } from '@/shared/config'
 import { readIntakeHandoff } from '@/shared/lib/intake-handoff'
 import { Button, ChoiceListSkeleton, EmptyState, PassportSkeleton, Segmented, useToast } from '@/shared/ui'
 import { DesignDnaSkeleton } from '@/widgets/design-dna'
-import { guessKind, IntakeDropzone, isContentFile, isIntakeFile, mergeIntakeFiles } from '@/widgets/intake-board'
-import type { PendingFile } from '@/widgets/intake-board'
+import {
+  buildPresetFiles,
+  detectActivePresetId,
+  getStage2Preset,
+  guessKind,
+  IntakeDropzone,
+  isContentFile,
+  isIntakeFile,
+  isPresetFileName,
+  isPresetTopic,
+  mergeIntakeFiles,
+  STAGE2_PRESETS,
+  type PendingFile,
+  type Stage2PresetId,
+} from '@/widgets/intake-board'
 import { StepShell } from '@/widgets/step-shell'
 import { existingFiles, topicFromBrief, withoutColorCodes } from '../lib/existing'
 import { dnaFileName, downloadJson, previewIds } from '../lib/passport'
@@ -93,14 +106,14 @@ export function IntakePage() {
     if (data.assistant_note) setNote(data.assistant_note)
   }
 
-  const sendFilesLegacy = async (picked: File[]) => {
+  const sendFilesLegacy = async (picked: File[], ideaOverride?: string) => {
     setFiles((prev) => mergeIntakeFiles(prev, picked.map(legacyFile)))
     setPendingFiles(picked.map((file) => ({ name: file.name, size: file.size })))
     setLegacyError(null)
     const templates = picked.filter((file) => /\.(pptx|potx)$/i.test(file.name))
     const templateNames = new Set(templates)
     const others = picked.filter((file) => !templateNames.has(file) && isIntakeFile(file.name))
-    const text = ideaText.trim()
+    const text = (ideaOverride ?? ideaText).trim()
     const ideaFile = text ? new File([text], 'idea.md', { type: 'text/markdown' }) : null
     try {
       if (templates[0]) await uploadTemplate(projectId, templates[0])
@@ -119,7 +132,7 @@ export function IntakePage() {
     if (!picked.length || upload.isPending) return
     setLegacyError(null)
     if (intakeMissing.current) {
-      void sendFilesLegacy(picked)
+      void sendFilesLegacy(picked, ideaOverride)
       return
     }
     setPendingFiles(picked.map((file) => ({ name: file.name, size: file.size })))
@@ -131,12 +144,22 @@ export function IntakePage() {
           if (data) applyIntake(data)
           else {
             intakeMissing.current = true
-            void sendFilesLegacy(picked)
+            void sendFilesLegacy(picked, ideaOverride)
           }
         },
         onError: () => setPendingFiles([]),
       },
     )
+  }
+
+  const applyPreset = (presetId: Stage2PresetId) => {
+    const preset = getStage2Preset(presetId)
+    if (!preset || upload.isPending || pendingFiles.length > 0 || advancing) return
+    const currentIdea = ideaText.trim()
+    const nextIdea = !currentIdea || isPresetTopic(currentIdea) ? preset.topic : currentIdea
+    setIdea(nextIdea)
+    setFiles((current) => current.filter((file) => !isPresetFileName(file.name)))
+    sendFiles(buildPresetFiles(preset.id), nextIdea)
   }
 
   const consumeHandoff = useEffectEvent(() => {
@@ -296,6 +319,7 @@ export function IntakePage() {
   const uploadError = legacyError ?? (upload.error ? errorText(upload.error, 'Не удалось отправить файлы.') : null)
   const priorityValue = priorityOverride ?? brandbookSummary.data?.priority ?? 'brandbook'
   const hint = canContinue ? null : templateId ? 'Добавьте материалы или напишите, о чём презентация.' : 'Нужен шаблон в формате .pptx или .potx.'
+  const activePresetId = detectActivePresetId([...files.map((file) => file.name), ...pendingFiles.map((file) => file.name)])
 
   return (
     <StepShell
@@ -361,6 +385,24 @@ export function IntakePage() {
         />
       </label>
       <IntakeDropzone onFiles={sendFiles} disabled={busy} compact />
+      <div className={styles.presets} role="group" aria-label="Подставить пример данных">
+        <span className={styles.presetsLabel}>Подставить пример данных:</span>
+        <div className={styles.presetChips}>
+          {STAGE2_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className={styles.presetChip}
+              disabled={busy}
+              aria-pressed={activePresetId === preset.id}
+              title={`${preset.title} · ${preset.summary}`}
+              onClick={() => applyPreset(preset.id)}
+            >
+              {preset.chip}
+            </button>
+          ))}
+        </div>
+      </div>
       {files.length === 0 && pendingFiles.length === 0 && (
         <ExistingRows
           files={existingFiles({
@@ -371,7 +413,9 @@ export function IntakePage() {
           })}
         />
       )}
-      {(files.length > 0 || pendingFiles.length > 0) && <FileRows files={files} pending={pendingFiles} onKind={changeKind} onRemove={removeFile} />}
+      {(files.length > 0 || pendingFiles.length > 0) && (
+        <FileRows files={files} pending={pendingFiles} packId={packId} onKind={changeKind} onRemove={removeFile} />
+      )}
       {uploadError && (
         <p className={styles.error} role="alert">
           {uploadError}

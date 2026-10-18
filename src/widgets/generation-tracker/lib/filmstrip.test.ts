@@ -276,4 +276,61 @@ describe('latestAssistantNote', () => {
     expect(latestAssistantNote(events.slice(0, 4), null, 3)).toBe('Собираю 3 из 3…')
     expect(latestAssistantNote(events.slice(0, 2), 'var_a', 3)).toBe('Собираю 2 из 3…')
   })
+
+  it('never exceeds 9 slides when 3 variants emit 27 slide.ready events for a 9-slide deck (F-74)', () => {
+    const nineSlidePlan: DeckPlan = {
+      ...plan,
+      slides: Array.from({ length: 9 }, (_, idx) => ({
+        id: `slide-${idx}`,
+        index: idx,
+        section_id: 'sec-1',
+        purpose: 'content',
+        title_intent: `Слайд ${idx + 1}`,
+        key_message: `Тезис ${idx + 1}`,
+        content_units: [],
+      })),
+    } as unknown as DeckPlan
+
+    const events: JobEvent[] = []
+    let sequence = 1
+    for (const variant of ['var_faithful', 'var_balanced', 'var_visual']) {
+      for (let slideNum = 1; slideNum <= 9; slideNum += 1) {
+        events.push(
+          makeEvent(sequence, 'slide.ready', {
+            variant_id: variant,
+            slide_key: `${variant}:${slideNum}`,
+            index: slideNum,
+            slide_id: `${variant}_s_${slideNum}`,
+            preview_revision: 1,
+            status: 'draft',
+            preview_artifact_id: `art_${sequence}`,
+          }),
+        )
+        sequence += 1
+      }
+    }
+
+    expect(events).toHaveLength(27)
+    expect(latestAssistantNote(events, null, 9)).toBe('Собираю 9 из 9…')
+    expect(latestAssistantNote(events, 'var_balanced', 9)).toBe('Собираю 9 из 9…')
+
+    const slotsWithoutVariantId = buildFilmstripSlots({
+      plan: nineSlidePlan,
+      variantId: null,
+      variantState: 'running',
+      events,
+    })
+    expect(slotsWithoutVariantId).toHaveLength(9)
+
+    const summary = buildStageSummary({
+      phase: 'running',
+      stage: 'render',
+      cardState: 'running',
+      slots: slotsWithoutVariantId,
+      hasPlan: true,
+    })
+    expect(summary.totalSlides).toBe(9)
+    expect(summary.readySlides).toBe(9)
+    expect(summary.stages[1]?.label).toBe('Слайды 9 из 9')
+  })
 })

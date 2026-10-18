@@ -35,8 +35,8 @@ export function isIntakeFile(name: string): boolean {
 export function guessKind(name: string): IntakeKind {
   const ext = fileExtension(name)
   if (ext === '.pptx' || ext === '.potx') return 'template'
-  if (ext === '.csv' || ext === '.xlsx') return 'data'
   if (IMAGE_EXTENSIONS.has(ext) || /brand|бренд|tokens|logo|логотип/i.test(name)) return 'brandbook'
+  if (ext === '.csv' || ext === '.xlsx' || ext === '.json') return 'data'
   return 'content'
 }
 
