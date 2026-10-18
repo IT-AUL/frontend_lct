@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import type { DesignDna, TemplateDetail } from '@/entities/template'
 import { pluralize } from '@/shared/lib/format'
 import { buildDnaView } from '@/widgets/design-dna'
-import { colorName } from '../lib/passport'
+import { cleanLayoutName, colorName } from '../lib/passport'
 import styles from './TemplateRules.module.css'
 
 const ROLE_NAME: Record<string, string> = {
@@ -22,7 +22,9 @@ export function TemplateRules({ detail, dna }: { detail: TemplateDetail; dna: De
   const { counts } = system
   const observed = system.observedFonts.slice(0, 3)
   const topLayout = system.layoutUsage[0]
-  const roles = facts.roles.filter((role) => role.slides > 0)
+  const topBlueprint = topLayout ? facts.blueprints.find((item) => item.key === topLayout.layout) : undefined
+  const topLayoutName = topLayout ? cleanLayoutName(topBlueprint?.name || topLayout.layout) : ''
+  const roles = facts.roles.filter((role) => role.slides > 0 && role.role in ROLE_NAME)
   const notes = [
     ...understanding.conflicts.map((conflict) =>
       conflict.kind === 'font'
@@ -70,15 +72,17 @@ export function TemplateRules({ detail, dna }: { detail: TemplateDetail; dna: De
         )}
       </section>
 
-      <section className={styles.section}>
-        <h3 className={styles.heading}>Раскладки</h3>
-        {roles.length > 0 && <p className={styles.text}>{roles.map((role) => `${ROLE_NAME[role.role] ?? role.role} — ${role.slides}`).join(', ')}</p>}
-        {topLayout && (
-          <p className={styles.muted}>
-            Чаще всего — «{topLayout.layout}», {topLayout.slides} {pluralize(topLayout.slides, ['слайд', 'слайда', 'слайдов'])}.
-          </p>
-        )}
-      </section>
+      {(roles.length > 0 || (topLayout && topLayoutName)) && (
+        <section className={styles.section}>
+          <h3 className={styles.heading}>Раскладки</h3>
+          {roles.length > 0 && <p className={styles.text}>{roles.map((role) => `${ROLE_NAME[role.role] ?? role.role} — ${role.slides}`).join(', ')}</p>}
+          {topLayout && topLayoutName && (
+            <p className={styles.muted}>
+              Чаще всего — «{topLayoutName}», {topLayout.slides} {pluralize(topLayout.slides, ['слайд', 'слайда', 'слайдов'])}.
+            </p>
+          )}
+        </section>
+      )}
 
       {notes.length > 0 && (
         <section className={styles.section}>

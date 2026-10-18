@@ -64,19 +64,37 @@ export function blockTitle(block: UnderstandingBlock): string {
   return sentence.length > 120 ? `${sentence.slice(0, 117)}…` : sentence
 }
 
+export interface MaterialCounts {
+  tables: number
+  textBlocks: number
+  numbers: number
+}
+
+export function materialCounts(understanding: Understanding): MaterialCounts {
+  const insights = insightEntries(understanding)
+  const blocks = textBlocks(understanding)
+  const numericBlocks = blocks.filter((block) => block.kind === 'number' || /\d/.test(block.text ?? '')).length
+  return {
+    tables: understanding.datasets.length,
+    textBlocks: blocks.length,
+    numbers: insights.length + numericBlocks,
+  }
+}
+
 export function stepNote(understanding: Understanding, excludedInsights = 0): string {
   const insights = insightEntries(understanding)
   const pending = insights.filter((entry) => needsDecision(entry.insight)).length
-  const blocks = textBlocks(understanding).length
+  const counts = materialCounts(understanding)
   const capacity = understanding.summary.capacity_slides ?? 0
   const parts: string[] = []
-  if (insights.length) parts.push(`${insights.length} ${pluralize(insights.length, ['вывод', 'вывода', 'выводов'])} из данных`)
-  if (blocks) parts.push(`${blocks} ${pluralize(blocks, ['мысль', 'мысли', 'мыслей'])} из текста`)
-  const found = parts.length ? `Нашёл ${parts.join(' и ')}.` : 'Материала пока мало.'
+  if (counts.tables > 0) parts.push(`${counts.tables} ${pluralize(counts.tables, ['таблица', 'таблицы', 'таблиц'])}`)
+  if (counts.textBlocks > 0) parts.push(`${counts.textBlocks} ${pluralize(counts.textBlocks, ['текстовый блок', 'текстовых блока', 'текстовых блоков'])}`)
+  if (counts.numbers > 0) parts.push(`${counts.numbers} ${pluralize(counts.numbers, ['числовой показатель', 'числовых показателя', 'числовых показателей'])}`)
+  const found = parts.length ? `В материалах: ${parts.join(', ')}.` : 'Материала пока мало.'
   const room = capacity > 0 ? ` Хватит примерно на ${capacity} ${pluralize(capacity, ['слайд', 'слайда', 'слайдов'])}.` : ''
   const skipped = excludedInsights > 0 ? ` ${excludedInsights} ${pluralize(excludedInsights, ['вывод не включу', 'вывода не включу', 'выводов не включу'])}.` : ''
   const ask = pending
-    ? ` ${pending} ${pluralize(pending, ['предложение ждёт', 'предложения ждут', 'предложений ждут'])} вашего решения — отметьте их на карточках.`
+    ? ` ${pending} ${pluralize(pending, ['предложение ждёт', 'предложения ждут', 'предложений ждут'])} вашего решения — отметьте выводы на карточках.`
     : ' Отметьте выводы или откройте карточку для правки.'
   return `${found}${room}${skipped}${ask}`
 }

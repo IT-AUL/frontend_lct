@@ -310,6 +310,16 @@ export function applyOptimisticNotes(understanding: Understanding, items: readon
   }
 }
 
+const STALE_PARTS_NOTE_RE = /материалы\s+в\s+\d+\s+част/i
+
+function formatMaterialSummaryParts(tables: number, textBlockCount: number, numbers: number): string {
+  const parts: string[] = []
+  if (tables > 0) parts.push(`${tables} ${pluralize(tables, ['таблица', 'таблицы', 'таблиц'])}`)
+  if (textBlockCount > 0) parts.push(`${textBlockCount} ${pluralize(textBlockCount, ['текстовый блок', 'текстовых блока', 'текстовых блоков'])}`)
+  if (numbers > 0) parts.push(`${numbers} ${pluralize(numbers, ['числовой показатель', 'числовых показателя', 'числовых показателей'])}`)
+  return parts.join(', ')
+}
+
 export function resolveUnderstandingNote(
   understanding: Understanding | null | undefined,
   sessionNote: string | null | undefined,
@@ -320,16 +330,25 @@ export function resolveUnderstandingNote(
     return 'Факты и графики по таблицам уже посчитаны, дописываю краткие пояснения к цифрам…'
   }
   const apiNote = understanding?.assistant_note ?? understanding?.summary.assistant_note
-  if (apiNote && apiNote.trim()) return sanitizeAssistantCopy(apiNote.trim())
-  if (sessionNote && sessionNote.trim()) return sanitizeAssistantCopy(sessionNote.trim())
+  if (apiNote && apiNote.trim() && !STALE_PARTS_NOTE_RE.test(apiNote)) return sanitizeAssistantCopy(apiNote.trim())
+  if (sessionNote && sessionNote.trim() && !STALE_PARTS_NOTE_RE.test(sessionNote)) return sanitizeAssistantCopy(sessionNote.trim())
   if (!understanding) return 'Разбираю структуру ваших материалов и считаю показатели по таблицам…'
   if ((understanding.summary.capacity_slides ?? 0) <= 2 && understanding.datasets.length === 0) {
     return 'Материала пока на пару слайдов — на следующем шаге решим, сделать короткую колоду или добрать факты.'
   }
+  const tables = understanding.datasets.length
+  const nonDataBlocks = understanding.blocks.filter((block) => !block.dataset_id && (block.title || block.text))
+  const insightCount = understanding.datasets.reduce((sum, ds) => sum + ds.insights.length, 0)
+  const numericBlocks = nonDataBlocks.filter((block) => block.kind === 'number' || /\d/.test(block.text ?? '')).length
+  const summaryParts = formatMaterialSummaryParts(tables, nonDataBlocks.length, insightCount + numericBlocks)
   if (understanding.datasets.length > 0) {
-    return 'В таблицах нашёл готовые сюжеты с цифрами — проверьте выводы и отметьте предложения, с которыми согласны.'
+    return summaryParts
+      ? `В материалах: ${summaryParts}. В таблицах нашёл готовые сюжеты с цифрами — проверьте выводы и отметьте предложения, с которыми согласны.`
+      : 'В таблицах нашёл готовые сюжеты с цифрами — проверьте выводы и отметьте предложения, с которыми согласны.'
   }
-  return 'Проверьте, как я понял ваши материалы: лишние блоки можно убрать, а важные выводы — уточнить.'
+  return summaryParts
+    ? `В материалах: ${summaryParts}. Проверьте, как я понял ваши материалы: лишние блоки можно убрать, а важные выводы — уточнить.`
+    : 'Проверьте, как я понял ваши материалы: лишние блоки можно убрать, а важные выводы — уточнить.'
 }
 
 function normalizeChartFamily(chartType: string | null | undefined): SparkGeometry['chartType'] {
@@ -437,7 +456,7 @@ export function buildSparkGeometry(preview: DataPreview | null | undefined, fall
       fraction,
       dashArray: `${len} ${Number((circumference - len).toFixed(2))}`,
       dashOffset: Number((-offset).toFixed(2)),
-      label: categories[idx] ?? `Доля ${idx + 1}`,
+    label: categories[idx] ?? `Доля ${idx + 1}`,
     }
     offset += len
     return item
@@ -498,23 +517,43 @@ export function fallbackUnderstandingFromContentPack(pack: ContentPack): Underst
       })
     })
   }
+  const datasets: UnderstandingDataset[] = (pack.datasets ?? []).map((ds) => ({
+    id: ds.id,
+    title: ds.title,
+    file: ds.file_name ?? null,
+    profile_summary:
+      [
+        ds.row_count > 0 ? `${ds.row_count} ${pluralize(ds.row_count, ['строка', 'строки', 'строк'])}` : null,
+        ds.columns?.length ? `${ds.columns.length} ${pluralize(ds.columns.length, ['колонка', 'колонки', 'колонок'])}` : null,
+      ]
+        .filter(Boolean)
+        .join('; ') || null,
+    task: null,
+    task_ru: null,
+    recommendations: [],
+    why: null,
+    insights: [],
+  }))
   const mainPoints = pack.sections
     .map((s) => s.heading)
     .filter((h): h is string => Boolean(h && h.trim()))
     .slice(0, 3)
-  const capacity = Math.max(3, Math.min(12, pack.sections.length + 2))
+  const capacity = Math.max(3, Math.min(12, pack.sections.length + datasets.length + 2))
+  const numberCount = blocks.filter((b) => b.kind === 'number').length + datasets.length
+  const summaryParts = formatMaterialSummaryParts(datasets.length, blocks.length, numberCount)
+  const note = summaryParts ? `В материалах: ${summaryParts}.` : `Разобрал материалы: разделов — ${pack.sections.length}.`
   return {
     content_pack_id: pack.id,
     blocks,
     summary: {
       capacity_slides: capacity,
       main_points: mainPoints,
-      assistant_note: `Разобрал материалы: разделов — ${pack.sections.length}.`,
+      assistant_note: note,
     },
-    datasets: [],
+    datasets,
     brief: {},
     context: null,
     interpretation: null,
-    assistant_note: `Разобрал материалы: разделов — ${pack.sections.length}.`,
+    assistant_note: note,
   }
 }

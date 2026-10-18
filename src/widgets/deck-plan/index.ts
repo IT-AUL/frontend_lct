@@ -3,6 +3,7 @@ export {
   buildPlanView,
   CHART_TYPE_LABEL,
   chartTypeLabel,
+  contentPackSourceMap,
   deckPurposeLabel,
   EDITOR_VISUALS,
   formatSlideRange,
@@ -17,7 +18,7 @@ export {
   SOURCE_KIND_LABEL,
   VISUAL_LABEL,
 } from './lib/plan'
-export type { EvidenceRef, PlanRow, PlanSectionSummary, PlanStats, PlanView, QuickActionKind, SlideChartOption, SlideChartView, SlideSource, SourceKind } from './lib/plan'
+export type { EvidenceRef, PlanRow, PlanSectionSummary, PlanStats, PlanView, QuickActionKind, SlideChartOption, SlideChartView, SlideSource, SourceKind, SourcePackLike, SourcePlanLike } from './lib/plan'
 export { ChartMiniSvg, ChartReasoningBox } from './ui/ChartReasoningBox'
 export { PlanCard } from './ui/PlanCard'
 export { DeckPlanView } from './ui/DeckPlanView'

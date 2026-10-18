@@ -1,13 +1,35 @@
+import { useParams } from 'react-router'
+import { useAssistantSession, useUnderstanding } from '@/entities/assistant'
+import { useContentPack } from '@/entities/content-pack'
 import { isEditableUnit, type DeckPlan, type SlidePlan } from '@/entities/generation'
 import type { QuickSlideAction, SlidePatch } from '@/features/edit-deck-plan'
 import { Button, Icon, X } from '@/shared/ui'
-import { availableQuickActions, EDITOR_VISUALS, parseSlideChartView, VISUAL_LABEL } from '@/widgets/deck-plan'
+import {
+  availableQuickActions,
+  contentPackSourceMap,
+  EDITOR_VISUALS,
+  parseEvidenceRef,
+  parseSlideChartView,
+  slideSources,
+  VISUAL_LABEL,
+  type SourcePackLike,
+} from '@/widgets/deck-plan'
 import styles from './PlanPage.module.css'
 
 const ACTION_LABEL: Partial<Record<QuickSlideAction, string>> = {
   shorten: 'Сократить',
   split: 'Разбить на два',
   merge_next: 'Объединить со следующим',
+}
+
+function findPlanPackId(plan: DeckPlan): string | null {
+  for (const item of plan.slides) {
+    for (const raw of item.evidence_ids) {
+      const { packId } = parseEvidenceRef(raw)
+      if (packId && packId !== 'ds') return packId
+    }
+  }
+  return null
 }
 
 interface SlideEditorProps {
@@ -17,6 +39,7 @@ interface SlideEditorProps {
   last: boolean
   researching: boolean
   canResearch: boolean
+  contentPack?: SourcePackLike | null
   onUpdate: (patch: SlidePatch) => void
   onUnitChange: (position: number, text: string) => void
   onUnitAdd: () => void
@@ -29,7 +52,14 @@ interface SlideEditorProps {
 }
 
 export function SlideEditor(props: SlideEditorProps) {
-  const { plan, slide, first, last, researching, canResearch, onUpdate, onUnitChange, onUnitAdd, onUnitRemove, onMove, onChart, onAction, onResearch, onKeep } = props
+  const { plan, slide, first, last, researching, canResearch, contentPack: packProp, onUpdate, onUnitChange, onUnitAdd, onUnitRemove, onMove, onChart, onAction, onResearch, onKeep } = props
+  const { projectId } = useParams<{ projectId: string }>()
+  const session = useAssistantSession(packProp !== undefined ? null : projectId)
+  const packId = packProp !== undefined ? null : (session.data?.artifacts.content_pack_id ?? findPlanPackId(plan))
+  const fetchedPack = useContentPack(packId)
+  const fetchedUnderstanding = useUnderstanding(packId)
+  const sourceMap = contentPackSourceMap(packProp ?? fetchedPack.data ?? fetchedUnderstanding.data, plan)
+  const sources = slideSources(slide.evidence_ids, sourceMap)
   const units = slide.content_units.map((unit, position) => ({ unit, position })).filter(({ unit }) => isEditableUnit(unit))
   const chart = parseSlideChartView(slide)
   const actions = availableQuickActions(plan, slide.id).filter((action) => ACTION_LABEL[action as QuickSlideAction])
@@ -37,6 +67,12 @@ export function SlideEditor(props: SlideEditorProps) {
 
   return (
     <div className={styles.editor}>
+      {sources.length > 0 && (
+        <div className={styles.field}>
+          <span>Опирается на</span>
+          <p className={styles.hint}>{sources.map((source) => source.label).join(', ')}</p>
+        </div>
+      )}
       {slide.supports_key_message === false && (
         <div className={styles.offTopic}>
           <p>Этот слайд уводит от главной мысли.</p>

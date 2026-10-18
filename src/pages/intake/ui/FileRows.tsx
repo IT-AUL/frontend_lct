@@ -1,46 +1,70 @@
-import type { IntakeFile, IntakeKind } from '@/entities/assistant'
-import type { ExistingFile } from '../lib/existing'
+import { useParams } from 'react-router'
+import { useAssistantSession, useUnderstanding, type IntakeFile, type IntakeKind } from '@/entities/assistant'
+import { useContentPack } from '@/entities/content-pack'
+import { useProject } from '@/entities/project'
 import { FILE_KIND_LABEL, FILE_KIND_OPTIONS, Icon, X } from '@/shared/ui'
 import type { PendingFile } from '@/widgets/intake-board'
+import { datasetDimensionsForFile, type DatasetMetaInput, type ExistingFile } from '../lib/existing'
 import styles from './IntakePage.module.css'
 
 interface FileRowsProps {
   files: readonly IntakeFile[]
   pending: readonly PendingFile[]
+  datasets?: readonly DatasetMetaInput[]
   onKind: (name: string, kind: IntakeKind) => void
   onRemove: (name: string) => void
 }
 
-export function FileRows({ files, pending, onKind, onRemove }: FileRowsProps) {
+export function FileRows({ files, pending, datasets: datasetsProp, onKind, onRemove }: FileRowsProps) {
+  const { projectId } = useParams<{ projectId: string }>()
+  const hasDataFile = files.some((file) => file.accepted && file.kind === 'data')
+  const shouldFetch = datasetsProp === undefined && hasDataFile && Boolean(projectId)
+  const session = useAssistantSession(shouldFetch ? projectId : null)
+  const project = useProject(shouldFetch ? projectId : undefined)
+  const packId = shouldFetch ? (session.data?.artifacts.content_pack_id ?? project.data?.content_pack_id ?? null) : null
+  const contentPack = useContentPack(packId)
+  const understanding = useUnderstanding(packId)
+  const datasets = datasetsProp ?? (contentPack.data?.datasets?.length ? contentPack.data.datasets : understanding.data?.datasets) ?? []
+  const dataFileCount = files.filter((file) => file.accepted && file.kind === 'data').length
   const known = new Set(files.map((file) => file.name))
+
   return (
     <ul className={styles.files} aria-label="Файлы">
-      {files.map((file) => (
-        <li key={file.name} className={styles.file} data-broken={!file.accepted || undefined}>
-          <span className={styles.fileName} title={file.name}>
-            {file.name}
-          </span>
-          {file.accepted ? (
-            <select
-              className={styles.kind}
-              value={file.kind}
-              aria-label={`Что это за файл: ${file.name}`}
-              onChange={(event) => onKind(file.name, event.target.value as IntakeKind)}
-            >
-              {FILE_KIND_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {FILE_KIND_LABEL[option]}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span className={styles.fileError}>{file.reason ?? 'Не читаю такой формат'}</span>
-          )}
-          <button type="button" className={styles.remove} onClick={() => onRemove(file.name)} aria-label={`Убрать ${file.name}`}>
-            <Icon as={X} size={14} />
-          </button>
-        </li>
-      ))}
+      {files.map((file) => {
+        const meta = file.accepted && file.kind === 'data' ? datasetDimensionsForFile(file.name, datasets, dataFileCount) : null
+        return (
+          <li key={file.name} className={styles.file} data-broken={!file.accepted || undefined}>
+            <span className={styles.fileName} title={file.name}>
+              {file.name}
+              {meta && (
+                <>
+                  <br />
+                  <span className={styles.fileKind}>{meta}</span>
+                </>
+              )}
+            </span>
+            {file.accepted ? (
+              <select
+                className={styles.kind}
+                value={file.kind}
+                aria-label={`Что это за файл: ${file.name}`}
+                onChange={(event) => onKind(file.name, event.target.value as IntakeKind)}
+              >
+                {FILE_KIND_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {FILE_KIND_LABEL[option]}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className={styles.fileError}>{file.reason ?? 'Не читаю такой формат'}</span>
+            )}
+            <button type="button" className={styles.remove} onClick={() => onRemove(file.name)} aria-label={`Убрать ${file.name}`}>
+              <Icon as={X} size={14} />
+            </button>
+          </li>
+        )
+      })}
       {pending
         .filter((file) => !known.has(file.name))
         .map((file) => (
@@ -61,6 +85,12 @@ export function ExistingRows({ files }: { files: readonly ExistingFile[] }) {
         <li key={`${file.kind}:${file.name}`} className={styles.file}>
           <span className={styles.fileName} title={file.name}>
             {file.name}
+            {file.meta && (
+              <>
+                <br />
+                <span className={styles.fileKind}>{file.meta}</span>
+              </>
+            )}
           </span>
           <span className={styles.fileKind}>{FILE_KIND_LABEL[file.kind]}</span>
         </li>

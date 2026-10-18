@@ -1,6 +1,6 @@
 import type { DeckPlan, SlidePlan } from '@/entities/generation'
 import dataPlanResponse from '@/shared/api/mocks/fixtures/assistant/data-plan.json'
-import { availableQuickActions, buildPlanView, parseSlideChartView, resolveDeckKeyMessage, slideSourceKinds } from './plan'
+import { availableQuickActions, buildPlanView, contentPackSourceMap, parseSlideChartView, resolveDeckKeyMessage, slideSourceKinds, slideSources } from './plan'
 
 const dataPlan = dataPlanResponse.body.plans[0]?.deck_plan as DeckPlan
 const slides = [...dataPlan.slides].sort((a, b) => a.index - b.index)
@@ -90,5 +90,47 @@ describe('slideSourceKinds', () => {
     } as unknown as SlidePlan
     expect(slideSourceKinds(slide)).toEqual(['table', 'text', 'web'])
     expect(slideSourceKinds({ ...base, evidence_ids: ['pack_1:meta'] })).toEqual([])
+  })
+})
+
+describe('contentPackSourceMap and slideSources', () => {
+  it('resolves ds-*, sec_* and pack:meta to human names from content pack', () => {
+    const map = contentPackSourceMap({
+      title_hint: 'Итоги Q1 2026',
+      sections: [
+        { id: 'sec-0', heading: 'Резюме для руководства' },
+        { id: 'sec-1', heading: 'Региональная динамика' },
+      ],
+      datasets: [
+        { id: 'ds-95b1eb6e', title: 'Продажи за 2025–2026', file_name: 'sales.xlsx' },
+      ],
+    })
+    const sources = slideSources(
+      [
+        'pack_52549aa7639543a8b68b55c5f60d42a8:meta',
+        'pack_52549aa7639543a8b68b55c5f60d42a8:ds-95b1eb6e-trend-i0',
+        'sec_01',
+      ],
+      map,
+    )
+    expect(sources.map((item) => item.label)).toEqual([
+      'Итоги Q1 2026',
+      'Продажи за 2025–2026',
+      'Региональная динамика',
+    ])
+  })
+
+  it('falls back to ваши материалы for unknown technical IDs and never leaks raw IDs', () => {
+    const sources = slideSources(
+      ['ds-ac6da9594b45', 'sec_99', 'pack_52549aa7639543a8b68b55c5f60d42a8:meta'],
+      new Map(),
+    )
+    expect(sources).toEqual([
+      {
+        key: 'materials',
+        label: 'ваши материалы',
+        refs: ['ds-ac6da9594b45', 'sec_99', 'pack_52549aa7639543a8b68b55c5f60d42a8:meta'],
+      },
+    ])
   })
 })

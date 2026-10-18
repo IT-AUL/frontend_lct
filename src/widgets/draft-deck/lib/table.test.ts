@@ -118,4 +118,18 @@ describe('stepNote', () => {
     expect(note).toContain('вывод')
     expect(note).toContain('слайд')
   })
+
+  it('honestly counts tables, text blocks and numeric indicators', () => {
+    const state = understanding({
+      blocks: [
+        block({ id: 'b:1', kind: 'fact', text: 'Первый текстовый блок' }),
+        block({ id: 'b:2', kind: 'number', text: 'Доля рынка 34%' }),
+      ],
+      datasets: [dataset({ insights: [insight({ id: 'i-1' }), insight({ id: 'i-2' })] })],
+    })
+    const note = stepNote(state)
+    expect(note).toContain('1 таблица')
+    expect(note).toContain('2 текстовых блока')
+    expect(note).toContain('3 числовых показателя')
+  })
 })

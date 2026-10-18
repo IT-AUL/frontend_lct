@@ -5,6 +5,7 @@ import { parseResearch, useGeneration } from '@/entities/generation'
 import { useVariantSlides } from '@/entities/variant'
 import { isApiError, humanError } from '@/shared/api'
 import { Button, Skeleton, useToast } from '@/shared/ui'
+import { contentPackSourceMap } from '@/widgets/deck-plan'
 import { buildExplainView, buildReworkChips, buildSlideNotesView, findPlanSlide, findSlideAt, type ReworkChip } from '../model/slideModel'
 import styles from './SlidePanel.module.css'
 
@@ -34,7 +35,12 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
   const view = buildExplainView(explain.data, planSlide, slide)
   const chips = buildReworkChips(strategy, view.alternatives, view.hasChart)
   const contentPack = useContentPack(generation.data?.content_pack_id)
-  const headings = new Map((contentPack.data?.sections ?? []).map((section) => [section.id, section.heading]))
+  const headings = contentPackSourceMap(contentPack.data, generation.data?.deck_plan)
+  const explainDatasetLabel = explain.data?.dataset?.title?.trim() || explain.data?.dataset?.file?.trim()
+  if (explainDatasetLabel) {
+    if (explain.data?.dataset?.id) headings.set(explain.data.dataset.id, explainDatasetLabel)
+    if (!headings.has('ds:*')) headings.set('ds:*', explainDatasetLabel)
+  }
   const research = parseResearch((generation.data?.deck_plan as unknown as Record<string, unknown> | undefined)?.research)?.sources ?? []
   const notes = buildSlideNotesView(planSlide, view, headings, research)
   const [pendingKey, setPendingKey] = useState<string | null>(null)

@@ -306,6 +306,13 @@ describe('resolveUnderstandingNote', () => {
     const state = understanding({ datasets: [], summary: { capacity_slides: 2, main_points: [], assistant_note: null } })
     expect(resolveUnderstandingNote(state, null, null)).toContain('Материала пока на пару слайдов')
   })
+  it('replaces stale Материалы в 1 части note with honest counts', () => {
+    const state = understanding({ assistant_note: 'Материалы в 1 части.' })
+    const note = resolveUnderstandingNote(state, null, null)
+    expect(note).toContain('1 таблица')
+    expect(note).toContain('1 текстовый блок')
+    expect(note).toContain('1 числовой показатель')
+  })
 })
 
 describe('buildSparkGeometry', () => {
@@ -345,9 +352,10 @@ describe('buildSparkGeometry', () => {
 })
 
 describe('fallbackUnderstandingFromContentPack', () => {
-  it('builds understanding blocks from pack sections', () => {
+  it('builds understanding blocks and honest counts from pack sections and datasets', () => {
     const pack = {
       id: 'pack-x',
+      datasets: [{ id: 'ds-1', title: 'Продажи', file_name: 'sales.xlsx', row_count: 120, columns: [{}, {}] }],
       sections: [
         {
           id: 'sec-1',
@@ -365,5 +373,8 @@ describe('fallbackUnderstandingFromContentPack', () => {
     expect(state.blocks[0]?.kind).toBe('topic')
     expect(state.blocks.some((item) => item.kind === 'number')).toBe(true)
     expect(state.summary.main_points).toEqual(['Итоги'])
+    expect(state.assistant_note).toContain('1 таблица')
+    expect(state.assistant_note).toContain('3 текстовых блока')
+    expect(state.assistant_note).toContain('2 числовых показателя')
   })
 })

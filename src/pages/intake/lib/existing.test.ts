@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { existingFiles, topicFromBrief, withoutColorCodes } from './existing'
+import { datasetDimensionsForFile, existingFiles, formatDatasetDimensions, topicFromBrief, withoutColorCodes } from './existing'
 
 describe('topicFromBrief', () => {
   it('keeps a written topic and drops a bare purpose code', () => {
@@ -18,8 +18,31 @@ describe('existingFiles', () => {
     ])
   })
 
+  it('includes N строк · M колонок when dataset dimensions are present', () => {
+    expect(
+      existingFiles({
+        template: null,
+        brandbook: null,
+        datasets: [{ title: 'Продажи', row_count: 240, columns: [{}, {}, {}, {}, {}, {}] }],
+        sections: 1,
+      }),
+    ).toEqual([{ name: 'Продажи', kind: 'data', meta: '240 строк · 6 колонок' }])
+  })
+
   it('names plain text materials when there is no table', () => {
     expect(existingFiles({ template: null, brandbook: null, datasets: [], sections: 3 })).toEqual([{ name: 'Текст материалов', kind: 'content' }])
+  })
+})
+
+describe('formatDatasetDimensions and datasetDimensionsForFile', () => {
+  it('formats rows and columns with Russian pluralization', () => {
+    expect(formatDatasetDimensions({ row_count: 1, columns: [{}] })).toBe('1 строка · 1 колонка')
+    expect(formatDatasetDimensions({ row_count: 240, columns: [{}, {}, {}, {}, {}, {}] })).toBe('240 строк · 6 колонок')
+    expect(
+      datasetDimensionsForFile('purchases.xlsx', [
+        { title: 'Закупки', file_name: 'purchases.xlsx', row_count: 120, columns: [{}, {}, {}] },
+      ]),
+    ).toBe('120 строк · 3 колонки')
   })
 })
 

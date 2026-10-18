@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { BrandbookSummary, TemplateSummary } from '@/entities/assistant'
 import { buildDesignSystem } from '@/entities/template'
 import { designDnaFixture, templateDetailFixture } from '@/shared/api/mocks'
-import { colorName, dnaFileName, normalizeHex, passportColors, passportConflicts, passportFonts, passportRoles, previewIds } from './passport'
+import { cleanLayoutName, colorName, dnaFileName, normalizeHex, passportColors, passportConflicts, passportFonts, passportRoles, previewIds } from './passport'
 
 const summary: TemplateSummary = {
   template_id: 'tpl',
@@ -107,6 +107,17 @@ describe('passportConflicts', () => {
 
   it('is empty without a brandbook', () => {
     expect(passportConflicts(null, 'brandbook')).toEqual([])
+  })
+})
+
+describe('cleanLayoutName', () => {
+  it('strips numeric and technical prefixes from layout names', () => {
+    expect(cleanLayoutName('1_Заголовочный слайд')).toBe('Заголовочный слайд')
+    expect(cleanLayoutName('02 - Титульный слайд')).toBe('Титульный слайд')
+    expect(cleanLayoutName('layout_3_Рабочий слайд')).toBe('Рабочий слайд')
+    expect(cleanLayoutName('11')).toBe('')
+    expect(cleanLayoutName('unresolved')).toBe('')
+    expect(cleanLayoutName(null)).toBe('')
   })
 })
 

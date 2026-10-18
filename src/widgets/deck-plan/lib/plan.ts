@@ -219,25 +219,156 @@ export function deckPurposeLabel(purpose: string): string {
   return DECK_PURPOSE_LABEL[purpose] ?? purpose
 }
 
+export interface SourcePackLike {
+  title_hint?: string | null
+  sections?: readonly { id: string; heading: string }[] | null
+  blocks?: readonly { id: string; title?: string | null }[] | null
+  datasets?: readonly { id: string; title?: string | null; file_name?: string | null; file?: string | null }[] | null
+  tables?: readonly { title?: string | null }[] | null
+}
+
+export interface SourcePlanLike {
+  sections?: readonly { id: string; title: string }[] | null
+}
+
+const UNKNOWN_SOURCE_LABEL = 'ваши материалы'
+const AUTHOR_NOTES_LABEL = 'Тезисы автора'
+const SECTION_NUM_RE = /^sec[-_](\d+)$/i
+const DATASET_TOKEN_RE = /^(?:ds:)?(ds[-_][a-z0-9_]+?)(?:-(?:trend|by\d+|corr|dist|top|part|stat|i\d+|row\d+|col\d+)\b.*)?$/i
+const TECHNICAL_ID_RE = /^(?:(?:pack|sec|ds|ev|art|slide|tbl|block|unit)[-_:]|[bs]:|[a-z]{1,6}[-_]\d|[0-9a-f]{8,})/i
+
+function registerSectionAliases(map: Map<string, string>, rawId: string, label: string, overwrite = true) {
+  const id = rawId.trim()
+  const clean = label.trim()
+  if (!id || !clean) return
+  if (overwrite || !map.has(id)) map.set(id, clean)
+  const match = SECTION_NUM_RE.exec(id)
+  if (!match) return
+  const num = Number(match[1])
+  const padded = String(num).padStart(2, '0')
+  for (const alias of [`sec-${num}`, `sec_${num}`, `sec-${padded}`, `sec_${padded}`]) {
+    if (overwrite || !map.has(alias)) map.set(alias, clean)
+  }
+}
+
+export function contentPackSourceMap(pack?: SourcePackLike | null, plan?: SourcePlanLike | null): Map<string, string> {
+  const map = new Map<string, string>()
+
+  for (const section of plan?.sections ?? []) {
+    if (section.id && section.title?.trim()) {
+      registerSectionAliases(map, section.id, section.title, false)
+    }
+  }
+
+  for (const block of pack?.blocks ?? []) {
+    const title = block.title?.trim()
+    if (!title) continue
+    const secId = block.id.startsWith('s:') ? block.id.slice(2) : block.id.startsWith('b:') ? (block.id.split(':')[1] ?? '') : ''
+    if (secId) registerSectionAliases(map, secId, title, false)
+  }
+
+  const sections = pack?.sections ?? []
+  sections.forEach((section, index) => {
+    const heading = section.heading?.trim()
+    if (!heading) return
+    registerSectionAliases(map, section.id, heading, true)
+    map.set(`ev_sec_${index}`, heading)
+    const oneBasedPadded = String(index + 1).padStart(2, '0')
+    for (const alias of [`sec_${oneBasedPadded}`, `sec-${oneBasedPadded}`]) {
+      if (!map.has(alias)) map.set(alias, heading)
+    }
+  })
+
+  const datasets = pack?.datasets ?? []
+  const datasetLabels: string[] = []
+  for (const dataset of datasets) {
+    const label = dataset.title?.trim() || dataset.file_name?.trim() || dataset.file?.trim()
+    if (!label) continue
+    datasetLabels.push(label)
+    if (dataset.id?.trim()) map.set(dataset.id.trim(), label)
+  }
+  if (datasetLabels.length === 1 && datasetLabels[0]) {
+    map.set('ds:*', datasetLabels[0])
+  }
+
+  for (const [index, table] of (pack?.tables ?? []).entries()) {
+    const title = table.title?.trim()
+    if (title) map.set(`ev_tbl_${index}`, title)
+  }
+
+  const metaLabel =
+    pack?.title_hint?.trim() ||
+    sections.find((section) => section.heading?.trim())?.heading?.trim() ||
+    (pack?.blocks ?? []).find((block) => block.title?.trim())?.title?.trim() ||
+    (plan?.sections ?? []).find((section) => section.title?.trim())?.title?.trim()
+  if (metaLabel) map.set('meta', metaLabel)
+
+  return map
+}
+
 export function parseEvidenceRef(raw: string): EvidenceRef {
+  if (raw.trim() === 'meta') return { raw, packId: null, sectionId: null, blockId: null, meta: true }
   const [packId = null, second = null, third = null] = raw.split(':')
   if (second === null) return { raw, packId: null, sectionId: null, blockId: null, meta: false }
   if (second === 'meta') return { raw, packId, sectionId: null, blockId: null, meta: true }
   return { raw, packId, sectionId: second, blockId: third, meta: false }
 }
 
-const DATASET_REF = /^ds-([0-9a-f]+)(?:-|$)/
+function resolveSectionHeading(token: string, raw: string, headings: ReadonlyMap<string, string>): string | null {
+  const direct = headings.get(token)?.trim() || headings.get(raw)?.trim()
+  if (direct) return direct
+  const match = SECTION_NUM_RE.exec(token)
+  if (match) {
+    const num = Number(match[1])
+    const padded = String(num).padStart(2, '0')
+    for (const candidate of [`sec-${num}`, `sec_${num}`, `sec-${padded}`, `sec_${padded}`]) {
+      const found = headings.get(candidate)?.trim()
+      if (found) return found
+    }
+    if (num >= 1 && !headings.has('sec-1') && headings.has('sec-0')) {
+      const zeroBased = headings.get(`sec-${num - 1}`)?.trim()
+      if (zeroBased) return zeroBased
+    }
+  }
+  if (/^sec[-_]notes\b/i.test(token) || raw.includes('user:notes')) {
+    return AUTHOR_NOTES_LABEL
+  }
+  if (!TECHNICAL_ID_RE.test(token) && /[а-яё]/i.test(token)) {
+    return token
+  }
+  return null
+}
 
 export function slideSources(evidenceIds: readonly string[], headings: ReadonlyMap<string, string>): SlideSource[] {
   const sources = new Map<string, SlideSource>()
   for (const raw of evidenceIds) {
-    const ref = parseEvidenceRef(raw)
-    const dataset = DATASET_REF.exec(raw)?.[1] ?? null
-    const key = ref.meta ? 'meta' : dataset ? `ds-${dataset}` : (ref.sectionId ?? raw)
-    const label = ref.meta ? 'Заголовок контента' : dataset ? 'Ваша таблица' : ref.sectionId ? (headings.get(ref.sectionId) ?? ref.sectionId) : raw
-    const existing = sources.get(key)
+    const trimmed = raw.trim()
+    if (!trimmed) continue
+    const ref = parseEvidenceRef(trimmed)
+    const token = (ref.sectionId ?? trimmed).trim()
+    const datasetId = DATASET_TOKEN_RE.exec(token)?.[1] ?? DATASET_TOKEN_RE.exec(trimmed)?.[1] ?? null
+
+    let key: string
+    let label: string
+
+    if (ref.meta || token === 'meta' || trimmed.endsWith(':meta')) {
+      const metaHeading = headings.get('meta')?.trim()
+      key = metaHeading ? 'meta' : 'materials'
+      label = metaHeading || UNKNOWN_SOURCE_LABEL
+    } else if (datasetId) {
+      const dsHeading = headings.get(token)?.trim() || headings.get(datasetId)?.trim() || headings.get('ds:*')?.trim()
+      key = dsHeading ? datasetId : 'materials'
+      label = dsHeading || UNKNOWN_SOURCE_LABEL
+    } else {
+      const resolved = resolveSectionHeading(token, trimmed, headings)
+      key = resolved ? token : 'materials'
+      label = resolved || UNKNOWN_SOURCE_LABEL
+    }
+
+    const dedupeKey = [...sources.values()].find((item) => item.label === label)?.key ?? key
+    const existing = sources.get(dedupeKey)
     if (existing) existing.refs.push(raw)
-    else sources.set(key, { key, label, refs: [raw] })
+    else sources.set(dedupeKey, { key: dedupeKey, label, refs: [raw] })
   }
   return [...sources.values()]
 }
@@ -246,8 +377,9 @@ export function slideSourceKinds(slide: Pick<SlidePlan, 'evidence_ids' | 'conten
   const found = new Set<SourceKind>()
   for (const raw of slide.evidence_ids) {
     const ref = parseEvidenceRef(raw)
-    if (ref.meta) continue
-    found.add(/^ds-/.test(ref.sectionId ?? raw) ? 'table' : 'text')
+    const token = (ref.sectionId ?? raw).trim()
+    if (ref.meta || token === 'meta') continue
+    found.add(/^(?:ds:)?ds[-_]/i.test(token) ? 'table' : 'text')
   }
   if (slide.content_units.some((unit) => unitOrigin(unit) === 'web')) found.add('web')
   return SOURCE_KIND_ORDER.filter((kind) => found.has(kind))
@@ -287,6 +419,8 @@ export function buildPlanView(plan: DeckPlan, headings: ReadonlyMap<string, stri
   const slides = [...plan.slides].sort((a, b) => a.index - b.index)
   const numberById = new Map(slides.map((slide, position) => [slide.id, position + 1]))
   const sections = plan.sections ?? []
+  const mergedHeadings = contentPackSourceMap(null, plan)
+  for (const [key, value] of headings) mergedHeadings.set(key, value)
   const firstSection = new Map<string, { id: string; title: string }>()
   for (const section of sections) {
     for (const slideId of section.slide_ids) if (!firstSection.has(slideId)) firstSection.set(slideId, section)
@@ -303,7 +437,7 @@ export function buildPlanView(plan: DeckPlan, headings: ReadonlyMap<string, stri
       keyMessage: slide.key_message,
       idea: slideIdea(slide, plan.objective),
       visual: plannedVisual(slide) ?? '',
-      sources: slideSources(slide.evidence_ids, headings),
+      sources: slideSources(slide.evidence_ids, mergedHeadings),
       sectionId: section?.id ?? null,
       sectionTitle: section?.title ?? null,
       chart: parseSlideChartView(slide),

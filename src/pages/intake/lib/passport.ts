@@ -133,6 +133,18 @@ export function passportConflicts(brandbook: BrandbookSummary | null, priority: 
   })
 }
 
+export function cleanLayoutName(raw: string | null | undefined): string {
+  if (!raw) return ''
+  const trimmed = raw.trim()
+  if (!trimmed || trimmed.toLowerCase() === 'unresolved' || /^\d+$/.test(trimmed)) return ''
+  const stripped = trimmed
+    .replace(/^(?:layout|slide[_-]?layout|master)\s*[_.\-—:#№]*\s*\d*\s*[_.\-—:]*\s*/i, '')
+    .replace(/^\d+\s*[_.\-—:)]+\s*/, '')
+    .trim()
+  if (!stripped || /^\d+$/.test(stripped)) return ''
+  return stripped
+}
+
 export function dnaFileName(templateName: string | null): string {
   const base = (templateName ?? 'template').replace(/\.[^.]+$/, '').trim().replace(/[^\p{L}\p{N}._-]+/gu, '-').replace(/^-+|-+$/g, '')
   return `${base || 'template'}-design-dna.json`
