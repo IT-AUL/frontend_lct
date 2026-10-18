@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useAssistantSession, useBrandbookSummary, useIntake, useJobEvents, useSetBrandPriority, useSetIntakeKind, useStartAutopilot, useTemplateSummary } from '@/entities/assistant'
 import type { BrandPriority, IntakeFile, IntakeKind, IntakeResult } from '@/entities/assistant'
 import { uploadContentPack, useContentPack } from '@/entities/content-pack'
 import { useInvalidateProject, useProject } from '@/entities/project'
-import { uploadTemplate, useDesignDna, useTemplate } from '@/entities/template'
+import { buildDesignSystem, uploadTemplate, useDesignDna, useTemplate } from '@/entities/template'
 import { isApiError } from '@/shared/api'
 import { routes } from '@/shared/config'
 import { Button, EmptyState, Segmented, Skeleton, useToast } from '@/shared/ui'
@@ -13,6 +13,7 @@ import { guessKind, IntakeDropzone, isContentFile, isIntakeFile, mergeIntakeFile
 import type { PendingFile } from '@/widgets/intake-board'
 import { StepShell } from '@/widgets/step-shell'
 import { existingFiles, topicFromBrief } from '../lib/existing'
+import { dnaFileName, downloadJson, previewIds } from '../lib/passport'
 import { ExistingRows, FileRows } from './FileRows'
 import { TemplateRules } from './TemplateRules'
 import { TemplateTable } from './TemplateTable'
@@ -71,8 +72,9 @@ export function IntakePage() {
   const savedTopic = topicFromBrief(session.data?.brief)
   const ideaText = idea ?? savedTopic
   const patchPriority = useSetBrandPriority(brandbookId ?? '')
-  const templateDetail = useTemplate(dnaOpen ? templateId : null)
-  const dna = useDesignDna(templateId, dnaOpen)
+  const templateDetail = useTemplate(templateId)
+  const dna = useDesignDna(templateId)
+  const system = useMemo(() => (templateDetail.data ? buildDesignSystem(templateDetail.data, dna.data) : null), [templateDetail.data, dna.data])
   const job = useJobEvents(autopilotStarted ? session.data?.job_id : null)
 
   useEffect(() => {
@@ -259,10 +261,14 @@ export function IntakePage() {
       canvas={
         <TemplateTable
           summary={templateSummary.data ?? null}
+          system={system}
+          previews={templateSummary.data ? previewIds(templateSummary.data, dna.data) : []}
+          aspectRatio={dna.data?.slide_size.aspect_ratio || 16 / 9}
           analyzing={analyzing}
           brandbook={brandbookSummary.data ?? null}
           priority={priorityValue}
           onOpenDetails={templateId ? () => setDnaOpen(true) : undefined}
+          onDownload={dna.data ? () => downloadJson(dnaFileName(templateSummary.data?.filename ?? null), dna.data) : undefined}
           priorityControl={
             brandbookId ? (
               <Segmented

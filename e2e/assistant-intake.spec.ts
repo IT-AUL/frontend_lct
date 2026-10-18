@@ -49,14 +49,25 @@ test('assistant step 1: upload files, check their types, see the template on the
   await expect(list).not.toContainText('raw_scan.tiff')
 
   const table = page.getByRole('region', { name: 'Как будет выглядеть презентация' })
-  await expect(table).toContainText('Так будут выглядеть ваши слайды')
-  await expect(table).toContainText('54 слайда')
+  const passport = table.getByRole('article', { name: 'Паспорт шаблона' })
+  await expect(passport).toContainText('54 слайда')
+  await expect(passport).not.toContainText('Так будут выглядеть ваши слайды')
+  await expect(passport.getByRole('region', { name: 'Палитра' })).toContainText('%')
+  await expect(passport.getByRole('region', { name: 'Шрифты' })).toContainText('Заявлено в теме')
+  await expect(passport.getByRole('region', { name: 'Шрифты' })).toContainText('На слайдах')
+  await expect(passport.getByRole('region', { name: 'Макеты по ролям' })).toContainText('Рабочие')
+  expect(await passport.textContent()).not.toMatch(/#[0-9a-f]{6}/i)
 
   const priority = table.getByRole('radiogroup', { name: 'Чьи цвета и шрифты важнее' })
   await expect(priority.getByRole('radio', { name: 'Брендбук' })).toHaveAttribute('aria-checked', 'true')
+  const brand = passport.getByRole('region', { name: /Брендбук/ })
+  await expect(brand.locator('[data-chosen]').first()).toContainText('Брендбук')
   await priority.getByRole('radio', { name: 'Шаблон' }).click()
   await expect(priority.getByRole('radio', { name: 'Шаблон' })).toHaveAttribute('aria-checked', 'true')
-  await expect(table.locator('[title="#0077FF"]')).toBeVisible()
+  await expect(brand.locator('[data-chosen]').first()).toContainText('Шаблон')
+
+  const [download] = await Promise.all([page.waitForEvent('download'), passport.getByRole('button', { name: 'Скачать правила (JSON)' }).click()])
+  expect(download.suggestedFilename()).toMatch(/design-dna\.json$/)
 
   await table.getByRole('button', { name: 'Все правила шаблона' }).click()
   const rules = page.getByRole('complementary', { name: 'Правила шаблона' })
