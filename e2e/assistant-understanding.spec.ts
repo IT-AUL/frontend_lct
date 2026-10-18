@@ -39,7 +39,22 @@ test('assistant steps 2–3: data insights, insight details, questions and plan'
     await gotoClient(page, `/projects/${projectId}/understanding`)
     await expect(page.getByRole('heading', { level: 1, name: 'Вот что я нашёл' })).toBeVisible()
     await expect(page.getByText(/Хватит примерно на/)).toBeVisible()
-    await expect(page.getByRole('list', { name: 'Выводы из данных' }).getByRole('listitem').first()).toBeVisible()
+    const list = page.getByRole('list', { name: 'Выводы из данных' })
+    const card = list.getByRole('listitem').first()
+    await expect(card).toBeVisible()
+    await expect(page.getByText(/строк/).first()).toBeVisible()
+  })
+
+  await test.step('insight cards act on the table', async () => {
+    const list = page.getByRole('list', { name: 'Выводы из данных' })
+    const card = list.getByRole('listitem', { name: /Вывод:/ }).first()
+    await expect(card.getByRole('button', { name: 'Согласен' })).toBeVisible()
+    await card.getByRole('button', { name: 'Не включать' }).click()
+    const strip = page.getByRole('group', { name: 'Исключённые выводы' })
+    await expect(strip).toBeVisible()
+    await strip.getByRole('button', { name: 'Вернуть' }).click()
+    await expect(strip).toBeHidden()
+    await expect(list.getByRole('listitem', { name: /Вывод:/ }).first()).toBeVisible()
   })
 
   await test.step('an insight opens in the side panel with its data', async () => {

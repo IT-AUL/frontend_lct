@@ -17,6 +17,7 @@ import {
 } from '@/entities/assistant'
 import { useContentPack } from '@/entities/content-pack'
 import { requestJson, humanError } from '@/shared/api'
+import { readJson, writeJson } from '@/shared/lib/storage'
 import { rememberRun, useProject } from '@/entities/project'
 import { useActiveProviderSession } from '@/entities/provider-session'
 import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
@@ -36,6 +37,10 @@ interface UndoEntry {
 function errorMessage(error: unknown): string | null {
   if (!error || isAbortError(error)) return null
   return humanError(error)
+}
+
+function excludedKey(projectId: string): string {
+  return `deckdna.understanding-excluded:${projectId}`
 }
 
 export function UnderstandingPage() {
@@ -67,6 +72,7 @@ export function UnderstandingPage() {
   const [noteInput, setNoteInput] = useState('')
   const [buildingPlan, setBuildingPlan] = useState(false)
   const [selection, setSelection] = useState<Selection | null>(null)
+  const [excludedSession, setExcludedSession] = useState<{ packId: string; ids: readonly string[] } | null>(null)
 
   const editBlocks = useEditBlocks(activePackId ?? '')
   const editInsight = useEditInsight(activePackId ?? '')
@@ -83,6 +89,15 @@ export function UnderstandingPage() {
   }, [understandingQuery.data, unsupportedUnderstanding, legacyPack])
 
   const currentUnderstanding = optimistic ?? baseUnderstanding
+
+  const storedExcludedIds = useMemo(() => (projectId ? readJson<string[]>(excludedKey(projectId), []) : []), [projectId])
+  const excludedInsightIds = excludedSession?.packId === activePackId ? excludedSession.ids : storedExcludedIds
+
+  const setExcludedIds = (ids: readonly string[]) => {
+    if (!activePackId) return
+    setExcludedSession({ packId: activePackId, ids })
+    writeJson(excludedKey(projectId), ids)
+  }
 
   const handleUndo = useCallback(() => {
     setUndoStack((prev) => {
@@ -167,6 +182,21 @@ export function UnderstandingPage() {
       setOptimistic(prevSnapshot)
       setActionError(errorMessage(error))
     }
+  }
+
+  const handleExcludeInsight = (insightId: string) => {
+    if (!activePackId) return
+    setExcludedIds(excludedInsightIds.includes(insightId) ? excludedInsightIds : [...excludedInsightIds, insightId])
+    if (selection?.kind === 'insight' && selection.id === insightId) setSelection(null)
+    const insight = currentUnderstanding?.datasets.flatMap((dataset) => dataset.insights).find((item) => item.id === insightId)
+    if (insight?.confirmed || insight?.implication || insight?.needs_confirmation) void handlePatchInsight(insightId, { confirmed: false })
+    setFeedbackNote('Не включу этот вывод — вернуть можно внизу таблицы.')
+  }
+
+  const handleIncludeInsight = (insightId: string) => {
+    if (!activePackId) return
+    setExcludedIds(excludedInsightIds.filter((id) => id !== insightId))
+    setFeedbackNote('Вернул вывод в презентацию.')
   }
 
   const handleAddNote = async () => {
@@ -309,9 +339,12 @@ export function UnderstandingPage() {
 
   const understanding = currentUnderstanding
   const busy = buildingPlan || autopilot.isPending
+  const excludedCount = understanding
+    ? excludedInsightIds.filter((id) => understanding.datasets.some((dataset) => dataset.insights.some((item) => item.id === id))).length
+    : 0
   const note = buildingPlan
     ? 'Составляю план презентации…'
-    : (feedbackNote ?? (understanding ? stepNote(understanding) : 'Разбираю материалы…'))
+    : (feedbackNote ?? (understanding ? stepNote(understanding, excludedCount) : 'Разбираю материалы…'))
 
   return (
     <StepShell
@@ -322,7 +355,16 @@ export function UnderstandingPage() {
         isLoading || !understanding ? (
           <Skeleton style={{ height: 320, borderRadius: 6 }} />
         ) : (
-          <DraftDeck understanding={understanding} selection={selection} onSelect={setSelection} />
+          <DraftDeck
+            understanding={understanding}
+            selection={selection}
+            onSelect={setSelection}
+            onPatchInsight={(id, patch) => void handlePatchInsight(id, patch)}
+            onExcludeInsight={handleExcludeInsight}
+            onIncludeInsight={handleIncludeInsight}
+            onRemoveBlock={handleRemoveBlock}
+            excludedInsightIds={excludedInsightIds}
+          />
         )
       }
       inspector={
@@ -332,7 +374,7 @@ export function UnderstandingPage() {
               onClose: () => setSelection(null),
               content: (
                 <SelectionDetails
-                  key={`${selection.kind}-${selection.id}`}
+                  key={`${selection.kind}-${selection.id}-${selection.edit ? 'edit' : 'view'}`}
                   understanding={understanding}
                   selection={selection}
                   onPatchInsight={(id, patch) => void handlePatchInsight(id, patch)}
@@ -341,6 +383,9 @@ export function UnderstandingPage() {
                     handleRemoveBlock(id)
                     setSelection(null)
                   }}
+                  onEditModeChange={(edit) =>
+                    setSelection((prev) => (prev ? { ...prev, edit } : prev))
+                  }
                 />
               ),
             }

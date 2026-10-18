@@ -149,3 +149,21 @@
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.editField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editLabel {
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 500;
+}

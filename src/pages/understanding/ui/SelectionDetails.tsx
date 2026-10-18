@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { InsightPatch, Understanding } from '@/entities/assistant'
+import type { Insight, InsightPatch, Understanding, UnderstandingBlock } from '@/entities/assistant'
 import { Button } from '@/shared/ui'
 import { blockTitle, CHART_TYPE_LABEL, insightEntries, insightTitle, MiniChart, needsDecision, type Selection } from '@/widgets/draft-deck'
 import styles from './UnderstandingPage.module.css'
@@ -10,6 +10,7 @@ interface SelectionDetailsProps {
   onPatchInsight: (id: string, patch: InsightPatch) => void
   onEditBlock: (id: string, patch: { title?: string; text?: string }) => void
   onRemoveBlock: (id: string) => void
+  onEditModeChange: (edit: boolean) => void
 }
 
 function profileSentence(profile: string | null): string | null {
@@ -24,127 +25,137 @@ function chartName(type: string | null | undefined): string {
   return type ? (CHART_TYPE_LABEL[type] ?? type).toLowerCase() : ''
 }
 
-export function SelectionDetails({ understanding, selection, onPatchInsight, onEditBlock, onRemoveBlock }: SelectionDetailsProps) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState('')
+function BlockDetails({ block, editing, onEditModeChange, onEditBlock, onRemoveBlock }: { block: UnderstandingBlock; editing: boolean; onEditModeChange: SelectionDetailsProps['onEditModeChange']; onEditBlock: SelectionDetailsProps['onEditBlock']; onRemoveBlock: SelectionDetailsProps['onRemoveBlock'] }) {
+  const [draft, setDraft] = useState(block.text ?? '')
+  const title = blockTitle(block)
 
-  if (selection.kind === 'block') {
-    const block = understanding.blocks.find((item) => item.id === selection.id)
-    if (!block) return null
-    const title = blockTitle(block)
+  if (editing) {
     return (
       <div className={styles.details}>
-        {editing ? (
-          <>
-            <textarea className={styles.noteInput} rows={8} value={draft} onChange={(event) => setDraft(event.target.value)} aria-label="Текст блока" />
-            <div className={styles.noteActions}>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  onEditBlock(block.id, { text: draft })
-                  setEditing(false)
-                }}
-              >
-                Сохранить
-              </Button>
-              <Button variant="ghost" onClick={() => setEditing(false)}>
-                Отмена
-              </Button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className={styles.detailLead}>{title}</p>
-            {block.text && block.text.trim() !== title && <p className={styles.detailText}>{block.text}</p>}
-            <div className={styles.noteActions}>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setDraft(block.text ?? '')
-                  setEditing(true)
-                }}
-              >
-                Изменить
-              </Button>
-              <Button variant="ghost" onClick={() => onRemoveBlock(block.id)}>
-                Не включать в презентацию
-              </Button>
-            </div>
-          </>
-        )}
+        <textarea className={styles.noteInput} rows={8} value={draft} onChange={(event) => setDraft(event.target.value)} aria-label="Текст блока" />
+        <div className={styles.noteActions}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              onEditBlock(block.id, { text: draft })
+              onEditModeChange(false)
+            }}
+          >
+            Сохранить
+          </Button>
+          <Button variant="ghost" onClick={() => onEditModeChange(false)}>
+            Отмена
+          </Button>
+        </div>
       </div>
     )
   }
 
-  const entry = insightEntries(understanding).find((item) => item.insight.id === selection.id)
-  if (!entry) return null
-  const { insight, dataset, preview } = entry
+  return (
+    <div className={styles.details}>
+      <p className={styles.detailLead}>{title}</p>
+      {block.text && block.text.trim() !== title && <p className={styles.detailText}>{block.text}</p>}
+      <div className={styles.noteActions}>
+        <Button variant="secondary" onClick={() => onEditModeChange(true)}>
+          Изменить
+        </Button>
+        <Button variant="ghost" onClick={() => onRemoveBlock(block.id)}>
+          Не включать в презентацию
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function InsightDetails({ insight, entry, editing, onEditModeChange, onPatchInsight }: { insight: Insight; entry: ReturnType<typeof insightEntries>[number]; editing: boolean; onEditModeChange: SelectionDetailsProps['onEditModeChange']; onPatchInsight: SelectionDetailsProps['onPatchInsight'] }) {
+  const [draftText, setDraftText] = useState(insight.headline || insight.fact)
+  const [draftMeaning, setDraftMeaning] = useState(insight.meaning ?? '')
+  const [draftImplication, setDraftImplication] = useState(insight.implication ?? '')
+
+  const { dataset, preview } = entry
   const title = insightTitle(insight)
   const chosen = dataset.recommendations[0]?.chart_type
   const alternatives = dataset.recommendations.slice(1, 3).map((item) => chartName(item.chart_type)).filter(Boolean)
   const profile = profileSentence(dataset.profile_summary)
   const decide = needsDecision(insight)
 
+  const saveEdit = () => {
+    const cleanText = draftText.trim()
+    if (!cleanText) return
+    const patch: InsightPatch = {
+      text: cleanText,
+      confirmed: true,
+      ...(draftMeaning.trim() !== (insight.meaning ?? '') ? { meaning: draftMeaning.trim() || null } : {}),
+      ...(draftImplication.trim() !== (insight.implication ?? '') ? { implication: draftImplication.trim() || null } : {}),
+    }
+    onPatchInsight(insight.id, patch)
+    onEditModeChange(false)
+  }
+
   return (
     <div className={styles.details}>
       {editing ? (
-        <>
-          <textarea className={styles.noteInput} rows={4} value={draft} onChange={(event) => setDraft(event.target.value)} aria-label="Формулировка вывода" />
+        <div className={styles.editForm}>
+          <label className={styles.editField}>
+            <span className={styles.editLabel}>Формулировка вывода</span>
+            <textarea
+              className={styles.noteInput}
+              rows={3}
+              value={draftText}
+              aria-label="Формулировка вывода"
+              onChange={(event) => setDraftText(event.target.value)}
+            />
+          </label>
+          <label className={styles.editField}>
+            <span className={styles.editLabel}>Что это значит</span>
+            <textarea
+              className={styles.noteInput}
+              rows={2}
+              value={draftMeaning}
+              placeholder="Например: рост ускорился во втором полугодии"
+              aria-label="Что это значит"
+              onChange={(event) => setDraftMeaning(event.target.value)}
+            />
+          </label>
+          <label className={styles.editField}>
+            <span className={styles.editLabel}>Что из этого следует</span>
+            <textarea
+              className={styles.noteInput}
+              rows={2}
+              value={draftImplication}
+              placeholder="Например: закрепить фокус на ключевом канале"
+              aria-label="Что из этого следует"
+              onChange={(event) => setDraftImplication(event.target.value)}
+            />
+          </label>
           <div className={styles.noteActions}>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                onPatchInsight(insight.id, { text: draft })
-                setEditing(false)
-              }}
-            >
+            <Button variant="secondary" disabled={!draftText.trim()} onClick={saveEdit}>
               Сохранить
             </Button>
-            <Button variant="ghost" onClick={() => setEditing(false)}>
+            <Button variant="ghost" onClick={() => onEditModeChange(false)}>
               Отмена
             </Button>
           </div>
-        </>
+        </div>
       ) : (
-        <p className={styles.detailLead}>{title}</p>
-      )}
-
-      {insight.meaning && (
-        <div className={styles.detailBlock}>
-          <h3 className={styles.detailHeading}>Что это значит</h3>
-          <p className={styles.detailText}>{insight.meaning}</p>
-        </div>
-      )}
-
-      {insight.implication && (
-        <div className={styles.detailBlock}>
-          <h3 className={styles.detailHeading}>Что из этого следует</h3>
-          <p className={styles.detailText}>{insight.implication}</p>
+        <>
+          <p className={styles.detailLead}>{title}</p>
           {decide && <p className={styles.detailMuted}>Это моё предложение. Оставлю его в презентации, только если вы согласны.</p>}
-        </div>
-      )}
-
-      {!editing && (
-        <div className={styles.noteActions}>
-          {decide ? (
-            <Button variant="primary" onClick={() => onPatchInsight(insight.id, { confirmed: true })}>
-              Согласен
+          <div className={styles.noteActions}>
+            {decide ? (
+              <Button variant="primary" onClick={() => onPatchInsight(insight.id, { confirmed: true })}>
+                Согласен
+              </Button>
+            ) : insight.confirmed ? (
+              <Button variant="ghost" onClick={() => onPatchInsight(insight.id, { confirmed: false })}>
+                Отменить согласие
+              </Button>
+            ) : null}
+            <Button variant="secondary" onClick={() => onEditModeChange(true)}>
+              Изменить формулировку
             </Button>
-          ) : insight.confirmed ? (
-            <Button variant="ghost" onClick={() => onPatchInsight(insight.id, { confirmed: false })}>
-              Отменить согласие
-            </Button>
-          ) : null}
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setDraft(title)
-              setEditing(true)
-            }}
-          >
-            Изменить формулировку
-          </Button>
-        </div>
+          </div>
+        </>
       )}
 
       <div className={styles.detailBlock}>
@@ -163,4 +174,16 @@ export function SelectionDetails({ understanding, selection, onPatchInsight, onE
       </div>
     </div>
   )
+}
+
+export function SelectionDetails({ understanding, selection, onPatchInsight, onEditBlock, onRemoveBlock, onEditModeChange }: SelectionDetailsProps) {
+  if (selection.kind === 'block') {
+    const block = understanding.blocks.find((item) => item.id === selection.id)
+    if (!block) return null
+    return <BlockDetails block={block} editing={selection.edit === true} onEditModeChange={onEditModeChange} onEditBlock={onEditBlock} onRemoveBlock={onRemoveBlock} />
+  }
+
+  const entry = insightEntries(understanding).find((item) => item.insight.id === selection.id)
+  if (!entry) return null
+  return <InsightDetails insight={entry.insight} entry={entry} editing={selection.edit === true} onEditModeChange={onEditModeChange} onPatchInsight={onPatchInsight} />
 }

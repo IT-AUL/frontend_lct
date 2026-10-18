@@ -6,7 +6,12 @@ export interface InsightEntry {
   insight: Insight
   dataset: UnderstandingDataset
   preview: UnderstandingBlock['preview']
-  first: boolean
+}
+
+export interface DatasetGroup {
+  dataset: UnderstandingDataset
+  preview: UnderstandingBlock['preview']
+  entries: InsightEntry[]
 }
 
 export function insightTitle(insight: Insight): string {
@@ -17,11 +22,34 @@ export function needsDecision(insight: Insight): boolean {
   return isInsightRecommendation(insight) && !insight.confirmed
 }
 
-export function insightEntries(understanding: Understanding): InsightEntry[] {
-  return understanding.datasets.flatMap((dataset) => {
+export function datasetGroups(understanding: Understanding): DatasetGroup[] {
+  return understanding.datasets.map((dataset) => {
     const preview = understanding.blocks.find((block) => block.dataset_id === dataset.id && block.preview)?.preview ?? null
-    return dataset.insights.map((insight, index) => ({ insight, dataset, preview, first: index === 0 }))
+    return {
+      dataset,
+      preview,
+      entries: dataset.insights.map((insight) => ({ insight, dataset, preview })),
+    }
   })
+}
+
+export function insightEntries(understanding: Understanding): InsightEntry[] {
+  return datasetGroups(understanding).flatMap((group) => group.entries)
+}
+
+export function profileFacts(profile: string | null | undefined): string[] {
+  if (!profile) return []
+  return profile
+    .split(';')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => (part.startsWith('есть пропуски') ? part.replace(/^есть\s+/, '') : part))
+}
+
+export function insightSource(insight: Insight, dataset: UnderstandingDataset): string | null {
+  const evidence = insight.evidence?.filter((item) => item.trim()) ?? []
+  if (evidence.length > 0) return evidence.slice(0, 2).join(' · ')
+  return dataset.file ?? null
 }
 
 export function textBlocks(understanding: Understanding): UnderstandingBlock[] {
@@ -36,7 +64,7 @@ export function blockTitle(block: UnderstandingBlock): string {
   return sentence.length > 120 ? `${sentence.slice(0, 117)}…` : sentence
 }
 
-export function stepNote(understanding: Understanding): string {
+export function stepNote(understanding: Understanding, excludedInsights = 0): string {
   const insights = insightEntries(understanding)
   const pending = insights.filter((entry) => needsDecision(entry.insight)).length
   const blocks = textBlocks(understanding).length
@@ -46,8 +74,11 @@ export function stepNote(understanding: Understanding): string {
   if (blocks) parts.push(`${blocks} ${pluralize(blocks, ['мысль', 'мысли', 'мыслей'])} из текста`)
   const found = parts.length ? `Нашёл ${parts.join(' и ')}.` : 'Материала пока мало.'
   const room = capacity > 0 ? ` Хватит примерно на ${capacity} ${pluralize(capacity, ['слайд', 'слайда', 'слайдов'])}.` : ''
-  const ask = pending ? ` ${pending} ${pluralize(pending, ['предложение ждёт', 'предложения ждут', 'предложений ждут'])} вашего решения — нажмите на слайд.` : ' Нажмите на слайд, чтобы поправить.'
-  return `${found}${room}${ask}`
+  const skipped = excludedInsights > 0 ? ` ${excludedInsights} ${pluralize(excludedInsights, ['вывод не включу', 'вывода не включу', 'выводов не включу'])}.` : ''
+  const ask = pending
+    ? ` ${pending} ${pluralize(pending, ['предложение ждёт', 'предложения ждут', 'предложений ждут'])} вашего решения — отметьте их на карточках.`
+    : ' Отметьте выводы или откройте карточку для правки.'
+  return `${found}${room}${skipped}${ask}`
 }
 
 export function keyFigure(text: string): string | null {

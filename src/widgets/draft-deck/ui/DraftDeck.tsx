@@ -1,87 +1,143 @@
 import { useState } from 'react'
-import type { Understanding } from '@/entities/assistant'
-import { SlideGrid, SlideTile } from '@/shared/ui'
-import { blockTitle, insightEntries, insightTitle, keyFigure, needsDecision, textBlocks } from '../lib/table'
-import { MiniChart } from './MiniChart'
+import type { InsightPatch, Understanding } from '@/entities/assistant'
+import { datasetGroups, insightTitle, profileFacts, textBlocks } from '../lib/table'
+import { InsightCard } from './InsightCard'
+import { ThoughtCard } from './ThoughtCard'
 import styles from './DraftDeck.module.css'
 
-export type Selection = { kind: 'insight'; id: string } | { kind: 'block'; id: string }
+export type Selection = { kind: 'insight'; id: string; edit?: boolean } | { kind: 'block'; id: string; edit?: boolean }
 
 const VISIBLE_BLOCKS = 6
+const VISIBLE_INSIGHTS = 6
 
 interface DraftDeckProps {
   understanding: Understanding
   selection: Selection | null
   onSelect?: (selection: Selection) => void
+  onPatchInsight?: (insightId: string, patch: InsightPatch) => void
+  onExcludeInsight?: (insightId: string) => void
+  onIncludeInsight?: (insightId: string) => void
+  onRemoveBlock?: (blockId: string) => void
+  excludedInsightIds?: readonly string[]
   quiet?: boolean
 }
 
-export function DraftDeck({ understanding, selection, onSelect, quiet }: DraftDeckProps) {
-  const [showAll, setShowAll] = useState(false)
-  const insights = insightEntries(understanding)
+export function DraftDeck({
+  understanding,
+  selection,
+  onSelect,
+  onPatchInsight,
+  onExcludeInsight,
+  onIncludeInsight,
+  onRemoveBlock,
+  excludedInsightIds,
+  quiet,
+}: DraftDeckProps) {
+  const [showAllBlocks, setShowAllBlocks] = useState(false)
+  const [showAllInsights, setShowAllInsights] = useState(false)
+  const groups = datasetGroups(understanding)
   const blocks = textBlocks(understanding)
-  const visibleBlocks = showAll ? blocks : blocks.slice(0, VISIBLE_BLOCKS)
-  const both = insights.length > 0 && blocks.length > 0
+  const excluded = new Set(excludedInsightIds ?? [])
+  const visibleBlocks = showAllBlocks ? blocks : blocks.slice(0, VISIBLE_BLOCKS)
+  const both = groups.length > 0 && blocks.length > 0
 
   return (
     <div className={styles.table}>
-      {insights.length > 0 && (
+      {groups.length > 0 && (
         <section className={styles.group}>
           {both && <h2 className={styles.groupTitle}>Из ваших данных</h2>}
-          <SlideGrid label="Выводы из данных">
-            {insights.map(({ insight, dataset, preview, first }) => {
-              const title = insightTitle(insight)
+          <div className={styles.insightList} role="list" aria-label="Выводы из данных" data-muted={quiet || undefined}>
+            {groups.map(({ dataset, entries }) => {
+              const active = entries.filter((entry) => !excluded.has(entry.insight.id))
+              const hidden = entries.filter((entry) => excluded.has(entry.insight.id))
+              const shown = showAllInsights ? active : active.slice(0, VISIBLE_INSIGHTS)
+              const facts = [...profileFacts(dataset.profile_summary), ...(dataset.task_ru ? [dataset.task_ru] : [])]
               return (
-                <div role="listitem" key={insight.id}>
-                  <SlideTile
-                    title={title}
-                    selected={selection?.kind === 'insight' && selection.id === insight.id}
-                    onOpen={onSelect ? () => onSelect({ kind: 'insight', id: insight.id }) : undefined}
-                    openLabel={`Открыть вывод: ${title}`}
-                    muted={quiet}
-                    caption={!quiet && needsDecision(insight) ? 'Нужно ваше решение' : null}
-                  >
-                    {first && preview ? (
-                      <MiniChart preview={preview} chartType={dataset.recommendations[0]?.chart_type} label={`График: ${dataset.title ?? ''}`} />
-                    ) : keyFigure(title) ? (
-                      <span className={styles.figure}>{keyFigure(title)}</span>
-                    ) : null}
-                  </SlideTile>
+                <div className={styles.dataset} role="group" aria-label={dataset.title ?? dataset.file ?? 'Таблица'} key={dataset.id}>
+                  <header className={styles.datasetHead}>
+                    <div className={styles.datasetName}>
+                      <span className={styles.datasetTitle}>{dataset.title ?? dataset.file ?? 'Таблица'}</span>
+                      {dataset.file && dataset.title !== dataset.file && <span className={styles.datasetFile}>{dataset.file}</span>}
+                    </div>
+                    {facts.length > 0 && (
+                      <ul className={styles.datasetProfile} aria-label="Профиль таблицы">
+                        {facts.map((fact) => (
+                          <li className={styles.datasetFact} key={fact}>
+                            {fact}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </header>
+
+                  {shown.map((entry) => {
+                    const insight = entry.insight
+                    return (
+                      <InsightCard
+                        key={insight.id}
+                        entry={entry}
+                        selected={selection?.kind === 'insight' && selection.id === insight.id}
+                        onOpen={onSelect ? () => onSelect({ kind: 'insight', id: insight.id }) : undefined}
+                        onEdit={onSelect ? () => onSelect({ kind: 'insight', id: insight.id, edit: true }) : undefined}
+                        onPatch={onPatchInsight}
+                        onExclude={onExcludeInsight}
+                      />
+                    )
+                  })}
+
+                  {active.length > shown.length && (
+                    <button type="button" className={styles.link} onClick={() => setShowAllInsights(true)}>
+                      Показать все {active.length}
+                    </button>
+                  )}
+
+                  {hidden.length > 0 && (
+                    <div className={styles.excluded} role="group" aria-label="Исключённые выводы">
+                      <span className={styles.excludedLabel}>Не включу:</span>
+                      {hidden.map((entry) => (
+                        <span className={styles.excludedItem} key={entry.insight.id}>
+                          <span className={styles.excludedTitle}>{insightTitle(entry.insight)}</span>
+                          {onIncludeInsight && (
+                            <button type="button" className={styles.link} onClick={() => onIncludeInsight(entry.insight.id)}>
+                              Вернуть
+                            </button>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )
             })}
-          </SlideGrid>
+          </div>
         </section>
       )}
 
       {blocks.length > 0 && (
         <section className={styles.group}>
           {both && <h2 className={styles.groupTitle}>Из текста</h2>}
-          <SlideGrid label="Мысли из текста">
-            {visibleBlocks.map((block) => {
-              const title = blockTitle(block)
-              return (
-                <div role="listitem" key={block.id}>
-                  <SlideTile
-                    title={title}
-                    selected={selection?.kind === 'block' && selection.id === block.id}
-                    onOpen={onSelect ? () => onSelect({ kind: 'block', id: block.id }) : undefined}
-                    openLabel={`Открыть: ${title}`}
-                    muted={quiet}
-                  />
-                </div>
-              )
-            })}
-          </SlideGrid>
+          <div className={styles.thoughts} role="list" aria-label="Мысли из текста" data-muted={quiet || undefined}>
+            {visibleBlocks.map((block) => (
+              <ThoughtCard
+                key={block.id}
+                block={block}
+                datasets={understanding.datasets}
+                selected={selection?.kind === 'block' && selection.id === block.id}
+                onOpen={onSelect ? () => onSelect({ kind: 'block', id: block.id }) : undefined}
+                onEdit={onSelect ? () => onSelect({ kind: 'block', id: block.id, edit: true }) : undefined}
+                onRemove={onRemoveBlock}
+              />
+            ))}
+          </div>
           {blocks.length > VISIBLE_BLOCKS && (
-            <button type="button" className={styles.link} onClick={() => setShowAll((value) => !value)}>
-              {showAll ? 'Свернуть' : `Показать все ${blocks.length}`}
+            <button type="button" className={styles.link} onClick={() => setShowAllBlocks((value) => !value)}>
+              {showAllBlocks ? 'Свернуть' : `Показать все ${blocks.length}`}
             </button>
           )}
         </section>
       )}
 
-      {insights.length === 0 && blocks.length === 0 && <p className={styles.emptyTable}>Материала пока мало. На следующем шаге решим, чем дополнить.</p>}
+      {groups.length === 0 && blocks.length === 0 && <p className={styles.emptyTable}>Материала пока мало. На следующем шаге решим, чем дополнить.</p>}
     </div>
   )
 }
