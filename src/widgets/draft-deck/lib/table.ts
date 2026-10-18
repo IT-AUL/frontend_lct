@@ -1,6 +1,6 @@
 import type { Insight, Understanding, UnderstandingBlock, UnderstandingDataset } from '@/entities/assistant'
 import { pluralize } from '@/shared/lib/format'
-import { isInsightRecommendation } from './understanding'
+import { deduplicateTextBlocks, extractFigure, isInsightRecommendation } from './understanding'
 
 export interface InsightEntry {
   insight: Insight
@@ -53,7 +53,7 @@ export function insightSource(insight: Insight, dataset: UnderstandingDataset): 
 }
 
 export function textBlocks(understanding: Understanding): UnderstandingBlock[] {
-  return understanding.blocks.filter((block) => !block.dataset_id && (block.title || block.text))
+  return deduplicateTextBlocks(understanding.blocks.filter((block) => !block.dataset_id && (block.title || block.text)))
 }
 
 export function blockTitle(block: UnderstandingBlock): string {
@@ -100,11 +100,5 @@ export function stepNote(understanding: Understanding, excludedInsights = 0): st
 }
 
 export function keyFigure(text: string): string | null {
-  const times = /в\s+(\d+(?:[.,]\d+)?)\s+раз/i.exec(text)
-  if (times) return `×${times[1]}`
-  const share = /(\d+(?:[.,]\d+)?)\s?%/.exec(text)
-  if (share) return `${share[1]}%`
-  const money = /(\d+(?:[.,]\d+)?)\s?(млн|млрд|тыс)/i.exec(text)
-  if (money) return `${money[1]} ${money[2]}`
-  return null
+  return extractFigure(text)
 }

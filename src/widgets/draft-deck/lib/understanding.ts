@@ -47,7 +47,7 @@ export interface SparkSegmentItem {
 }
 
 export interface SparkGeometry {
-  chartType: 'line' | 'bar' | 'pie' | 'kpi' | 'table'
+  chartType: 'line' | 'bar' | 'pie' | 'scatter' | 'histogram' | 'kpi' | 'table'
   chartLabel: string
   seriesName: string | null
   unit: string | null
@@ -60,6 +60,7 @@ export interface SparkGeometry {
   deltaText: string | null
   linePath: string
   areaPath: string
+  trendLinePath: string
   points: SparkSeriesPoint[]
   peakPoint: SparkSeriesPoint | null
   bars: SparkBarItem[]
@@ -221,13 +222,81 @@ export function isInsightRecommendation(insight: Pick<Insight, 'needs_confirmati
   return Boolean(insight.needs_confirmation || insight.kind === 'recommendation' || insight.implication)
 }
 
+function normalizeTextKey(value: string | null | undefined): string {
+  return (value ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+export function extractFigure(text: string): string | null {
+  const times = /×\s*(\d+(?:[.,]\d+)?)|в\s+(\d+(?:[.,]\d+)?)\s+раз/i.exec(text)
+  if (times) return `×${times[1] ?? times[2]}`
+  const share = /(\d+(?:[.,]\d+)?)\s?%/.exec(text)
+  if (share) return `${share[1]}%`
+  const money = /(\d+(?:[.,]\d+)?)\s*(млн\.?|млрд\.?|тыс\.?)(?:\s*(₽|\$|€|руб\.?))?/i.exec(text)
+  if (money) {
+    const amount = money[1]
+    const unit = money[2]
+    const currency = money[3]
+    return currency ? `${amount} ${unit} ${currency}` : `${amount} ${unit}`
+  }
+  const directCurrency = /(\d+(?:[.,]\d+)?)\s*(₽|\$|€)/.exec(text)
+  if (directCurrency) return `${directCurrency[1]} ${directCurrency[2]}`
+  return null
+}
+
+export function deduplicateTextBlocks<
+  T extends {
+    title?: string | null
+    text?: string | null
+    heading?: string | null
+    summary?: string | null
+    dataset_id?: string | null
+    kind?: string | null
+  },
+>(blocks: readonly T[]): T[] {
+  const seen = new Map<string, number>()
+  const result: T[] = []
+  for (const block of blocks) {
+    if (block.dataset_id) {
+      result.push(block)
+      continue
+    }
+    const heading = normalizeTextKey(block.heading ?? block.title)
+    const summary = normalizeTextKey(block.summary ?? block.text)
+    if (!heading && !summary) continue
+    const key = `${heading}\u0000${summary}`
+    const existingIndex = seen.get(key)
+    if (existingIndex !== undefined) {
+      const existing = result[existingIndex]
+      if (existing && existing.kind === 'topic' && block.kind && block.kind !== 'topic') {
+        result[existingIndex] = block
+      }
+      continue
+    }
+    seen.set(key, result.length)
+    result.push(block)
+  }
+  return result
+}
+
 export function applyOptimisticBlockOps(understanding: Understanding, ops: BlockOps['ops']): Understanding {
   let blocks = understanding.blocks.map((block) => ({ ...block }))
   for (const op of ops) {
     const index = blocks.findIndex((block) => block.id === op.block_id)
     if (index < 0) continue
     if (op.op === 'remove') {
-      blocks = blocks.filter((block) => block.id !== op.block_id)
+      const removed = blocks[index]
+      const removedKey =
+        removed && !removed.dataset_id
+          ? `${normalizeTextKey(removed.title)}\u0000${normalizeTextKey(removed.text)}`
+          : null
+      blocks = blocks.filter((block) => {
+        if (block.id === op.block_id) return false
+        if (removedKey && !block.dataset_id) {
+          const key = `${normalizeTextKey(block.title)}\u0000${normalizeTextKey(block.text)}`
+          if (key === removedKey) return false
+        }
+        return true
+      })
     } else if (op.op === 'edit') {
       const current = blocks[index]
       if (!current) continue
@@ -337,7 +406,7 @@ export function resolveUnderstandingNote(
     return 'Материала пока на пару слайдов — на следующем шаге решим, сделать короткую колоду или добрать факты.'
   }
   const tables = understanding.datasets.length
-  const nonDataBlocks = understanding.blocks.filter((block) => !block.dataset_id && (block.title || block.text))
+  const nonDataBlocks = deduplicateTextBlocks(understanding.blocks.filter((block) => !block.dataset_id && (block.title || block.text)))
   const insightCount = understanding.datasets.reduce((sum, ds) => sum + ds.insights.length, 0)
   const numericBlocks = nonDataBlocks.filter((block) => block.kind === 'number' || /\d/.test(block.text ?? '')).length
   const summaryParts = formatMaterialSummaryParts(tables, nonDataBlocks.length, insightCount + numericBlocks)
@@ -354,14 +423,37 @@ export function resolveUnderstandingNote(
 function normalizeChartFamily(chartType: string | null | undefined): SparkGeometry['chartType'] {
   if (!chartType) return 'line'
   if (chartType === 'pie' || chartType === 'doughnut' || chartType === 'donut') return 'pie'
+  if (chartType === 'scatter') return 'scatter'
+  if (chartType === 'histogram') return 'histogram'
   if (chartType === 'kpi') return 'kpi'
   if (chartType === 'table') return 'table'
-  if (chartType.startsWith('bar') || chartType === 'histogram' || chartType === 'column') return 'bar'
+  if (chartType.startsWith('bar') || chartType === 'column') return 'bar'
   return 'line'
 }
 
+function buildTrendLinePath(points: readonly SparkSeriesPoint[], padX: number, plotW: number, padTop: number, plotH: number): string {
+  if (points.length < 2) return ''
+  const n = points.length
+  const meanX = points.reduce((sum, pt) => sum + pt.x, 0) / n
+  const meanY = points.reduce((sum, pt) => sum + pt.y, 0) / n
+  let num = 0
+  let den = 0
+  for (const pt of points) {
+    const dx = pt.x - meanX
+    num += dx * (pt.y - meanY)
+    den += dx * dx
+  }
+  if (den <= 0) return ''
+  const slope = num / den
+  const intercept = meanY - slope * meanX
+  const x1 = padX
+  const x2 = padX + plotW
+  const clampY = (y: number) => Number(Math.max(padTop, Math.min(padTop + plotH, y)).toFixed(1))
+  return `M${Number(x1.toFixed(1))},${clampY(intercept + slope * x1)} L${Number(x2.toFixed(1))},${clampY(intercept + slope * x2)}`
+}
+
 export function buildSparkGeometry(preview: DataPreview | null | undefined, fallbackChartType?: string | null, width = 220, height = 64): SparkGeometry {
-  const rawType = preview?.chart_type ?? fallbackChartType ?? 'line'
+  const rawType = fallbackChartType ?? preview?.chart_type ?? 'line'
   const chartType = normalizeChartFamily(rawType)
   const chartLabel = chartTypeLabel(rawType)
   const firstSeries = preview?.series?.[0]
@@ -386,6 +478,7 @@ export function buildSparkGeometry(preview: DataPreview | null | undefined, fall
       deltaText: null,
       linePath: '',
       areaPath: '',
+      trendLinePath: '',
       points: [],
       peakPoint: null,
       bars: [],
@@ -415,8 +508,23 @@ export function buildSparkGeometry(preview: DataPreview | null | undefined, fall
   const plotH = Math.max(16, height - padTop - padBottom)
   const span = max - min || 1
 
+  const parsedX =
+    chartType === 'scatter' && categories.length === values.length
+      ? categories.map((cat) => Number(String(cat).replace(',', '.').replace(/[^0-9.-]/g, '')))
+      : []
+  const hasNumericX = parsedX.length === values.length && parsedX.every((val) => Number.isFinite(val))
+  const minX = hasNumericX ? Math.min(...parsedX) : 0
+  const maxX = hasNumericX ? Math.max(...parsedX) : 0
+  const spanX = maxX - minX
+
   const points: SparkSeriesPoint[] = values.map((value, idx) => {
-    const x = values.length === 1 ? padX + plotW / 2 : Number((padX + (idx / (values.length - 1)) * plotW).toFixed(1))
+    const xRatio =
+      values.length === 1
+        ? 0.5
+        : hasNumericX && spanX > 0
+          ? ((parsedX[idx] ?? minX) - minX) / spanX
+          : idx / (values.length - 1)
+    const x = Number((padX + xRatio * plotW).toFixed(1))
     const y = Number((padTop + plotH - ((value - min) / span) * plotH).toFixed(1))
     return { x, y, value, label: categories[idx] ?? String(idx + 1) }
   })
@@ -432,10 +540,12 @@ export function buildSparkGeometry(preview: DataPreview | null | undefined, fall
   const baselineY = padTop + plotH
   const areaPath =
     firstPt && lastPt ? `${linePath} L${lastPt.x},${baselineY} L${firstPt.x},${baselineY} Z` : ''
+  const trendLinePath = buildTrendLinePath(points, padX, plotW, padTop, plotH)
 
   const barCount = Math.min(values.length, 24)
   const stepW = plotW / barCount
-  const barW = Math.max(3, Number((stepW * 0.68).toFixed(1)))
+  const barRatio = chartType === 'histogram' ? 0.88 : 0.68
+  const barW = Math.max(3, Number((stepW * barRatio).toFixed(1)))
   const baseMin = Math.min(0, min)
   const barSpan = max - baseMin || 1
   const bars: SparkBarItem[] = values.slice(0, barCount).map((value, idx) => {
@@ -456,7 +566,7 @@ export function buildSparkGeometry(preview: DataPreview | null | undefined, fall
       fraction,
       dashArray: `${len} ${Number((circumference - len).toFixed(2))}`,
       dashOffset: Number((-offset).toFixed(2)),
-    label: categories[idx] ?? `Доля ${idx + 1}`,
+      label: categories[idx] ?? `Доля ${idx + 1}`,
     }
     offset += len
     return item
@@ -476,6 +586,7 @@ export function buildSparkGeometry(preview: DataPreview | null | undefined, fall
     deltaText,
     linePath,
     areaPath,
+    trendLinePath,
     points,
     peakPoint,
     bars,
@@ -484,7 +595,7 @@ export function buildSparkGeometry(preview: DataPreview | null | undefined, fall
 }
 
 export function fallbackUnderstandingFromContentPack(pack: ContentPack): Understanding {
-  const blocks: UnderstandingBlock[] = []
+  const rawBlocks: UnderstandingBlock[] = []
   for (const section of pack.sections) {
     const firstBlock = section.blocks[0]
     const previewLines = section.blocks
@@ -492,7 +603,7 @@ export function fallbackUnderstandingFromContentPack(pack: ContentPack): Underst
       .slice(0, 2)
       .join(' ')
     if (section.heading) {
-      blocks.push({
+      rawBlocks.push({
         id: `s:${section.id}`,
         kind: 'topic',
         title: section.heading,
@@ -506,7 +617,7 @@ export function fallbackUnderstandingFromContentPack(pack: ContentPack): Underst
       const text = block.text ?? (block.items ? block.items.join('\n') : '')
       if (!text.trim()) return
       const hasNumber = /\d/.test(text)
-      blocks.push({
+      rawBlocks.push({
         id: `b:${section.id}:${index}`,
         kind: block.kind === 'quote' ? 'quote' : hasNumber ? 'number' : 'fact',
         title: section.heading || null,
@@ -517,6 +628,7 @@ export function fallbackUnderstandingFromContentPack(pack: ContentPack): Underst
       })
     })
   }
+  const blocks = deduplicateTextBlocks(rawBlocks)
   const datasets: UnderstandingDataset[] = (pack.datasets ?? []).map((ds) => ({
     id: ds.id,
     title: ds.title,

@@ -1,8 +1,8 @@
 import type { InsightPatch } from '@/entities/assistant'
 import { Badge, Button, Check, Icon, Mono } from '@/shared/ui'
-import { insightSource, insightTitle, keyFigure, needsDecision, type InsightEntry } from '../lib/table'
-import { isInsightRecommendation, sanitizeAssistantCopy } from '../lib/understanding'
-import { MiniChart } from './MiniChart'
+import { insightSource, insightTitle, needsDecision, type InsightEntry } from '../lib/table'
+import { extractFigure, isInsightRecommendation, sanitizeAssistantCopy } from '../lib/understanding'
+import { SparkChart } from './SparkChart'
 import styles from './DraftDeck.module.css'
 
 export interface InsightCardProps {
@@ -13,6 +13,20 @@ export interface InsightCardProps {
   onPatch?: (insightId: string, patch: InsightPatch) => void
   onExclude?: (insightId: string) => void
   showChart?: boolean
+}
+
+function resolveInsightChartType(entry: InsightEntry): string | null | undefined {
+  const { insight, dataset, preview } = entry
+  if (insight.fact_type === 'correlation' || insight.fact_type === 'no_correlation' || dataset.task === 'correlation') {
+    return 'scatter'
+  }
+  if (insight.fact_type === 'spread' || insight.fact_type === 'outlier' || dataset.task === 'distribution') {
+    return 'histogram'
+  }
+  if (preview?.chart_type && preview.chart_type !== 'line') {
+    return preview.chart_type
+  }
+  return dataset.recommendations[0]?.chart_type ?? preview?.chart_type
 }
 
 function StatusBadge({ entry }: { entry: InsightEntry }) {
@@ -86,8 +100,8 @@ function InsightVisual({ entry, figure, chartType, showChart }: { entry: Insight
   const preview = showChart ? entry.preview : null
   if (!preview && !figure) return null
   return (
-    <div className={styles.insightVisual}>
-      {preview && <MiniChart preview={preview} chartType={chartType} label={`График: ${dataset.title ?? dataset.file ?? ''}`} />}
+    <div className={styles.insightVisual} data-figure-only={!preview || undefined}>
+      {preview && <SparkChart preview={preview} chartType={chartType} label={`График: ${dataset.title ?? dataset.file ?? ''}`} />}
       {figure && <span className={styles.figure}>{figure}</span>}
     </div>
   )
@@ -102,8 +116,10 @@ export function InsightCard({ entry, selected, onOpen, onEdit, onPatch, onExclud
   const implicationText = insight.implication ? sanitizeAssistantCopy(insight.implication) : null
   const decide = needsDecision(insight)
   const source = insightSource(insight, dataset)
-  const figure = keyFigure(title)
-  const chartType = preview?.chart_type ?? dataset.recommendations[0]?.chart_type
+  const figure = extractFigure(title) ?? extractFigure(factText)
+  const chartType = resolveInsightChartType(entry)
+  const hasChart = Boolean(showChart && preview && (preview.series?.[0]?.values?.length ?? 0) > 0)
+  const visualMode = hasChart ? 'chart' : figure ? 'figure' : 'none'
 
   return (
     <article
@@ -118,22 +134,21 @@ export function InsightCard({ entry, selected, onOpen, onEdit, onPatch, onExclud
         {dataset.file && <span className={styles.insightFile}>{dataset.file}</span>}
       </header>
 
-      <div className={styles.insightMain}>
+      <div className={styles.insightMain} data-visual={visualMode}>
         <div className={styles.insightText}>
-      <h3 className={styles.insightTitle}>
-        {onOpen ? (
-          <button type="button" className={styles.insightOpen} onClick={onOpen} aria-label={`Открыть вывод: ${title}`}>
-            {title}
-          </button>
-        ) : (
-          title
-        )}
-      </h3>
+          <h3 className={styles.insightTitle}>
+            {onOpen ? (
+              <button type="button" className={styles.insightOpen} onClick={onOpen} aria-label={`Открыть вывод: ${title}`}>
+                {title}
+              </button>
+            ) : (
+              title
+            )}
+          </h3>
 
-      {showFact && <p className={styles.insightFact}>{factText}</p>}
+          {showFact && <p className={styles.insightFact}>{factText}</p>}
 
-      <MeaningRows meaningText={meaningText} implicationText={implicationText} decide={decide} />
-
+          <MeaningRows meaningText={meaningText} implicationText={implicationText} decide={decide} />
         </div>
         <InsightVisual entry={entry} figure={figure} chartType={chartType} showChart={showChart} />
       </div>

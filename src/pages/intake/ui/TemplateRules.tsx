@@ -11,6 +11,8 @@ const ROLE_NAME: Record<string, string> = {
   content: 'рабочие слайды',
   closing: 'финал',
   divider: 'разделители',
+  toc: 'Оглавление',
+  contact: 'Контакты',
 }
 
 function percent(share: number): string {
@@ -25,6 +27,16 @@ export function TemplateRules({ detail, dna }: { detail: TemplateDetail; dna: De
   const topBlueprint = topLayout ? facts.blueprints.find((item) => item.key === topLayout.layout) : undefined
   const topLayoutName = topLayout ? cleanLayoutName(topBlueprint?.name || topLayout.layout) : ''
   const roles = facts.roles.filter((role) => role.slides > 0 && role.role in ROLE_NAME)
+  const palette = useMemo(() => {
+    const seen = new Set<string>()
+    return system.palette.flatMap((slot) => {
+      const name = colorName(slot.hex)
+      if (seen.has(name)) return []
+      seen.add(name)
+      return [{ ...slot, name }]
+    })
+  }, [system.palette])
+  const textSizes = useMemo(() => facts.scale.filter((step) => step.pt <= 96).slice(0, 6), [facts.scale])
   const notes = [
     ...understanding.conflicts.map((conflict) =>
       conflict.kind === 'font'
@@ -49,10 +61,10 @@ export function TemplateRules({ detail, dna }: { detail: TemplateDetail; dna: De
       <section className={styles.section}>
         <h3 className={styles.heading}>Цвета</h3>
         <ul className={styles.swatches} aria-label="Палитра темы">
-          {system.palette.map((slot) => (
+          {palette.map((slot) => (
             <li key={`${slot.slot}-${slot.hex}`} className={styles.swatchItem}>
-              <span className={styles.swatch} style={{ background: slot.hex }} role="img" aria-label={colorName(slot.hex)} />
-              <span className={styles.hex}>{colorName(slot.hex)}</span>
+              <span className={styles.swatch} style={{ background: slot.hex }} role="img" aria-label={slot.name} />
+              <span className={styles.hex}>{slot.name}</span>
             </li>
           ))}
         </ul>
@@ -65,9 +77,9 @@ export function TemplateRules({ detail, dna }: { detail: TemplateDetail; dna: De
             ? observed.map((font) => `${font.name} (${percent(font.share)})`).join(', ')
             : system.declaredFonts.join(', ') || 'Не нашёл шрифтов в шаблоне.'}
         </p>
-        {facts.scale.length > 0 && (
+        {textSizes.length > 0 && (
           <p className={styles.muted}>
-            Размеры текста: {facts.scale.slice(0, 6).map((step) => `${step.pt}`).join(', ')} пт
+            Размеры текста: {textSizes.map((step) => `${step.pt}`).join(', ')} пт
           </p>
         )}
       </section>

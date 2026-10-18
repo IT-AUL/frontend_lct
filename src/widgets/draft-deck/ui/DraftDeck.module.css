@@ -204,8 +204,6 @@
   color: var(--ink-3);
   font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 
 .insightStepText {
@@ -226,6 +224,14 @@
   align-items: start;
 }
 
+.insightMain[data-visual='figure'] {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.insightMain[data-visual='none'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .insightText {
   display: flex;
   flex-direction: column;
@@ -243,16 +249,27 @@
   background: var(--surface-2);
 }
 
+.insightVisual[data-figure-only] {
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
 .insightVisual svg {
   width: 100%;
   min-width: 0;
   max-height: 72px;
 }
 
-
 @media (max-width: 1100px) {
   .insightMain {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .insightMain[data-visual='figure'] {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 }
 
@@ -268,11 +285,9 @@
 }
 
 .insightSource {
-  overflow: hidden;
   color: var(--ink-3);
   font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .insightActions {
@@ -310,6 +325,24 @@
 .thoughtOrigin {
   color: var(--ink-3);
   font-size: 12px;
+}
+
+.thoughtMain {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.thoughtMain[data-visual='figure'] {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.thoughtBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
 
 .thoughtTitle {
@@ -361,9 +394,7 @@
 }
 
 .excludedTitle {
-  overflow: hidden;
   color: var(--ink-3);
   text-decoration: line-through;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }

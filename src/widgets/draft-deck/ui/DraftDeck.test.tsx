@@ -163,4 +163,57 @@ describe('DraftDeck', () => {
     expect(within(card).queryByRole('button', { name: 'Согласен' })).not.toBeInTheDocument()
     expect(within(card).queryByRole('button', { name: 'Не включать' })).not.toBeInTheDocument()
   })
+
+  it('renders scatter and histogram charts and collapses figure-only right column', () => {
+    const data = understanding({
+      datasets: [
+        dataset({
+          id: 'ds-1',
+          title: 'Реклама и продажи',
+          task: 'correlation',
+          recommendations: [{ chart_type: 'scatter', score: 1.3, reasons: [] }],
+          insights: [
+            insight({
+              id: 'i-scatter',
+              fact_type: 'correlation',
+              headline: 'Расходы на рекламу и продажи связаны: r = 0,96',
+              fact: 'Связь по 40 городам',
+            }),
+            insight({
+              id: 'i-figure',
+              fact_type: 'spread',
+              headline: 'Расходы на рекламу: типичное значение 421 тыс. ₽',
+              fact: 'Медиана 421 тыс. ₽',
+            }),
+          ],
+        }),
+      ],
+    })
+    render(<DraftDeck understanding={data} selection={null} />)
+
+    const chart = screen.getByRole('img', { name: 'График: Реклама и продажи' })
+    expect(chart).toHaveAttribute('data-chart-type', 'scatter')
+    expect(chart.querySelector('[data-trend-line]')).not.toBeNull()
+
+    const secondCard = screen.getByRole('listitem', { name: /Вывод: Расходы на рекламу: типичное значение 421 тыс\. ₽/ })
+    expect(within(secondCard).getByText('421 тыс. ₽')).toBeInTheDocument()
+    expect(secondCard.querySelector('[data-visual="figure"]')).not.toBeNull()
+  })
+
+  it('deduplicates twin text blocks and omits duplicate Цифра badge on numeric text cards', () => {
+    const data = understanding({
+      blocks: [
+        block({ id: 's:sec-1', kind: 'topic', title: 'Итоги Q3', text: 'Рост продаж составил 280 млн ₽' }),
+        block({ id: 'b:sec-1:0', kind: 'number', title: 'Итоги Q3', text: 'Рост продаж составил 280 млн ₽' }),
+      ],
+      datasets: [],
+    })
+    render(<DraftDeck understanding={data} selection={null} />)
+
+    const thoughts = screen.getByRole('list', { name: 'Мысли из текста' })
+    const cards = within(thoughts).getAllByRole('listitem')
+    expect(cards).toHaveLength(1)
+    expect(within(cards[0] as HTMLElement).queryByText('Цифра')).not.toBeInTheDocument()
+    expect(within(cards[0] as HTMLElement).getByText('280 млн ₽')).toBeInTheDocument()
+  })
 })

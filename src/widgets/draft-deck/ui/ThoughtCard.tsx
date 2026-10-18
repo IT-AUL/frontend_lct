@@ -1,7 +1,7 @@
 import type { UnderstandingBlock, UnderstandingDataset } from '@/entities/assistant'
 import { Badge, Button } from '@/shared/ui'
 import { blockTitle } from '../lib/table'
-import { BLOCK_KIND_LABEL, BLOCK_KIND_TONE, blockOrigin, normalizeBlockKind, sanitizeAssistantCopy } from '../lib/understanding'
+import { BLOCK_KIND_LABEL, BLOCK_KIND_TONE, blockOrigin, extractFigure, normalizeBlockKind, sanitizeAssistantCopy } from '../lib/understanding'
 import styles from './DraftDeck.module.css'
 
 export interface ThoughtCardProps {
@@ -17,26 +17,37 @@ export function ThoughtCard({ block, datasets, selected, onOpen, onEdit, onRemov
   const kindKey = normalizeBlockKind(block.kind)
   const kindLabel = BLOCK_KIND_LABEL[kindKey]
   const origin = blockOrigin(block, datasets)
-  const title = block.title ? sanitizeAssistantCopy(block.title) : kindLabel
+  const cardTitle = sanitizeAssistantCopy(blockTitle(block))
+  const title = block.title?.trim() ? sanitizeAssistantCopy(block.title.trim()) : cardTitle
   const bodyText = block.text ? sanitizeAssistantCopy(block.text) : null
-  const cardTitle = blockTitle(block)
+  const figure = extractFigure(bodyText ?? title)
+  const originText = origin.detail && origin.kind === 'user' && origin.detail !== block.title ? `${origin.label} · ${origin.detail}` : origin.label
 
   return (
     <article className={styles.thought} role="listitem" data-selected={selected || undefined} aria-label={`Блок: ${cardTitle}`}>
       <header className={styles.thoughtMeta}>
-        <Badge tone={BLOCK_KIND_TONE[kindKey]}>{kindLabel}</Badge>
-        <span className={styles.thoughtOrigin}>{origin.label}</span>
+        {kindKey !== 'number' && <Badge tone={BLOCK_KIND_TONE[kindKey]}>{kindLabel}</Badge>}
+        <span className={styles.thoughtOrigin}>{originText}</span>
       </header>
-      <h3 className={styles.thoughtTitle}>
-        {onOpen ? (
-          <button type="button" className={styles.insightOpen} onClick={onOpen} aria-label={`Открыть: ${cardTitle}`}>
-            {title}
-          </button>
-        ) : (
-          title
+      <div className={styles.thoughtMain} data-visual={figure ? 'figure' : 'none'}>
+        <div className={styles.thoughtBody}>
+          <h3 className={styles.thoughtTitle}>
+            {onOpen ? (
+              <button type="button" className={styles.insightOpen} onClick={onOpen} aria-label={`Открыть: ${cardTitle}`}>
+                {title}
+              </button>
+            ) : (
+              title
+            )}
+          </h3>
+          {bodyText && bodyText !== title && <p className={styles.thoughtText}>{bodyText}</p>}
+        </div>
+        {figure && (
+          <div className={styles.insightVisual} data-figure-only>
+            <span className={styles.figure}>{figure}</span>
+          </div>
         )}
-      </h3>
-      {bodyText && bodyText !== title && <p className={styles.thoughtText}>{bodyText}</p>}
+      </div>
       {(onEdit || onRemove) && (
         <footer className={styles.thoughtActions}>
           {onEdit && (

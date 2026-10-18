@@ -7,7 +7,9 @@ import {
   blockOrigin,
   buildSparkGeometry,
   chartTypeLabel,
+  deduplicateTextBlocks,
   extractContextBadges,
+  extractFigure,
   fallbackUnderstandingFromContentPack,
   formatCapacitySlides,
   formatSourceDetails,
@@ -343,11 +345,65 @@ describe('buildSparkGeometry', () => {
     expect(geo.deltaText).toBe('×2,0')
   })
 
+  it('builds scatter geometry with points and a trend line path', () => {
+    const geo = buildSparkGeometry({
+      chart_type: 'scatter',
+      categories: ['100', '200', '300', '400'],
+      series: [{ name: 'Продажи', values: [120, 230, 340, 460] }],
+      unit: 'тыс. ₽',
+    })
+    expect(geo.chartType).toBe('scatter')
+    expect(geo.points).toHaveLength(4)
+    expect(geo.trendLinePath).toMatch(/^M[\d.]+,[\d.]+ L[\d.]+,[\d.]+$/)
+  })
+
+  it('builds histogram geometry with vertical bin bars', () => {
+    const geo = buildSparkGeometry({
+      chart_type: 'histogram',
+      categories: ['0–200', '200–400', '400–600', '600–800'],
+      series: [{ name: 'Города', values: [4, 18, 12, 6] }],
+      unit: null,
+    })
+    expect(geo.chartType).toBe('histogram')
+    expect(geo.bars).toHaveLength(4)
+    expect(geo.bars[1]?.isPeak).toBe(true)
+  })
+
   it('returns an empty geometry without values', () => {
     const geo = buildSparkGeometry({ chart_type: 'line', categories: [], series: [], unit: null })
     expect(geo.values).toEqual([])
     expect(geo.linePath).toBe('')
+    expect(geo.trendLinePath).toBe('')
     expect(geo.points).toEqual([])
+  })
+})
+
+describe('extractFigure', () => {
+  it('preserves currency symbols after Russian abbreviations', () => {
+    expect(extractFigure('Инвестиции составили 280 млн ₽ за год')).toBe('280 млн ₽')
+    expect(extractFigure('Объём рынка достиг 1,2 млрд $')).toBe('1,2 млрд $')
+    expect(extractFigure('Средний чек вырос до 45 тыс. €')).toBe('45 тыс. €')
+    expect(extractFigure('Расходы на рекламу: типичное значение 421 тыс. ₽')).toBe('421 тыс. ₽')
+  })
+
+  it('extracts multipliers and percentage shares', () => {
+    expect(extractFigure('Рост выручки в 2,1 раза')).toBe('×2,1')
+    expect(extractFigure('Доля канала 61% выручки')).toBe('61%')
+    expect(extractFigure('Без числовых показателей')).toBeNull()
+  })
+})
+
+describe('deduplicateTextBlocks', () => {
+  it('deduplicates twin blocks by normalized (heading, summary) ignoring case and extra whitespace', () => {
+    const blocks = [
+      block({ id: 's:sec-1', kind: 'topic', title: 'Итоги маркетинга', text: 'Рост продаж на  280 млн ₽\nза квартал' }),
+      block({ id: 'b:sec-1:0', kind: 'number', title: '  итоги   маркетинга ', text: 'рост продаж на 280 млн ₽ за квартал' }),
+      block({ id: 'b:sec-2:0', kind: 'fact', title: 'Планы Q4', text: 'Перераспределить бюджет в пользу 12 городов' }),
+    ]
+    const deduped = deduplicateTextBlocks(blocks)
+    expect(deduped).toHaveLength(2)
+    expect(deduped[0]?.id).toBe('b:sec-1:0')
+    expect(deduped[1]?.id).toBe('b:sec-2:0')
   })
 })
 

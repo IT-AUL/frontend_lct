@@ -83,7 +83,7 @@ export function useSetBrandPriority(brandbookId: string) {
 export function useUnderstanding(packId: Id, { useLlm = false }: { useLlm?: boolean } = {}) {
   const client = useQueryClient()
   return useQuery({
-    queryKey: [...assistantKeys.understanding(packId ?? ''), { useLlm }], enabled: Boolean(packId), staleTime: Infinity, retry: false, refetchOnWindowFocus: false,
+    queryKey: [...assistantKeys.understanding(packId ?? ''), { useLlm }], enabled: Boolean(packId), staleTime: 60_000, retry: false, refetchOnWindowFocus: false,
     queryFn: async ({ signal }) => {
       const data = await normalized(unwrap(api.GET('/api/v1/content-packs/{pack_id}/understanding', { params: { path: { pack_id: packId as string }, query: { use_llm: useLlm } }, signal })), normalizeUnderstanding)
       if (data) await invalidate(client, [assistantKeys.sessions])
