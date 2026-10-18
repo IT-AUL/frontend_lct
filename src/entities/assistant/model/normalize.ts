@@ -1,4 +1,4 @@
-import type { AssistantSession, AssistantStep, AnswersResult, BrandbookSummary, Insight, IntakeKind, IntakeResult, JobEvent, JsonRecord, PackEditResult, QuestionsResult, RegenerateResult, SlideExplain, SlideInfo, StylePreview, StylePreviewAccepted, TemplateSummary, Understanding } from './types'
+import type { AssistantCommandResult, AssistantSession, AssistantStep, AnswersResult, BrandbookSummary, CommandChange, CommandOption, CommandStatus, Insight, IntakeKind, IntakeResult, JobEvent, JsonRecord, PackEditResult, ParsedCommand, PlanSet, QuestionsResult, RegenerateResult, SlideExplain, SlideInfo, StylePreview, StylePreviewAccepted, TemplateSummary, Understanding } from './types'
 
 export const record = (value: unknown): JsonRecord => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as JsonRecord : {}
 export const array = (value: unknown): unknown[] => Array.isArray(value) ? value : []
@@ -100,3 +100,66 @@ export function normalizeJobEvent(value: unknown, eventType?: string, id?: strin
   if (sequence === null || !Number.isSafeInteger(sequence) || sequence < 0 || !type) return null
   return { ...r, sequence, type, timestamp: text(r.timestamp), stage: text(r.stage), progress: number(r.progress), message: text(r.message), data: nullableRecord(r.data) ?? r }
 }
+function normalizeCommandOptions(value: unknown): CommandOption[] {
+  return array(value).flatMap((item): CommandOption[] => {
+    if (typeof item === 'string' && item.trim()) return [{ value: item.trim(), label: item.trim() }]
+    const r = nullableRecord(item)
+    if (!r) return []
+    const val = text(r.value) ?? text(r.command) ?? text(r.text) ?? text(r.label)
+    const label = text(r.label) ?? text(r.title) ?? val
+    return val && label ? [{ value: val, label }] : []
+  })
+}
+function normalizeParsedCommand(value: unknown): ParsedCommand | null {
+  const r = nullableRecord(value)
+  if (!r) return null
+  return {
+    ...r,
+    intent: text(r.intent),
+    action: text(r.action),
+    text: text(r.text) ?? '',
+    chart_type: text(r.chart_type),
+    brief: records(r.brief).filter((b) => typeof b.field === 'string').map((b) => ({ field: String(b.field), value: b.value, label: text(b.label) })),
+    question: text(r.question),
+  }
+}
+function normalizeCommandChange(value: unknown): CommandChange | null {
+  const r = nullableRecord(value)
+  if (!r) return null
+  return {
+    ...r,
+    id: text(r.id),
+    job_id: text(r.job_id),
+    variant_id: text(r.variant_id),
+    slide_id: text(r.slide_id),
+    expected_revision: number(r.expected_revision),
+    target_revision: number(r.target_revision),
+    action: text(r.action),
+    state: text(r.state),
+    events_url: text(r.events_url),
+  }
+}
+export function normalizeCommandResult(value: unknown): AssistantCommandResult {
+  const r = record(value)
+  const rawStatus = text(r.status)
+  const status: CommandStatus = rawStatus === 'applied' || rawStatus === 'accepted' || rawStatus === 'clarification' ? rawStatus : nullableRecord(r.change) ? 'accepted' : 'clarification'
+  const planRec = nullableRecord(r.plan)
+  const plan = planRec && typeof planRec.plan_id === 'string' && Array.isArray(planRec.plans) ? (planRec as unknown as PlanSet) : null
+  const cmdRec = nullableRecord(r.command)
+  const options = normalizeCommandOptions(r.options ?? r.choices ?? cmdRec?.options ?? cmdRec?.choices)
+  return {
+    ...r,
+    status,
+    parser: text(r.parser),
+    command: normalizeParsedCommand(r.command),
+    assistant_note: note(r),
+    brief: nullableRecord(r.brief),
+    context_revision: number(r.context_revision),
+    changed_fields: strings(r.changed_fields),
+    invalidated: strings(r.invalidated),
+    change: normalizeCommandChange(r.change),
+    plan,
+    options,
+  }
+}
+

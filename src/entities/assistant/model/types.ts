@@ -222,3 +222,57 @@ export interface JobEvent extends JsonRecord {
   message: string | null
   data: JsonRecord
 }
+export type CommandStatus = 'applied' | 'accepted' | 'clarification'
+export type CommandParser = 'rules' | 'llm' | string
+export interface CommandBriefEdit {
+  field: string
+  value: unknown
+  label: string | null
+}
+export interface ParsedCommand extends JsonRecord {
+  intent: string | null
+  action: string | null
+  text: string
+  chart_type: string | null
+  brief: CommandBriefEdit[]
+  question: string | null
+}
+export interface CommandChange extends JsonRecord {
+  id: string | null
+  job_id: string | null
+  variant_id: string | null
+  slide_id: string | null
+  expected_revision: number | null
+  target_revision: number | null
+  action: string | null
+  state: string | null
+  events_url: string | null
+}
+export interface CommandOption {
+  value: string
+  label: string
+}
+export interface AssistantCommandRequest {
+  text: string
+  variant_id?: string | null
+  slide_id?: string | null
+  plan_id?: string | null
+  expected_revision?: number | null
+  expected_context_revision?: number | null
+  provider_session_id?: string | null
+  use_llm?: boolean
+}
+export interface AssistantCommandResult extends JsonRecord {
+  status: CommandStatus
+  parser: CommandParser | null
+  command: ParsedCommand | null
+  assistant_note: string | null
+  brief: JsonRecord | null
+  context_revision: number | null
+  changed_fields: string[]
+  invalidated: string[]
+  change: CommandChange | null
+  plan: PlanSet | null
+  options: CommandOption[]
+}
+

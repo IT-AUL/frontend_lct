@@ -292,7 +292,11 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
       const url = new URL(request.url)
       const after = Math.max(Number(url.searchParams.get('after') ?? 0), Number(request.headers.get('Last-Event-ID') ?? 0))
       if (!Number.isSafeInteger(after) || after < 0) return json({ error: { code: 'invalid_input', message: 'Invalid cursor' } }, 422)
-      const raw = String(fixture(current.scenario, `${current.label}-events`).sse ?? '')
+      const changeSse = [
+        'id: 1\nevent: job.started\ndata: {"sequence":1,"type":"job.started","stage":"slide_update","progress":0.45,"message":"Обновляю слайд"}',
+        'id: 2\nevent: job.completed\ndata: {"sequence":2,"type":"job.completed","stage":"completed","progress":1,"message":"Слайд обновлён"}',
+      ].join('\n\n')
+      const raw = current.label === 'change' ? changeSse : String(fixture(current.scenario, `${current.label}-events`).sse ?? '')
       const frames = raw.replace(/\r\n/g, '\n').split('\n\n').filter((frame) => Number(/^id: (\d+)/m.exec(frame)?.[1] ?? 0) > after)
       const encoder = new TextEncoder()
       let index = 0
@@ -303,7 +307,7 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
             const currentState = state(current.projectId)
             if (current.label === 'autopilot' || current.label === 'generation') {
               currentState.session = { ...fixture(current.scenario, 'session-final'), job_id: null }
-            } else {
+            } else if (current.label === 'style') {
               currentState.session.artifacts = { ...object(currentState.session.artifacts), preview_id: fixture('data', 'style-start').preview_id }
             }
             controller.close()
@@ -313,7 +317,11 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
     }),
     http.get(`*${API_BASE}/jobs/:jobId`, ({ params }) => {
       const current = jobs.get(String(params.jobId))
-      return current ? json(fixture(current.scenario, `${current.label}-job`)) : undefined
+      if (!current) return undefined
+      if (current.label === 'change') {
+        return json({ id: String(params.jobId), project_id: current.projectId, kind: 'slide_change', status: 'succeeded', progress: 1, message: 'Слайд обновлён' })
+      }
+      return json(fixture(current.scenario, `${current.label}-job`))
     }),
     http.post(`*${API_BASE}/projects/:projectId/generations`, async ({ params }) => {
       const current = states.get(String(params.projectId))
@@ -375,5 +383,197 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
       result.slide = { ...object(result.slide), id: param('slideId'), variant_id: param('variantId') }
       return json(result)
     }),
+    route('post', '/projects/:projectId/commands', async ({ request, param }) => {
+      const projectId = param('projectId')
+      const current = state(projectId)
+      const body = await readJson(request)
+      const rawText = typeof body.text === 'string' ? body.text.trim() : ''
+      if (!rawText) throw validationError('text', 'Введите текст команды')
+      const lowered = rawText.toLowerCase()
+      const briefRules: { pattern: RegExp; field: string; value: unknown; label: string }[] = [
+        { pattern: /руководств|совет директор|топ-менедж|инвестор/, field: 'audience', value: 'executive', label: 'аудитория: руководство' },
+        { pattern: /клиент|заказчик|партнер|партнёр/, field: 'audience', value: 'clients', label: 'аудитория: клиенты' },
+        { pattern: /команд|инженер|аналитик|разработчик/, field: 'audience', value: 'team', label: 'аудитория: команда' },
+        { pattern: /защит|бюджет|одобрен|согласован/, field: 'goal', value: 'approval', label: 'цель: согласование решения' },
+        { pattern: /отчет|отчёт|итог|результат/, field: 'goal', value: 'report', label: 'цель: отчёт по результатам' },
+        { pattern: /продаж|коммерческ|питч/, field: 'goal', value: 'pitch', label: 'цель: коммерческое предложение' },
+        { pattern: /строг|формальн|делов/, field: 'style', value: 'strict', label: 'тон: строгий деловой' },
+        { pattern: /визуальн|выразительн/, field: 'style', value: 'visual', label: 'стиль: больше визуальных акцентов' },
+        { pattern: /плотност.*высок|больше фактов|подробн/, field: 'density', value: 'high', label: 'плотность: подробнее' },
+        { pattern: /плотност.*низк|сжато|тезисн|меньше текста/, field: 'density', value: 'low', label: 'плотность: короче и тезиснее' },
+      ]
+      const slideActions: { pattern: RegExp; intent: 'slide_change' | 'plan_action'; action: string; chart_type?: string; label: string }[] = [
+        { pattern: /короче|сократ|ужми/, intent: 'slide_change', action: 'shorter', label: 'сделать слайд короче' },
+        { pattern: /другой макет|смени макет|переверст/, intent: 'slide_change', action: 'other_layout', label: 'подобрать другой макет' },
+        { pattern: /таблиц/, intent: 'slide_change', action: 'other_chart', chart_type: 'table', label: 'переключить на таблицу' },
+        { pattern: /столбчат|bar/, intent: 'slide_change', action: 'other_chart', chart_type: 'bar', label: 'переключить на столбчатый график' },
+        { pattern: /линейн|line/, intent: 'slide_change', action: 'other_chart', chart_type: 'line', label: 'переключить на линейный график' },
+        { pattern: /другой график|смени график/, intent: 'slide_change', action: 'other_chart', label: 'выбрать другой график' },
+        { pattern: /схем|диаграмм/, intent: 'plan_action', action: 'to_diagram', label: 'превратить в схему' },
+        { pattern: /убери слайд|удали слайд/, intent: 'plan_action', action: 'remove', label: 'убрать слайд из плана' },
+        { pattern: /раздели слайд|разбей слайд/, intent: 'plan_action', action: 'split', label: 'разделить слайд' },
+        { pattern: /объедини|слей слайд/, intent: 'plan_action', action: 'merge_next', label: 'объединить со следующим слайдом' },
+      ]
+      const matchedAction = slideActions.find((rule) => rule.pattern.test(lowered))
+      const seenFields = new Set<string>()
+      const briefEdits: { field: string; value: unknown; label: string }[] = []
+      if (!matchedAction) {
+        for (const rule of briefRules) {
+          if (!seenFields.has(rule.field) && rule.pattern.test(lowered)) {
+            seenFields.add(rule.field)
+            briefEdits.push({ field: rule.field, value: rule.value, label: rule.label })
+          }
+        }
+        const countMatch = /(?:до\s+)?(\d{1,2})\s*слайд/.exec(lowered)
+        if (countMatch && !/на\s+слайде|слайд\s+\d/.test(lowered)) {
+          const count = Number(countMatch[1])
+          if (count >= 3 && count <= 40) briefEdits.push({ field: 'slide_count', value: count, label: `объём: ${count} слайдов` })
+        }
+      }
+      if (briefEdits.length > 0) {
+        const patch = Object.fromEntries(briefEdits.map((item) => [item.field, item.value]))
+        current.session.brief = { ...object(current.session.brief), ...patch }
+        const packId = textId(object(current.session.artifacts).content_pack_id)
+        if (packId && packs.has(packId)) {
+          const packEntry = packs.get(packId)
+          if (packEntry) packEntry.understanding.brief = { ...object(packEntry.understanding.brief), ...patch }
+        }
+        const note = `Принял: ${briefEdits.map((item) => item.label).join('; ')}.`
+        return json({
+          status: 'applied',
+          parser: 'rules',
+          command: { intent: 'update_brief', action: 'update_brief', text: rawText, chart_type: null, brief: briefEdits, question: null },
+          brief: current.session.brief,
+          context_revision: 2,
+          changed_fields: briefEdits.map((item) => item.field),
+          invalidated: ['plan'],
+          assistant_note: note,
+        })
+      }
+      if (matchedAction) {
+        const variantId = textId(body.variant_id)
+        const planId = textId(body.plan_id) ?? textId(object(current.session.artifacts).plan_id)
+        const numberMatch = /слайд[аеу]?\s*№?\s*(\d{1,2})|(\d{1,2})\s*(?:-?[ймго]+\s+)?слайд/.exec(lowered)
+        const slideNum = numberMatch ? Number(numberMatch[1] ?? numberMatch[2]) : null
+        let slideId = textId(body.slide_id)
+        if (!slideId && slideNum !== null && planId && plans.has(planId)) {
+          const currentPlan = plan(planId)
+          const deck = object(objects(currentPlan.plans)[0]?.deck_plan)
+          const found = objects(deck.slides)[slideNum - 1]
+          if (found && typeof found.id === 'string') slideId = found.id
+        }
+        if (!slideId) {
+          const question = 'Уточните, к какому слайду применить изменение.'
+          return json({
+            status: 'clarification',
+            parser: 'rules',
+            command: { intent: 'clarification', action: matchedAction.action, text: rawText, chart_type: matchedAction.chart_type ?? null, brief: [], question },
+            assistant_note: question,
+            options: [
+              { value: `${rawText} на слайде 1`, label: 'Слайд 1' },
+              { value: `${rawText} на слайде 2`, label: 'Слайд 2' },
+              { value: `${rawText} на слайде 3`, label: 'Слайд 3' },
+            ],
+          })
+        }
+        const commandPayload = { intent: matchedAction.intent, action: matchedAction.action, text: rawText, chart_type: matchedAction.chart_type ?? null, brief: [], question: null }
+        if (matchedAction.intent === 'slide_change' && variantId) {
+          const jobId = prefixedId('job_chg')
+          jobs.set(jobId, { scenario: current.scenario, label: 'change', projectId })
+          const expectedRev = typeof body.expected_revision === 'number' ? body.expected_revision : 1
+          return json({
+            status: 'accepted',
+            parser: 'rules',
+            command: commandPayload,
+            change: {
+              id: prefixedId('chg'),
+              job_id: jobId,
+              variant_id: variantId,
+              slide_id: slideId,
+              expected_revision: expectedRev,
+              target_revision: expectedRev + 1,
+              action: matchedAction.action,
+              state: 'queued',
+              events_url: `/api/v1/jobs/${jobId}/events`,
+            },
+            assistant_note: `Принял: ${matchedAction.label}.`,
+          }, 202)
+        }
+        if (planId && plans.has(planId)) {
+          const currentPlan = plan(planId)
+          const deck = object(objects(currentPlan.plans)[0]?.deck_plan)
+          const slides = objects(deck.slides)
+          const slide = slides.find((item) => item.id === slideId) ?? slides[0]
+          if (slide) {
+            if (matchedAction.action === 'shorter') {
+              slide.content_units = objects(slide.content_units).slice(0, Math.max(1, Math.ceil(objects(slide.content_units).length / 2)))
+            } else if (matchedAction.action === 'other_chart' && matchedAction.chart_type) {
+              const chart = object(slide.chart)
+              slide.chart = { ...chart, type: matchedAction.chart_type }
+              slide.desired_visual = matchedAction.chart_type === 'table' ? 'table' : 'chart'
+            } else if (matchedAction.action === 'to_diagram') {
+              slide.desired_visual = 'diagram'
+            } else if (matchedAction.action === 'remove') {
+              deck.slides = slides.filter((item) => item !== slide)
+            } else if (matchedAction.action === 'split') {
+              deck.slides = slides.flatMap((item) => item === slide ? [slide, { ...structuredClone(slide), id: prefixedId('slide') }] : [item])
+            } else if (matchedAction.action === 'merge_next') {
+              const idx = slides.indexOf(slide)
+              const next = slides[idx + 1]
+              if (next) {
+                slide.content_units = [...objects(slide.content_units), ...objects(next.content_units)]
+                deck.slides = slides.filter((item) => item !== next)
+              }
+            }
+            objects(deck.slides).forEach((item, idx) => { item.index = idx })
+          }
+          return json({
+            status: 'applied',
+            parser: 'rules',
+            command: commandPayload,
+            plan: currentPlan,
+            assistant_note: `Принял: ${matchedAction.label}.`,
+          })
+        }
+        return json({
+          status: 'applied',
+          parser: 'rules',
+          command: commandPayload,
+          assistant_note: `Принял: ${matchedAction.label}.`,
+        })
+      }
+      const hasVariant = Boolean(textId(body.variant_id))
+      const hasPlan = Boolean(textId(body.plan_id))
+      const question = 'Уточните, что изменить: аудиторию, цель, тон, объём или действие со слайдом («короче», «другой макет», «таблица»).'
+      const options = hasVariant
+        ? [
+            { value: 'Сделай короче', label: 'Сделать короче' },
+            { value: 'Другой макет', label: 'Другой макет' },
+            { value: 'Переключи на таблицу', label: 'Показать таблицей' },
+          ]
+        : hasPlan
+          ? [
+              { value: 'Короче на слайде 2', label: 'Короче на слайде 2' },
+              { value: 'Преврати в схему слайд 2', label: 'Схема на слайде 2' },
+              { value: 'Раздели слайд 2', label: 'Разделить слайд 2' },
+            ]
+          : [
+              { value: 'Аудитория — руководство', label: 'Для руководства' },
+              { value: 'Тон строгий деловой', label: 'Строгий тон' },
+              { value: 'Сжато и тезисно', label: 'Короче и тезиснее' },
+            ]
+      return json({
+        status: 'clarification',
+        parser: 'rules',
+        command: { intent: 'clarification', action: null, text: rawText, chart_type: null, brief: [], question },
+        assistant_note: question,
+        options,
+      })
+    }),
   ]
 }
+
+function textId(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null
+}
+

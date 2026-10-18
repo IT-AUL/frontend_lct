@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { usePatchPlanSlide, usePlanSlideAction } from '@/entities/assistant'
 import { hasChartData, slidePurposeLabel, type DeckPlan, type GenerationCreate, type SlidePlan } from '@/entities/generation'
+import { AssistantCommandBar } from '@/features/assistant-command'
 import { applyQuickAction, changeSlideChart, usePlanDraft, useResearchPlanSlide, type QuickSlideAction } from '@/features/edit-deck-plan'
 import { humanError } from '@/shared/api'
 import { pluralize } from '@/shared/lib/format'
@@ -299,6 +300,7 @@ export function PlanStep(props: PlanStepProps) {
             }
           : null
       }
+      command={<AssistantCommandBar projectId={draftKey.replace(/^draft:/, '').split(':')[0] || ''} planId={planId} slideId={selectedId} slides={ordered} onApplied={(res) => { const next = res.plan?.plans[0]?.deck_plan; if (res.plan && next) { draft.replace(next, true); onServerPlanSet(res.plan, next) } }} />}
       actions={
         <>
           <Button variant="primary" size="lg" disabled={disabled} onClick={() => onSelectStyle(planWithCurrentMessage())}>

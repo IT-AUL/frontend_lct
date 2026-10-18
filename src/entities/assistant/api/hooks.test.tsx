@@ -343,3 +343,50 @@ it('passes files to the upload helper and reports intermediate progress', async 
     globalThis.XMLHttpRequest = original
   }
 })
+
+it('sends assistant command, normalizes accepted slide change, and tracks change job events', async () => {
+  const { result, client } = setup(() => hooks.useAssistantCommand(projectId))
+  const spy = vi.spyOn(client, 'invalidateQueries')
+  await act(async () => {
+    await result.current.mutateAsync({
+      text: 'Сделай короче',
+      variant_id: slide.body.variant_id,
+      slide_id: slideId,
+      expected_revision: 1,
+    })
+  })
+  await waitFor(() => expect(result.current.isSuccess).toBe(true))
+  expect(result.current.data?.status).toBe('accepted')
+  expect(result.current.data?.assistant_note).toContain('Принял:')
+  expect(result.current.data?.change?.job_id).toMatch(/^job_chg/)
+  expect(spy).toHaveBeenCalledWith({ queryKey: assistantKeys.session(projectId) })
+  expect(spy).toHaveBeenCalledWith({ queryKey: ['audit'] })
+
+  const jobId = result.current.data?.change?.job_id ?? ''
+  const events = setup(() => useJobEvents(jobId))
+  await waitFor(() => expect(events.result.current.done).toBe(true))
+  expect(events.result.current.lastEvent?.type).toBe('job.completed')
+})
+
+it('returns clarification with options without invalidating step queries', async () => {
+  const { result, client } = setup(() => hooks.useAssistantCommand(projectId))
+  const spy = vi.spyOn(client, 'invalidateQueries')
+  await act(async () => {
+    await result.current.mutateAsync({ text: 'Поменяй что-нибудь' })
+  })
+  await waitFor(() => expect(result.current.isSuccess).toBe(true))
+  expect(result.current.data?.status).toBe('clarification')
+  expect(result.current.data?.options.length).toBeGreaterThan(0)
+  expect(spy).not.toHaveBeenCalled()
+})
+
+it.each([404, 405, 501])('returns null when assistant command endpoint responds with %i', async (status) => {
+  server.use(http.post('*/api/v1/projects/:id/commands', () => new HttpResponse(null, { status })))
+  const { result } = setup(() => hooks.useAssistantCommand(projectId))
+  await act(async () => {
+    await result.current.mutateAsync({ text: 'Короче на слайде 3' })
+  })
+  await waitFor(() => expect(result.current.isSuccess).toBe(true))
+  expect(result.current.data).toBeNull()
+})
+

@@ -3,6 +3,7 @@ import { useGeneration } from '@/entities/generation'
 import { useProject } from '@/entities/project'
 import { useTemplate } from '@/entities/template'
 import { useVariant, useVariants } from '@/entities/variant'
+import { AssistantCommandBar } from '@/features/assistant-command'
 import { AuditWorkspace } from '@/widgets/audit-workspace'
 import { SlideInspector } from '@/widgets/slide-inspector'
 import { routes } from '@/shared/config'
@@ -89,7 +90,8 @@ export function AuditPage() {
           />
         ) : null
       }
-      renderSlidePanel={({ slideNumber }) => <SlidePanel key={slideNumber} runId={runId} variantId={variantId} strategy={strategy} slideNumber={slideNumber} />}
+      renderSlidePanel={({ slideNumber, slideId, revision }) => (<><SlidePanel key={slideNumber} runId={runId} variantId={variantId} strategy={strategy} slideNumber={slideNumber} /><AssistantCommandBar projectId={projectId} variantId={variantId} slideId={generation.data?.deck_plan?.slides[slideNumber - 1]?.id ?? slideId} expectedRevision={revision} slides={generation.data?.deck_plan?.slides} /></>)}
     />
   )
 }
+

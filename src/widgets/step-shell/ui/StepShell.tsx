@@ -6,13 +6,14 @@ interface StepShellProps {
   title: string
   note?: ReactNode
   children?: ReactNode
+  command?: ReactNode
   actions?: ReactNode
   canvas: ReactNode
   canvasLabel: string
   inspector?: { title: string; content: ReactNode; onClose: () => void; wide?: boolean } | null
 }
 
-export function StepShell({ title, note, children, actions, canvas, canvasLabel, inspector }: StepShellProps) {
+export function StepShell({ title, note, children, command, actions, canvas, canvasLabel, inspector }: StepShellProps) {
   const closeRef = useRef<HTMLButtonElement>(null)
   const onCloseRef = useRef<(() => void) | null>(null)
   const inspectorKey = inspector ? inspector.title : null
@@ -45,6 +46,7 @@ export function StepShell({ title, note, children, actions, canvas, canvasLabel,
           )}
           {children && <div className={styles.controls}>{children}</div>}
         </div>
+        {command && <div className={styles.command}>{command}</div>}
         {actions && <div className={styles.actions}>{actions}</div>}
       </section>
       <section

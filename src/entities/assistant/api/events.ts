@@ -105,7 +105,7 @@ export function useJobEvents(jobId: string | null | undefined) {
         client.setQueryData(logKey, state)
         client.setQueryData(key, state)
         if (state.done) {
-          for (const queryKey of [assistantKeys.sessions, ['assistant', 'style-preview'], ['assistant', 'plan'], ['generation'], ['variant'], ['job', jobId]]) void client.invalidateQueries({ queryKey })
+          for (const queryKey of [assistantKeys.sessions, ['assistant', 'style-preview'], ['assistant', 'plan'], ['plan'], ['generation'], ['variant'], ['audit'], ['export'], ['passport'], ['pdf'], ['assistant', 'slide'], ['job', jobId]]) void client.invalidateQueries({ queryKey })
         }
       } })
       return state

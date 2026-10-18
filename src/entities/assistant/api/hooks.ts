@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
-import { api, isUnsupportedEndpoint, unwrap, uploadWithProgress } from '@/shared/api'
+import { api, isUnsupportedEndpoint, requestOptionalJson, unwrap, uploadWithProgress } from '@/shared/api'
 import { API_BASE } from '@/shared/config'
-import { normalizeAnswers, normalizeBrandbookSummary, normalizeExplain, normalizeIntake, normalizePackEdit, normalizeQuestions, normalizeRegenerate, normalizeSession, normalizeSlide, normalizeStyleAccepted, normalizeStylePreview, normalizeTemplateSummary, normalizeUnderstanding, record } from '../model/normalize'
-import type { AnswersBody, AutopilotRequest, BlockOps, BrandPriority, InsightPatch, IntakeKind, NotesBody, PackEditResult, PlanSet, PlanSlideAction, PlanSlidePatch, RegenerateRequest, StylePreviewRequest } from '../model/types'
+import { normalizeAnswers, normalizeBrandbookSummary, normalizeCommandResult, normalizeExplain, normalizeIntake, normalizePackEdit, normalizeQuestions, normalizeRegenerate, normalizeSession, normalizeSlide, normalizeStyleAccepted, normalizeStylePreview, normalizeTemplateSummary, normalizeUnderstanding, record } from '../model/normalize'
+import type { AnswersBody, AssistantCommandRequest, AutopilotRequest, BlockOps, BrandPriority, InsightPatch, IntakeKind, NotesBody, PackEditResult, PlanSet, PlanSlideAction, PlanSlidePatch, RegenerateRequest, StylePreviewRequest } from '../model/types'
 import { abortable } from '../lib/abortable'
 import { assistantKeys } from './keys'
 
@@ -155,3 +155,17 @@ export function useSlideExplain(slideId: Id) {
 export function useSlide(slideId: Id) {
   return useQuery({ queryKey: assistantKeys.slide(slideId ?? ''), enabled: Boolean(slideId), queryFn: ({ signal }) => normalized(unwrap(api.GET('/api/v1/slides/{slide_id}', { params: { path: { slide_id: slideId as string } }, signal })), normalizeSlide) })
 }
+export function useAssistantCommand(projectId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AssistantCommandRequest) => normalized(requestOptionalJson<unknown>(`/projects/${encodeURIComponent(projectId)}/commands`, { method: 'POST', body }), normalizeCommandResult),
+    onSuccess: async (data) => {
+      if (!data || data.status === 'clarification') return
+      if (data.plan) client.setQueryData(assistantKeys.plan(data.plan.plan_id), data.plan)
+      const keys: QueryKey[] = [assistantKeys.session(projectId), assistantKeys.questions(projectId), ['assistant', 'understanding'], ['content-pack'], ['assistant', 'plan'], ['plan'], ['assistant', 'style-preview'], ['variant'], ['generation'], ['audit'], ['export'], ['passport'], ['pdf'], ['assistant', 'slide']]
+      if (data.change?.job_id) keys.push(['job', data.change.job_id])
+      await invalidate(client, keys)
+    },
+  })
+}
+

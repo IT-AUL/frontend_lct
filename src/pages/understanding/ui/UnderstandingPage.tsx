@@ -22,6 +22,7 @@ import { rememberRun, useProject } from '@/entities/project'
 import { useActiveProviderSession } from '@/entities/provider-session'
 import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
 import { isAbortError, PlanBuildProgress, requestAndStorePlan, usePlanBuild } from '@/features/edit-deck-plan'
+import { AssistantCommandBar } from '@/features/assistant-command'
 import { routes } from '@/shared/config'
 import { Button, EmptyState, InsightBoardSkeleton, LinkButton } from '@/shared/ui'
 import { StepShell } from '@/widgets/step-shell'
@@ -391,6 +392,7 @@ export function UnderstandingPage() {
             }
           : null
       }
+      command={<AssistantCommandBar projectId={projectId} />}
       actions={
         <>
           <Button variant="primary" size="lg" pending={buildingPlan} disabled={busy || !understanding} onClick={() => void handleContinue()}>

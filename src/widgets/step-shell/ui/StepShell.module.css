@@ -44,12 +44,26 @@
   margin-top: 28px;
 }
 
+.command {
+  padding: 14px 32px 0;
+  border-top: 1px solid var(--line);
+}
+
+.command:empty {
+  display: none;
+}
+
 .actions {
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 20px 32px 28px;
   border-top: 1px solid var(--line);
+}
+
+.command:not(:empty) + .actions {
+  padding-top: 14px;
+  border-top: 0;
 }
 
 .table {
@@ -155,6 +169,10 @@
 
   .decisionBody {
     padding: 28px 24px 20px;
+  }
+
+  .command {
+    padding: 12px 24px 0;
   }
 
   .actions {
