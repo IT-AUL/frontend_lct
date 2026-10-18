@@ -3,7 +3,7 @@ import { clsx } from 'clsx'
 import { formatIndex } from '@/shared/lib/format'
 import { ArrowRight, Badge, Button, Check, ChevronLeft, ChevronRight, Icon, Mono, Skeleton, X } from '@/shared/ui'
 import type { CatalogStrategy } from '@/entities/variant'
-import type { StyleColumnView } from '../model/styleView'
+import { resolveStyleTitle, type StyleColumnView } from '../model/styleView'
 import styles from './StyleCompareDialog.module.css'
 
 interface StyleCompareDialogProps {
@@ -37,6 +37,7 @@ export function StyleCompareDialog({
   const currentSlot = referenceSlots[currentIndex] ?? referenceSlots[0]
   const activeSlideId = currentSlot?.slideId ?? slideId
   const selectedColumn = columns.find((col) => col.strategy === selectedStrategy) ?? columns[0]
+  const selectedTitle = selectedColumn ? resolveStyleTitle(selectedColumn.strategy, selectedColumn.title) : ''
 
   const stepSlide = (delta: -1 | 1) => {
     if (referenceSlots.length <= 1) return
@@ -113,14 +114,15 @@ export function StyleCompareDialog({
             {columns.map((column) => {
               const slot = column.slots.find((item) => item.slideId === activeSlideId) ?? column.slots[0]
               const isSelected = column.strategy === selectedStrategy
+              const title = resolveStyleTitle(column.strategy, column.title)
               return (
                 <section
                   key={column.strategy}
                   className={clsx(styles.card, isSelected && styles.cardSelected)}
-                  aria-label={`Стиль «${column.title}»`}
+                  aria-label={`Стиль «${title}»`}
                 >
                   <div className={styles.cardHead}>
-                    <h3 className={styles.cardTitle}>{column.title}</h3>
+                    <h3 className={styles.cardTitle}>{title}</h3>
                     <div className={styles.badges}>
                       {column.recommended && <Badge tone="ink">советую</Badge>}
                     </div>
@@ -131,7 +133,7 @@ export function StyleCompareDialog({
                       <img
                         className={styles.stageImage}
                         src={slot.imageUrl}
-                        alt={`${column.title}: слайд ${slot.slideNumber} — ${slot.title}`}
+                        alt={`${title}: слайд ${slot.slideNumber} — ${slot.title}`}
                       />
                     ) : slot?.state === 'loading' ? (
                       <div className={styles.stagePlaceholder}>
@@ -158,7 +160,7 @@ export function StyleCompareDialog({
                           Выбран
                         </>
                       ) : (
-                        `Выбрать «${column.title}»`
+                        `Выбрать «${title}»`
                       )}
                     </Button>
                   </div>
@@ -169,7 +171,7 @@ export function StyleCompareDialog({
 
           <footer className={styles.footer}>
             <div className={styles.footerMeta}>
-              Выбран стиль: <strong>{selectedColumn?.title}</strong>
+              Выбран стиль: <strong>{selectedTitle}</strong>
             </div>
             <div className={styles.footerActions}>
               <Dialog.Close asChild>

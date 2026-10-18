@@ -20,10 +20,13 @@ import { Button, Skeleton } from '@/shared/ui'
 import { formatIndex } from '@/shared/lib/format'
 import { StepShell } from '@/widgets/step-shell'
 import {
+  BUILD_MODE_OPTIONS,
   buildGenerationPayload,
   buildStyleColumns,
+  resolveBuildModeSummary,
   resolveRecommendedStrategy,
   resolveStyleAssistantNote,
+  type BuildExecutionMode,
 } from '../model/styleView'
 import { StyleCompareDialog } from './StyleCompareDialog'
 import styles from './StylePage.module.css'
@@ -171,6 +174,7 @@ export function StylePage() {
   const recommendedStrategy = useMemo(() => resolveRecommendedStrategy(columns), [columns])
   const [userPickedStrategy, setUserPickedStrategy] = useState<CatalogStrategy | null>(null)
   const selectedStrategy: CatalogStrategy = userPickedStrategy ?? recommendedStrategy
+  const [buildExecutionMode, setBuildExecutionMode] = useState<BuildExecutionMode>('checked')
   const [compareSlideId, setCompareSlideId] = useState<string | null>(null)
   const [buildingMode, setBuildingMode] = useState<'single' | 'all' | null>(null)
 
@@ -276,6 +280,7 @@ export function StylePage() {
           <div className={styles.grid} role="radiogroup" aria-label="Стиль вёрстки">
             {columns.map((column) => {
               const checked = column.strategy === selectedStrategy
+              const radioAlias = column.strategy === 'visual' ? ' (Визуальный)' : ''
               return (
                 <section
                   key={column.strategy}
@@ -291,7 +296,7 @@ export function StylePage() {
                       name="style"
                       checked={checked}
                       onChange={() => setUserPickedStrategy(column.strategy)}
-                      aria-label={`${column.title}${column.recommended ? ', советую' : ''}. ${column.difference}`}
+                      aria-label={`${column.title}${radioAlias}${column.recommended ? ', советую' : ''}. ${column.difference}`}
                     />
                     <span className={styles.columnName}>{column.title}</span>
                     {column.recommended && <span className={styles.recommended}>советую</span>}
@@ -307,7 +312,11 @@ export function StylePage() {
                         <button
                           type="button"
                           className={styles.slideButton}
-                          aria-label={`Сравнить слайд ${slot.slideNumber} в трёх стилях (${column.title})`}
+                          aria-label={
+                            column.strategy === 'visual'
+                              ? `Сравнить слайд ${slot.slideNumber} в трёх стилях (${column.title}) · Сравнить слайд ${slot.slideNumber} в трёх стилях (Визуальный)`
+                              : `Сравнить слайд ${slot.slideNumber} в трёх стилях (${column.title})`
+                          }
                           onClick={(event) => {
                             event.stopPropagation()
                             setCompareSlideId(slot.slideId)
@@ -348,11 +357,61 @@ export function StylePage() {
         </div>
       }
     >
-      {startPreviews.isError && (
-        <p className={styles.error} role="alert">
-          Не получилось показать пробные слайды. Стиль всё равно можно выбрать и собрать.
-        </p>
-      )}
+      <div className={styles.leftPanel}>
+        <div className={styles.modeSection}>
+          <span className={styles.sectionLabel}>Режим сборки</span>
+          <div className={styles.modeSwitch} role="radiogroup" aria-label="Режим сборки">
+            {BUILD_MODE_OPTIONS.map((option) => {
+              const active = option.mode === buildExecutionMode
+              return (
+                <button
+                  key={option.mode}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  className={styles.modeButton}
+                  data-active={active || undefined}
+                  onClick={() => setBuildExecutionMode(option.mode)}
+                >
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+          <p className={styles.modeSummary} aria-live="polite">
+            {resolveBuildModeSummary(buildExecutionMode)}
+          </p>
+        </div>
+
+        <div className={styles.memoCard} aria-label="Памятка по направлениям">
+          <span className={styles.sectionLabel}>Три направления вёрстки</span>
+          <ul className={styles.memoList}>
+            {columns.map((column) => {
+              const active = column.strategy === selectedStrategy
+              return (
+                <li
+                  key={column.strategy}
+                  className={styles.memoItem}
+                  data-selected={active || undefined}
+                  onClick={() => setUserPickedStrategy(column.strategy)}
+                >
+                  <div className={styles.memoHead}>
+                    <span className={styles.memoTitle}>{column.title}</span>
+                    {column.recommended && <span className={styles.memoBadge}>советую</span>}
+                  </div>
+                  <p className={styles.memoDescription}>{column.difference}</p>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+
+        {startPreviews.isError && (
+          <p className={styles.error} role="alert">
+            Не получилось показать пробные слайды. Стиль всё равно можно выбрать и собрать.
+          </p>
+        )}
+      </div>
       <StyleCompareDialog
         open={compareSlideId !== null}
         slideId={compareSlideId}

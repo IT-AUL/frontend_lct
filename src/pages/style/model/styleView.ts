@@ -8,6 +8,33 @@ import { formatIndex } from '@/shared/lib/format'
 
 export type StyleSlotState = 'loading' | 'ready' | 'draft' | 'error'
 
+export type BuildExecutionMode = 'fast' | 'checked'
+
+export interface BuildModeOptionView {
+  mode: BuildExecutionMode
+  label: string
+  summary: string
+}
+
+export const BUILD_MODE_OPTIONS: readonly BuildModeOptionView[] = [
+  {
+    mode: 'fast',
+    label: 'Быстро',
+    summary: 'Быстро — соберёт колоду за минуту без промежуточной проверки',
+  },
+  {
+    mode: 'checked',
+    label: 'С проверкой',
+    summary: 'С проверкой — проверит числа, источники и плотность каждого слайда',
+  },
+]
+
+export function resolveBuildModeSummary(mode: BuildExecutionMode): string {
+  return mode === 'fast'
+    ? 'Быстро — соберёт колоду за минуту без промежуточной проверки'
+    : 'С проверкой — проверит числа, источники и плотность каждого слайда'
+}
+
 export interface StyleSlideSlotView {
   slideId: string
   slideNumber: number
@@ -31,9 +58,24 @@ export interface StyleColumnView {
 }
 
 const FALLBACK_STYLE_TITLES: Record<CatalogStrategy, string> = {
-  faithful: 'Строгий',
+  faithful: 'Близко к шаблону',
   balanced: 'Сбалансированный',
-  visual: 'Визуальный',
+  visual: 'Свободный',
+}
+
+const STRATEGY_ALIAS_TITLES: Record<string, string> = {
+  faithful: 'Близко к шаблону',
+  strict: 'Близко к шаблону',
+  balanced: 'Сбалансированный',
+  visual: 'Свободный',
+  creative: 'Свободный',
+}
+
+const LEGACY_BACKEND_TITLES: Record<string, string> = {
+  Строгий: 'Близко к шаблону',
+  строгий: 'Близко к шаблону',
+  Визуальный: 'Свободный',
+  визуальный: 'Свободный',
 }
 
 const FALLBACK_STYLE_DIFFERENCES: Record<CatalogStrategy, string> = {
@@ -42,12 +84,40 @@ const FALLBACK_STYLE_DIFFERENCES: Record<CatalogStrategy, string> = {
   visual: 'Больше графиков и схем, меньше текста, смелее группировка.',
 }
 
+const STRATEGY_ALIAS_DIFFERENCES: Record<string, string> = {
+  faithful: FALLBACK_STYLE_DIFFERENCES.faithful,
+  strict: FALLBACK_STYLE_DIFFERENCES.faithful,
+  balanced: FALLBACK_STYLE_DIFFERENCES.balanced,
+  visual: FALLBACK_STYLE_DIFFERENCES.visual,
+  creative: FALLBACK_STYLE_DIFFERENCES.visual,
+}
+
 export function fallbackStyleTitle(strategy: string): string {
+  const normalized = strategy.trim().toLowerCase()
+  if (normalized in STRATEGY_ALIAS_TITLES) {
+    return STRATEGY_ALIAS_TITLES[normalized] ?? strategyInfo(strategy).name
+  }
   if (strategy in FALLBACK_STYLE_TITLES) return FALLBACK_STYLE_TITLES[strategy as CatalogStrategy]
   return strategyInfo(strategy).name
 }
 
+export function resolveStyleTitle(strategy: string, backendTitle?: string | null): string {
+  const trimmed = backendTitle?.trim()
+  if (trimmed && trimmed in LEGACY_BACKEND_TITLES) {
+    return LEGACY_BACKEND_TITLES[trimmed] ?? fallbackStyleTitle(strategy)
+  }
+  const normalized = strategy.trim().toLowerCase()
+  if (normalized in STRATEGY_ALIAS_TITLES) {
+    return STRATEGY_ALIAS_TITLES[normalized] ?? fallbackStyleTitle(strategy)
+  }
+  return trimmed || fallbackStyleTitle(strategy)
+}
+
 export function fallbackStyleDifference(strategy: string): string {
+  const normalized = strategy.trim().toLowerCase()
+  if (normalized in STRATEGY_ALIAS_DIFFERENCES) {
+    return STRATEGY_ALIAS_DIFFERENCES[normalized] ?? strategyInfo(strategy).axis
+  }
   if (strategy in FALLBACK_STYLE_DIFFERENCES) return FALLBACK_STYLE_DIFFERENCES[strategy as CatalogStrategy]
   return strategyInfo(strategy).axis
 }
@@ -218,7 +288,7 @@ export function buildStyleColumns({
 
   return STRATEGY_ORDER.map((strategy) => {
     const backendStyle = styleByStrategy.get(strategy)
-    const title = backendStyle?.title?.trim() || fallbackStyleTitle(strategy)
+    const title = resolveStyleTitle(strategy, backendStyle?.title)
     const difference = backendStyle?.difference?.trim() || fallbackStyleDifference(strategy)
     const recommended = backendStyle ? backendStyle.recommended || preview?.recommended === strategy : recommendedStrategy === strategy
     const styleError = errorMessage(backendStyle?.error)

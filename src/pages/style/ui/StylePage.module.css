@@ -10,6 +10,8 @@
 }
 
 .column {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   padding: 14px 10px 12px;
   border: 1px solid var(--line);
@@ -33,6 +35,7 @@
 
 .columnHead {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   min-width: 0;
@@ -53,12 +56,10 @@
 }
 
 .columnName {
-  overflow: hidden;
   color: var(--ink);
   font-size: 14px;
   font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
 }
 
 .recommended {
@@ -69,21 +70,18 @@
 }
 
 .difference {
-  display: -webkit-box;
-  overflow: hidden;
   min-height: calc(2 * 1.4em);
   margin: 8px 0 14px;
   color: var(--ink-2);
   font-size: 12px;
   line-height: 1.4;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .slides {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  margin-top: auto;
 }
 
 .slide {
@@ -92,21 +90,18 @@
 
 .slideMeta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 5px;
-  overflow: hidden;
   margin-bottom: 5px;
   color: var(--ink-3);
   font-family: var(--font-mono);
   font-size: 10px;
-  white-space: nowrap;
 }
 
 .purpose {
-  overflow: hidden;
   font-family: var(--font-sans);
-  text-overflow: ellipsis;
 }
 
 .slideButton {
@@ -173,6 +168,134 @@
   font-size: 11px;
 }
 
+.leftPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sectionLabel {
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.modeSwitch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.modeButton {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--ink-2);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.modeButton:hover {
+  color: var(--ink);
+}
+
+.modeButton[data-active] {
+  border-color: var(--line-2);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.modeButton:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.modeSummary {
+  margin: 0;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.memoCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.memoList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.memoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.memoItem:hover {
+  border-color: var(--line-2);
+}
+
+.memoItem[data-selected] {
+  border-color: var(--ink);
+  background: var(--surface-2);
+}
+
+.memoHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.memoTitle {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.memoBadge {
+  color: var(--ink-2);
+  font-size: 11px;
+}
+
+.memoDescription {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 11px;
+  line-height: 1.32;
+}
 
 .actions {
   display: flex;
@@ -198,5 +321,9 @@
 
   .column {
     padding: 12px 8px;
+  }
+
+  .difference {
+    min-height: calc(3 * 1.4em);
   }
 }

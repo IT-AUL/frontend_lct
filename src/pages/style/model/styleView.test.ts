@@ -6,10 +6,13 @@ import {
   buildGenerationPayload,
   buildStyleColumns,
   extractPreviewReadyMap,
+  fallbackStyleTitle,
   formatExemplarLabel,
   pickKeySlideIds,
+  resolveBuildModeSummary,
   resolveRecommendedStrategy,
   resolveStyleAssistantNote,
+  resolveStyleTitle,
 } from './styleView'
 
 const deckPlan = (planFixture.body.plans[0]?.deck_plan ?? null) as unknown as DeckPlan
@@ -43,6 +46,25 @@ describe('styleView model', () => {
     expect(formatExemplarLabel(null)).toBeNull()
   })
 
+  it('maps strategy codes and legacy backend titles to unified Russian labels', () => {
+    expect(fallbackStyleTitle('faithful')).toBe('Близко к шаблону')
+    expect(fallbackStyleTitle('strict')).toBe('Близко к шаблону')
+    expect(fallbackStyleTitle('balanced')).toBe('Сбалансированный')
+    expect(fallbackStyleTitle('visual')).toBe('Свободный')
+    expect(fallbackStyleTitle('creative')).toBe('Свободный')
+
+    expect(resolveStyleTitle('faithful', 'Строгий')).toBe('Близко к шаблону')
+    expect(resolveStyleTitle('strict', 'Строгий')).toBe('Близко к шаблону')
+    expect(resolveStyleTitle('balanced', 'Сбалансированный')).toBe('Сбалансированный')
+    expect(resolveStyleTitle('visual', 'Визуальный')).toBe('Свободный')
+    expect(resolveStyleTitle('creative', null)).toBe('Свободный')
+  })
+
+  it('resolves build mode summary copy for fast and checked modes', () => {
+    expect(resolveBuildModeSummary('fast')).toBe('Быстро — соберёт колоду за минуту без промежуточной проверки')
+    expect(resolveBuildModeSummary('checked')).toBe('С проверкой — проверит числа, источники и плотность каждого слайда')
+  })
+
   it('builds loading skeletons before preview.ready events arrive, then populates ready images progressively', () => {
     const initial = buildStyleColumns({
       preview: null,
@@ -69,7 +91,7 @@ describe('styleView model', () => {
     expect(visualSlots?.[1]?.state).toBe('loading')
   })
 
-  it('uses backend titles, differences, recommendation and final preview images once settled', () => {
+  it('uses unified titles, differences, recommendation and final preview images once settled', () => {
     const settled = buildStyleColumns({
       preview: normalizedPreview,
       events: [],
@@ -77,9 +99,9 @@ describe('styleView model', () => {
       plan: deckPlan,
     })
     expect(settled.map((col) => [col.strategy, col.title, col.recommended])).toEqual([
-      ['faithful', 'Строгий', false],
+      ['faithful', 'Близко к шаблону', false],
       ['balanced', 'Сбалансированный', false],
-      ['visual', 'Визуальный', true],
+      ['visual', 'Свободный', true],
     ])
     expect(settled[0]?.difference).toBe(
       'Ближе всего к вашему шаблону: его привычные раскладки, спокойная плотность текста.',
