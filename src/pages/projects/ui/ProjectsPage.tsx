@@ -29,7 +29,7 @@ function useRunLookup(runId: string | undefined): RunLookup {
 }
 
 interface ProjectCardMeta {
-  badgeLabel: 'Готова' | 'В работе' | 'Черновик'
+  badgeLabel: 'Готова' | 'В работе' | 'Прервана' | 'Черновик'
   badgeTone: Tone
   subtitle: string
   volumeLabel: string
@@ -46,7 +46,7 @@ function buildVolumeLabel(project: Project, run: RunLookup): string {
   return [slidesPart, filesPart, variantsPart].filter(Boolean).join(' · ')
 }
 
-function fallbackProjectSubtitle(project: Project, templateFilename?: string): { badgeLabel: 'Готова' | 'В работе' | 'Черновик'; badgeTone: Tone; subtitle: string } {
+function fallbackProjectSubtitle(project: Project, templateFilename?: string): { badgeLabel: 'Готова' | 'В работе' | 'Прервана' | 'Черновик'; badgeTone: Tone; subtitle: string } {
   const templatePart = templateFilename ? `Шаблон ${templateFilename}` : null
   const runId = projectRunId(project, project.id)
   if (project.latest_run_state === 'completed' || (runId && !project.latest_run_state && project.template_id && project.content_pack_id)) {
@@ -112,7 +112,7 @@ function resolveProjectCardMeta(project: Project, run: RunLookup, templateFilena
     }
     if (generation.state === 'failed') {
       return {
-        badgeLabel: 'В работе',
+        badgeLabel: 'Прервана',
         badgeTone: 'error',
         subtitle: 'Сборка прервалась — откройте, чтобы повторить',
         volumeLabel,

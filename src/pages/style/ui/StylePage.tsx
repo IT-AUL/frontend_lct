@@ -383,29 +383,6 @@ export function StylePage() {
           </p>
         </div>
 
-        <div className={styles.memoCard} aria-label="Памятка по направлениям">
-          <span className={styles.sectionLabel}>Три направления вёрстки</span>
-          <ul className={styles.memoList}>
-            {columns.map((column) => {
-              const active = column.strategy === selectedStrategy
-              return (
-                <li
-                  key={column.strategy}
-                  className={styles.memoItem}
-                  data-selected={active || undefined}
-                  onClick={() => setUserPickedStrategy(column.strategy)}
-                >
-                  <div className={styles.memoHead}>
-                    <span className={styles.memoTitle}>{column.title}</span>
-                    {column.recommended && <span className={styles.memoBadge}>советую</span>}
-                  </div>
-                  <p className={styles.memoDescription}>{column.difference}</p>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-
         {startPreviews.isError && (
           <p className={styles.error} role="alert">
             Не получилось показать пробные слайды. Стиль всё равно можно выбрать и собрать.

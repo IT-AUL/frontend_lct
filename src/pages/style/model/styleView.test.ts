@@ -50,14 +50,14 @@ describe('styleView model', () => {
     expect(fallbackStyleTitle('faithful')).toBe('Близко к шаблону')
     expect(fallbackStyleTitle('strict')).toBe('Близко к шаблону')
     expect(fallbackStyleTitle('balanced')).toBe('Сбалансированный')
-    expect(fallbackStyleTitle('visual')).toBe('Свободный')
-    expect(fallbackStyleTitle('creative')).toBe('Свободный')
+    expect(fallbackStyleTitle('visual')).toBe('Визуальный')
+    expect(fallbackStyleTitle('creative')).toBe('Визуальный')
 
     expect(resolveStyleTitle('faithful', 'Строгий')).toBe('Близко к шаблону')
     expect(resolveStyleTitle('strict', 'Строгий')).toBe('Близко к шаблону')
     expect(resolveStyleTitle('balanced', 'Сбалансированный')).toBe('Сбалансированный')
-    expect(resolveStyleTitle('visual', 'Визуальный')).toBe('Свободный')
-    expect(resolveStyleTitle('creative', null)).toBe('Свободный')
+    expect(resolveStyleTitle('visual', 'Визуальный')).toBe('Визуальный')
+    expect(resolveStyleTitle('creative', null)).toBe('Визуальный')
   })
 
   it('resolves build mode summary copy for fast and checked modes', () => {
@@ -101,7 +101,7 @@ describe('styleView model', () => {
     expect(settled.map((col) => [col.strategy, col.title, col.recommended])).toEqual([
       ['faithful', 'Близко к шаблону', false],
       ['balanced', 'Сбалансированный', false],
-      ['visual', 'Свободный', true],
+      ['visual', 'Визуальный', true],
     ])
     expect(settled[0]?.difference).toBe(
       'Ближе всего к вашему шаблону: его привычные раскладки, спокойная плотность текста.',

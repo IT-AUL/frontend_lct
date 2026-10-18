@@ -172,7 +172,7 @@ describe('StylePage', () => {
     const group = screen.getByRole('radiogroup', { name: 'Стиль вёрстки' })
     const faithful = within(group).getByRole('radio', { name: /Близко к шаблону/ })
     const balanced = within(group).getByRole('radio', { name: /Сбалансированный/ })
-    const visual = within(group).getByRole('radio', { name: /Свободный/ })
+    const visual = within(group).getByRole('radio', { name: /Визуальный/ })
 
     expect(faithful).not.toBeChecked()
     expect(balanced).not.toBeChecked()
@@ -192,7 +192,7 @@ describe('StylePage', () => {
     expect(screen.getByRole('button', { name: 'Собрать все три' })).toBeEnabled()
   })
 
-  it('renders build mode switcher and direction memo in the left column', async () => {
+  it('renders the build mode switcher in the left column without repeating the styles', async () => {
     renderStylePage()
 
     const modeSwitch = screen.getByRole('radiogroup', { name: 'Режим сборки' })
@@ -206,10 +206,8 @@ describe('StylePage', () => {
     expect(fastRadio).toHaveAttribute('aria-checked', 'true')
     expect(screen.getByText('Быстро — соберёт колоду за минуту без промежуточной проверки')).toBeInTheDocument()
 
-    const memo = screen.getByLabelText('Памятка по направлениям')
-    expect(within(memo).getByText('Близко к шаблону')).toBeInTheDocument()
-    expect(within(memo).getByText('Сбалансированный')).toBeInTheDocument()
-    expect(within(memo).getByText('Свободный')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Памятка по направлениям')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Визуальный')).toHaveLength(1)
   })
 
   it('shows a ready slide alongside slide-shaped skeletons while the other previews arrive', () => {
@@ -244,18 +242,18 @@ describe('StylePage', () => {
     const table = screen.getByRole('region', { name: 'Пробные слайды' })
     expect(within(table).getAllByRole('button', { name: /Сравнить слайд/ })).toHaveLength(9)
     expect(within(table).getAllByRole('status', { name: /Верстаю/ })).toHaveLength(8)
-    expect(within(table).getByRole('button', { name: /Сравнить слайд 1 в трёх стилях \(Свободный\)/ }).querySelector('img')).not.toBeNull()
+    expect(within(table).getByRole('button', { name: /Сравнить слайд 1 в трёх стилях \(Визуальный\)/ }).querySelector('img')).not.toBeNull()
   })
 
   it('opens the comparison when clicking a slide and allows switching slides and styles', async () => {
     renderStylePage()
 
-    await userEvent.click(screen.getByRole('button', { name: /Сравнить слайд 1 в трёх стилях \(Свободный\)/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Сравнить слайд 1 в трёх стилях \(Визуальный\)/ }))
 
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).getByRole('heading', { name: /Сравнение трёх стилей · Слайд 01/ })).toBeInTheDocument()
     expect(within(dialog).getByRole('region', { name: 'Стиль «Близко к шаблону»' })).toBeInTheDocument()
-    expect(within(dialog).getByRole('region', { name: 'Стиль «Свободный»' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('region', { name: 'Стиль «Визуальный»' })).toBeInTheDocument()
 
     await userEvent.click(within(dialog).getByRole('button', { name: 'Следующий слайд' }))
     expect(within(dialog).getByRole('heading', { name: /Сравнение трёх стилей · Слайд 02/ })).toBeInTheDocument()

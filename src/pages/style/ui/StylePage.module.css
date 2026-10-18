@@ -236,66 +236,14 @@
   line-height: 1.35;
 }
 
-.memoCard {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
 
-.memoList {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
 
-.memoItem {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px 9px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
 
-.memoItem:hover {
-  border-color: var(--line-2);
-}
 
-.memoItem[data-selected] {
-  border-color: var(--ink);
-  background: var(--surface-2);
-}
 
-.memoHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
 
-.memoTitle {
-  color: var(--ink);
-  font-size: 12px;
-  font-weight: 600;
-}
 
-.memoBadge {
-  color: var(--ink-2);
-  font-size: 11px;
-}
 
-.memoDescription {
-  margin: 0;
-  color: var(--ink-2);
-  font-size: 11px;
-  line-height: 1.32;
-}
 
 .actions {
   display: flex;

@@ -60,22 +60,22 @@ export interface StyleColumnView {
 const FALLBACK_STYLE_TITLES: Record<CatalogStrategy, string> = {
   faithful: 'Близко к шаблону',
   balanced: 'Сбалансированный',
-  visual: 'Свободный',
+  visual: 'Визуальный',
 }
 
 const STRATEGY_ALIAS_TITLES: Record<string, string> = {
   faithful: 'Близко к шаблону',
   strict: 'Близко к шаблону',
   balanced: 'Сбалансированный',
-  visual: 'Свободный',
-  creative: 'Свободный',
+  visual: 'Визуальный',
+  creative: 'Визуальный',
 }
 
 const LEGACY_BACKEND_TITLES: Record<string, string> = {
   Строгий: 'Близко к шаблону',
   строгий: 'Близко к шаблону',
-  Визуальный: 'Свободный',
-  визуальный: 'Свободный',
+  Визуальный: 'Визуальный',
+  визуальный: 'Визуальный',
 }
 
 const FALLBACK_STYLE_DIFFERENCES: Record<CatalogStrategy, string> = {
