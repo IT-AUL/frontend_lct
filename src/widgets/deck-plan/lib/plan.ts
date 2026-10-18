@@ -1,4 +1,4 @@
-import { isEditableUnit, slidePurposeLabel, type DeckPlan, type SlidePlan, type UnitOrigin } from '@/entities/generation'
+import { isEditableUnit, slidePurposeLabel, unitOrigin, type DeckPlan, type SlidePlan, type UnitOrigin } from '@/entities/generation'
 import { formatIndex } from '@/shared/lib/format'
 
 export type QuickActionKind = 'shorten' | 'split' | 'merge_next' | 'to_chart' | 'to_diagram' | 'remove'
@@ -108,6 +108,16 @@ export const ORIGIN_LABEL: Record<UnitOrigin, string> = {
   web: 'интернет',
   model: 'знания модели',
 }
+
+export type SourceKind = 'table' | 'text' | 'web'
+
+export const SOURCE_KIND_LABEL: Record<SourceKind, string> = {
+  table: 'Таблица',
+  text: 'Текст',
+  web: 'Интернет',
+}
+
+const SOURCE_KIND_ORDER: readonly SourceKind[] = ['table', 'text', 'web']
 
 const BOOKENDS = new Set(['title', 'thank_you', 'cta', 'agenda'])
 
@@ -230,6 +240,17 @@ export function slideSources(evidenceIds: readonly string[], headings: ReadonlyM
     else sources.set(key, { key, label, refs: [raw] })
   }
   return [...sources.values()]
+}
+
+export function slideSourceKinds(slide: Pick<SlidePlan, 'evidence_ids' | 'content_units'>): SourceKind[] {
+  const found = new Set<SourceKind>()
+  for (const raw of slide.evidence_ids) {
+    const ref = parseEvidenceRef(raw)
+    if (ref.meta) continue
+    found.add(/^ds-/.test(ref.sectionId ?? raw) ? 'table' : 'text')
+  }
+  if (slide.content_units.some((unit) => unitOrigin(unit) === 'web')) found.add('web')
+  return SOURCE_KIND_ORDER.filter((kind) => found.has(kind))
 }
 
 export function plannedVisual(slide: Pick<SlidePlan, 'desired_visual' | 'content_units'>): string | null {

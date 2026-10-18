@@ -4,9 +4,8 @@ import { hasChartData, type DeckPlan, type GenerationCreate } from '@/entities/g
 import { applyQuickAction, changeSlideChart, usePlanDraft, useResearchPlanSlide, type QuickSlideAction } from '@/features/edit-deck-plan'
 import { humanError } from '@/shared/api'
 import { pluralize } from '@/shared/lib/format'
-import { Button, SlideGrid, SlideTile } from '@/shared/ui'
-import { plannedVisual } from '@/widgets/deck-plan'
-import { keyFigure } from '@/widgets/draft-deck'
+import { Button, Segmented } from '@/shared/ui'
+import { PlanCard } from '@/widgets/deck-plan'
 import { StepShell } from '@/widgets/step-shell'
 import styles from './PlanPage.module.css'
 import { SlideEditor } from './SlideEditor'
@@ -27,6 +26,13 @@ interface PlanStepProps {
   onServerPlanSet: (planSet: unknown, optimisticPlan: DeckPlan) => void
   onKeyMessageCommit: (keyMessage: string, nextPlan: DeckPlan) => void
 }
+
+type PlanView = 'list' | 'grid'
+
+const VIEW_OPTIONS: readonly { value: PlanView; label: string }[] = [
+  { value: 'list', label: 'Список' },
+  { value: 'grid', label: 'Сетка' },
+]
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
@@ -54,6 +60,7 @@ export function PlanStep(props: PlanStepProps) {
   const [researchSupported, setResearchSupported] = useState(true)
   const [researching, setResearching] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [view, setView] = useState<PlanView>('list')
   const [message, setMessage] = useState(draft.plan.brief.key_message ?? keyMessage ?? '')
 
   useEffect(() => {
@@ -156,34 +163,37 @@ export function PlanStep(props: PlanStepProps) {
       note={untitled ? 'У каждого слайда должен быть заголовок.' : planNote(draft.plan, draft.edited, assistantNote)}
       canvasLabel="План презентации"
       canvas={
-        <SlideGrid label="Слайды">
-          {ordered.map((slide, position) => {
-            const visual = plannedVisual(slide)
-            const points = slide.content_units.filter((unit) => (unit.kind === 'bullet' || unit.kind === 'paragraph') && (unit.text ?? '').trim()).length
-            const figure = keyFigure(slide.title_intent)
-            const meta = [visual && visual !== 'Текст' ? visual : null, points ? `${points} ${pluralize(points, ['пункт', 'пункта', 'пунктов'])}` : null].filter(Boolean).join(', ')
-            return (
-              <div role="listitem" key={slide.id}>
-                <SlideTile
-                  title={slide.title_intent || 'Без заголовка'}
-                  selected={slide.id === selectedId}
-                  muted={slide.supports_key_message === false}
-                  pending={researching === slide.id}
-                  onOpen={() => setSelectedId(slide.id)}
-                  openLabel={`Слайд ${position + 1}: ${slide.title_intent}`}
-                  caption={`${position + 1}. ${meta || 'Текст'}`}
-                >
-                  {figure ? <span className={styles.figure}>{figure}</span> : null}
-                </SlideTile>
-              </div>
-            )
-          })}
-          <div role="listitem">
-            <button type="button" className={styles.addSlide} onClick={draft.add}>
-              Добавить слайд
-            </button>
+        <div className={styles.canvas} data-view={view}>
+          <div className={styles.canvasHead}>
+            <span className={styles.canvasCount}>
+              {ordered.length} {pluralize(ordered.length, ['слайд', 'слайда', 'слайдов'])}
+            </span>
+            <Segmented label="Вид плана" size="sm" options={VIEW_OPTIONS} value={view} onChange={setView} />
           </div>
-        </SlideGrid>
+          <ol className={styles.cards} data-view={view} aria-label="Слайды">
+            {ordered.map((slide, position) => (
+              <li key={slide.id}>
+                <PlanCard
+                  slide={slide}
+                  number={position + 1}
+                  selected={slide.id === selectedId}
+                  offTopic={slide.supports_key_message === false}
+                  researching={researching === slide.id}
+                  onOpen={() => setSelectedId(slide.id)}
+                  onTitleChange={(text) => draft.update(slide.id, { title_intent: text })}
+                  onUnitChange={(unit, text) => draft.updateUnit(slide.id, unit, text)}
+                  onUnitAdd={() => draft.addUnit(slide.id)}
+                  onUnitRemove={(unit) => draft.removeUnit(slide.id, unit)}
+                />
+              </li>
+            ))}
+            <li>
+              <button type="button" className={styles.addSlide} onClick={draft.add}>
+                Добавить слайд
+              </button>
+            </li>
+          </ol>
+        </div>
       }
       inspector={
         selected

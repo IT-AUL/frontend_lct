@@ -59,7 +59,7 @@ async function openPlan(page: Page) {
 }
 
 function slideTile(page: Page, number: number) {
-  return page.getByRole('list', { name: 'Слайды' }).getByRole('button', { name: new RegExp(`^Слайд ${number}:`) })
+  return page.getByRole('list', { name: 'Слайды' }).getByRole('button', { name: `Подробнее о слайде ${number}` })
 }
 
 test.describe('plan step', () => {
@@ -71,6 +71,24 @@ test.describe('plan step', () => {
     await input.fill('Электроника даёт 61% выручки')
     await input.blur()
     await expect(page.getByRole('button', { name: 'Отменить последнее' })).toBeVisible()
+  })
+
+  test('reads the storyline on the cards and edits a title in place', async ({ page }) => {
+    await openPlan(page)
+
+    const card = page.getByRole('article', { name: 'Слайд 3' })
+    await expect(card).toContainText('Данные')
+    await expect(card).toContainText('График · Линия')
+    await expect(card).toContainText('Таблица')
+    await expect(card.getByRole('textbox', { name: /^Пункт 1 слайда 3$/ })).toBeVisible()
+
+    const title = card.getByRole('textbox', { name: 'Заголовок слайда 3' })
+    await title.fill('Выручка выросла вдвое')
+    await expect(page.getByRole('button', { name: 'Отменить последнее' })).toBeVisible()
+
+    await page.getByRole('radio', { name: 'Сетка' }).click()
+    await expect(page.getByRole('list', { name: 'Слайды' })).toHaveAttribute('data-view', 'grid')
+    await expect(page.getByRole('textbox', { name: 'Заголовок слайда 3' })).toHaveValue('Выручка выросла вдвое')
   })
 
   test('opens a slide, explains its chart and switches the chart type', async ({ page }) => {
@@ -95,13 +113,13 @@ test.describe('plan step', () => {
   test('splits a slide from the editor', async ({ page }) => {
     await openPlan(page)
 
-    const before = await page.getByRole('list', { name: 'Слайды' }).getByRole('button', { name: /^Слайд \d+:/ }).count()
+    const before = await page.getByRole('list', { name: 'Слайды' }).getByRole('button', { name: /^Подробнее о слайде \d+$/ }).count()
     await slideTile(page, 2).click()
     const editor = page.getByRole('complementary', { name: 'Слайд 2' })
     const acted = page.waitForResponse((response) => response.url().includes('/slides/slide-1/actions'))
     await editor.getByRole('button', { name: 'Разбить на два' }).click()
     await acted
-    await expect(page.getByRole('list', { name: 'Слайды' }).getByRole('button', { name: /^Слайд \d+:/ })).toHaveCount(before + 1)
+    await expect(page.getByRole('list', { name: 'Слайды' }).getByRole('button', { name: /^Подробнее о слайде \d+$/ })).toHaveCount(before + 1)
   })
 
   test('flags an off-topic slide and keeps it on request', async ({ page }) => {

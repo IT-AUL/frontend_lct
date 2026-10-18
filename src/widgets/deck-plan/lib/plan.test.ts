@@ -1,6 +1,6 @@
 import type { DeckPlan, SlidePlan } from '@/entities/generation'
 import dataPlanResponse from '@/shared/api/mocks/fixtures/assistant/data-plan.json'
-import { availableQuickActions, buildPlanView, parseSlideChartView, resolveDeckKeyMessage } from './plan'
+import { availableQuickActions, buildPlanView, parseSlideChartView, resolveDeckKeyMessage, slideSourceKinds } from './plan'
 
 const dataPlan = dataPlanResponse.body.plans[0]?.deck_plan as DeckPlan
 const slides = [...dataPlan.slides].sort((a, b) => a.index - b.index)
@@ -71,5 +71,24 @@ describe('buildPlanView', () => {
     expect(dataRow?.chart?.type).toBe('line')
     expect(dataRow?.supportsKeyMessage).toBeNull()
     expect(view.rows.find((row) => row.id === 'slide-6')?.supportsKeyMessage).toBe(false)
+  })
+})
+
+describe('slideSourceKinds', () => {
+  const base = { evidence_ids: [], content_units: [] } as unknown as SlidePlan
+
+  it('marks dataset evidence as a table and section evidence as text', () => {
+    expect(slideSourceKinds({ ...base, evidence_ids: ['pack_1:ds-95b1eb6e-trend-i0'] })).toEqual(['table'])
+    expect(slideSourceKinds({ ...base, evidence_ids: ['pack_1:sec-notes-1:b0'] })).toEqual(['text'])
+  })
+
+  it('ignores the meta evidence and keeps a stable order', () => {
+    const slide = {
+      ...base,
+      evidence_ids: ['pack_1:meta', 'pack_1:sec-a:b0', 'pack_1:ds-1'],
+      content_units: [{ kind: 'bullet', text: 'x', origin: 'web' }],
+    } as unknown as SlidePlan
+    expect(slideSourceKinds(slide)).toEqual(['table', 'text', 'web'])
+    expect(slideSourceKinds({ ...base, evidence_ids: ['pack_1:meta'] })).toEqual([])
   })
 })

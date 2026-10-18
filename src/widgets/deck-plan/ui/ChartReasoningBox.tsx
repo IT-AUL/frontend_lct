@@ -10,7 +10,7 @@ interface ChartReasoningBoxProps {
   disabled?: boolean
 }
 
-function ChartMiniSvg({ type }: { type: string }) {
+export function ChartMiniSvg({ type }: { type: string }) {
   switch (type) {
     case 'line':
       return (
