@@ -376,6 +376,7 @@ export function buildStageSummary({
   const updatingSlides = slots.filter((slot) => slot.previewBadge === 'обновляется').length
   const knownStage = pipelineStage(stage)
   const isCompleted = phase === 'completed' || cardState === 'done'
+  const isFailed = phase === 'failed' || cardState === 'error'
 
   const isPlanActive =
     !isCompleted &&
@@ -383,22 +384,25 @@ export function buildStageSummary({
     !hasPlan &&
     (phase === 'submitting' || knownStage === 'template' || knownStage === 'content' || knownStage === 'plan')
 
-  const planState: BuildStageItemState = isPlanActive ? 'active' : 'done'
-  const planStatusLabel = planState === 'done' ? 'готово' : 'собираю'
+  const planState: BuildStageItemState = isPlanActive ? (isFailed ? 'pending' : 'active') : 'done'
+  const planStatusLabel = planState === 'done' ? 'готово' : isFailed ? 'остановлено' : 'собираю'
 
   const isAuditStage = knownStage === 'audit' || knownStage === 'repair' || knownStage === 'passport'
-  const allSlidesReady = totalSlides > 0 && readySlides >= totalSlides && draftSlides === 0 && updatingSlides === 0
+  const allSlidesHavePreview = totalSlides > 0 && readySlides >= totalSlides
+  const allSlidesReady = allSlidesHavePreview && draftSlides === 0 && updatingSlides === 0
 
   let slidesState: BuildStageItemState = 'pending'
-  if (isCompleted || (isAuditStage && allSlidesReady)) {
+  if (isCompleted || (isAuditStage && allSlidesReady) || (isFailed && allSlidesHavePreview)) {
     slidesState = 'done'
-  } else if (planState === 'done') {
+  } else if (planState === 'done' && !isFailed) {
     slidesState = 'active'
   }
 
   let slidesStatusLabel = 'ожидает'
   if (slidesState === 'done') {
-    slidesStatusLabel = 'готово'
+    slidesStatusLabel = isFailed && draftSlides > 0 ? 'черновик' : 'готово'
+  } else if (isFailed && planState === 'done') {
+    slidesStatusLabel = readySlides > 0 ? 'черновик' : 'остановлено'
   } else if (slidesState === 'active') {
     if (updatingSlides > 0) {
       slidesStatusLabel = 'обновляется'
@@ -412,11 +416,18 @@ export function buildStageSummary({
   let auditState: BuildStageItemState = 'pending'
   if (isCompleted) {
     auditState = 'done'
-  } else if (isAuditStage || (planState === 'done' && totalSlides > 0 && readySlides >= totalSlides)) {
+  } else if (!isFailed && (isAuditStage || (planState === 'done' && allSlidesHavePreview))) {
     auditState = 'active'
   }
 
-  const auditStatusLabel = auditState === 'done' ? 'готово' : auditState === 'active' ? 'проверяю' : 'ожидает'
+  const auditStatusLabel =
+    auditState === 'done'
+      ? 'готово'
+      : isFailed && (isAuditStage || allSlidesHavePreview)
+        ? 'сбой'
+        : auditState === 'active'
+          ? 'проверяю'
+          : 'ожидает'
   const slidesLabel = totalSlides > 0 ? `Слайды ${readySlides} из ${totalSlides}` : 'Слайды'
 
   return {

@@ -11,12 +11,22 @@ export interface FailureView {
 
 const FALLBACK_MESSAGE = 'Сервис сообщил об ошибке без подробностей.'
 const HUMAN_MESSAGE = 'Не получилось собрать колоду. Материалы и план сохранены — попробуйте ещё раз или выберите другой стиль.'
-const TECHNICAL = /^[A-Za-z_.]*(Error|Exception)\b|Traceback|NoneType|object has no attribute/
+const PROVIDER_MESSAGE = 'Внешний сервис проверки временно не ответил. Черновики слайдов сохранены — нажмите «Повторить», чтобы завершить сборку.'
+const INTERRUPTED_MESSAGE = 'Сервер перезапустился во время сборки. Материалы и план сохранены — нажмите «Повторить».'
+const TECHNICAL = /^[A-Za-z_.]*(Error|Exception)\b|Traceback|NoneType|object has no attribute|^provider\s+HTTP\s+\d+|^Server restarted/i
 
 function humanize(code: string | null, raw: string | null | undefined, stage: string | null, retryable: boolean | null): FailureView {
   const message = raw?.trim() || FALLBACK_MESSAGE
   const technical = code === 'internal_error' || TECHNICAL.test(message)
-  return { code, message: technical ? HUMAN_MESSAGE : message, stage, retryable, technical: technical ? message : null }
+  const readable =
+    !technical
+      ? message
+      : code === 'provider_unavailable'
+        ? PROVIDER_MESSAGE
+        : code === 'execution_interrupted'
+          ? INTERRUPTED_MESSAGE
+          : HUMAN_MESSAGE
+  return { code, message: readable, stage, retryable, technical: technical ? message : null }
 }
 
 export function describeFailure(tracker: Pick<GenerationTracker, 'error' | 'jobError' | 'job'>): FailureView {

@@ -109,6 +109,10 @@ describe('failure description', () => {
     const failure = describeFailure({ jobError: { code: 'internal_error', message: "AttributeError: 'NoneType' object has no attribute 'text'", stage: 'composing.deck' }, error: null, job: undefined })
     expect(failure.message).toMatch(/^Не получилось собрать колоду/)
     expect(failure.technical).toContain('AttributeError')
+
+    const providerFail = describeFailure({ jobError: { code: 'provider_unavailable', message: 'provider HTTP 500', stage: 'providers' }, error: null, job: undefined })
+    expect(providerFail.message).toContain('Черновики слайдов сохранены')
+    expect(providerFail.technical).toBe('provider HTTP 500')
   })
 
   it('recognises a lost tracking id', () => {
