@@ -117,6 +117,33 @@ describe('styleView model', () => {
     ).toContain('Примерил 1 из 9 пробных слайдов')
   })
 
+  it('keeps the project brief as the source of truth so the service accepts the inline plan', () => {
+    const plan = { ...deckPlan, brief: { ...deckPlan.brief, purpose: 'presentation', key_message: null, call_to_action: null } }
+    const payload = buildGenerationPayload({
+      stored: null,
+      plan,
+      session: {
+        step: 5,
+        completed_steps: [1, 2, 3, 4],
+        skipped_steps: [],
+        artifacts: { template_id: 'tpl_1', content_pack_id: 'pack_1', brandbook_id: null, plan_id: 'plan_1', preview_id: null, generation_id: null },
+        brief: { purpose: 'Итоги года', audience: 'Совет директоров', language: 'ru', key_message: 'подтвердить рост выручки', call_to_action: 'утвердить бюджет' },
+        assistant_note: '',
+        job_id: null,
+      },
+      project: undefined,
+      previewId: null,
+      strategies: ['balanced'],
+    })
+
+    expect(payload?.deck_plan?.brief).toMatchObject({
+      purpose: 'Итоги года',
+      audience: 'Совет директоров',
+      key_message: 'подтвердить рост выручки',
+      call_to_action: 'утвердить бюджет',
+    })
+  })
+
   it('builds POST /generations payload with inline deck_plan, preview_id and chosen variants', () => {
     const single = buildGenerationPayload({
       stored: null,

@@ -79,6 +79,17 @@ function sessionBriefToGenerationBrief(raw: Record<string, unknown>): Generation
   }
 }
 
+const CANONICAL_BRIEF_FIELDS = ['purpose', 'audience', 'language', 'key_message', 'call_to_action'] as const
+
+function withCanonicalBrief(plan: DeckPlan, sessionBrief: Record<string, unknown> | undefined): DeckPlan {
+  const brief = { ...plan.brief }
+  for (const field of CANONICAL_BRIEF_FIELDS) {
+    const value = sessionBrief?.[field]
+    if (typeof value === 'string' && value.trim()) Object.assign(brief, { [field]: value.trim() })
+  }
+  return { ...plan, brief }
+}
+
 export function PlanDraftPage() {
   const { projectId = '' } = useParams()
   const navigate = useNavigate()
@@ -224,7 +235,7 @@ export function PlanDraftPage() {
         ...(next.request.provider_session_id ? { provider_session_id: next.request.provider_session_id } : {}),
       })
       if (!accepted) {
-        fallbackBuild.build(buildBody(next), draftPlan, { lockAll: next.contentFill === 'keep' })
+        fallbackBuild.build(buildBody(next), withCanonicalBrief(draftPlan, sessionQuery.data?.brief), { lockAll: next.contentFill === 'keep' })
         return
       }
       if (accepted.assistant_note) setAutopilotNote(accepted.assistant_note)

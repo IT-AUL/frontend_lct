@@ -313,6 +313,13 @@ export function resolveStyleAssistantNote({
   return 'Примерил три стиля вёрстки на ваших ключевых слайдах — сравните плотность текста и подачу графиков.'
 }
 
+const CANONICAL_BRIEF_FIELDS = ['purpose', 'audience', 'language', 'key_message', 'call_to_action'] as const
+
+function sessionText(sessionBrief: Record<string, unknown> | null | undefined, field: string): string | null {
+  const value = sessionBrief?.[field]
+  return typeof value === 'string' && value.trim() ? value.trim() : null
+}
+
 function normalizeBrief(
   planBrief: DeckPlan['brief'] | null | undefined,
   storedBrief: GenerationBrief | null | undefined,
@@ -320,23 +327,14 @@ function normalizeBrief(
   targetSlidesFallback: number,
 ): GenerationBrief {
   const source = planBrief ?? storedBrief
-  const purpose =
-    source?.purpose?.trim() ||
-    (typeof sessionBrief?.purpose === 'string' && sessionBrief.purpose.trim() ? sessionBrief.purpose.trim() : 'Презентация проекта')
-  const audience =
-    source?.audience !== undefined
-      ? source.audience
-      : typeof sessionBrief?.audience === 'string'
-        ? sessionBrief.audience
-        : 'Руководство'
-  const language =
-    source?.language?.trim() ||
-    (typeof sessionBrief?.language === 'string' && sessionBrief.language.trim() ? sessionBrief.language.trim() : 'ru')
+  const purpose = source?.purpose?.trim() || 'Презентация проекта'
+  const audience = source?.audience !== undefined ? source.audience : 'Руководство'
+  const language = source?.language?.trim() || 'ru'
   const targetSlideCount =
     source?.target_slide_count ??
     (typeof sessionBrief?.target_slide_count === 'number' ? sessionBrief.target_slide_count : targetSlidesFallback)
 
-  return {
+  const brief: GenerationBrief = {
     purpose,
     audience,
     language,
@@ -349,6 +347,11 @@ function normalizeBrief(
     ...(source && 'call_to_action' in source ? { call_to_action: source.call_to_action } : {}),
     ...(source && 'explain_slide' in source ? { explain_slide: source.explain_slide } : {}),
   }
+  for (const field of CANONICAL_BRIEF_FIELDS) {
+    const canonical = sessionText(sessionBrief, field)
+    if (canonical) Object.assign(brief, { [field]: canonical })
+  }
+  return brief
 }
 
 export interface BuildGenerationPayloadOptions {
