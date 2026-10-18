@@ -12,7 +12,7 @@ import { DesignDnaSkeleton } from '@/widgets/design-dna'
 import { guessKind, IntakeDropzone, isContentFile, isIntakeFile, mergeIntakeFiles } from '@/widgets/intake-board'
 import type { PendingFile } from '@/widgets/intake-board'
 import { StepShell } from '@/widgets/step-shell'
-import { existingFiles, topicFromBrief } from '../lib/existing'
+import { existingFiles, topicFromBrief, withoutColorCodes } from '../lib/existing'
 import { dnaFileName, downloadJson, previewIds } from '../lib/passport'
 import { ExistingRows, FileRows } from './FileRows'
 import { TemplateRules } from './TemplateRules'
@@ -256,7 +256,7 @@ export function IntakePage() {
   return (
     <StepShell
       title="Что у вас есть?"
-      note={assistantNote}
+      note={withoutColorCodes(assistantNote)}
       canvasLabel="Как будет выглядеть презентация"
       canvas={
         <TemplateTable

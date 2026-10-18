@@ -23,3 +23,11 @@ export function existingFiles(input: {
   if (input.brandbook) rows.push({ name: input.brandbook, kind: 'brandbook' })
   return rows
 }
+
+export function withoutColorCodes(note: string): string {
+  return note
+    .replace(/,?\s*(?:главный|основной)\s+цвет\s+#[0-9a-f]{3,8}\b/gi, '')
+    .replace(/\s*#[0-9a-f]{6}\b/gi, '')
+    .replace(/\s+,/g, ',')
+    .trim()
+}

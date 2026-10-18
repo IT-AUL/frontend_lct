@@ -47,7 +47,7 @@ function defaultProposal(proposals: readonly PlanProposal[]): string {
 
 function errorText(error: unknown): string | null {
   if (!error || isAbortError(error)) return null
-  return humanError(error)
+  return humanError(error, 'Не получилось составить план. Проверьте материалы и попробуйте ещё раз.')
 }
 
 function adjustedRequest(stored: StoredPlanRequest, adjustment: PlanAdjustment, excluded: readonly string[]): StoredPlanRequest['request'] {
