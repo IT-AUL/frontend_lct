@@ -21,6 +21,8 @@ import {
 } from '../model/commandModel'
 import styles from './AssistantCommandBar.module.css'
 
+const VISIBLE_HISTORY = 2
+
 export interface AssistantCommandBarProps {
   projectId: string
   variantId?: string | null
@@ -131,7 +133,7 @@ export function AssistantCommandBar({
 
   const jobRunning = Boolean(activeJobId) && !jobEvents.done && !jobEvents.error
   const jobLabel = jobRunning ? (jobEvents.lastEvent?.message ?? 'Применяю изменения…') : null
-  const visibleHistory = clarification && history[0]?.status === 'clarification' ? history.slice(1) : history
+  const visibleHistory = (clarification && history[0]?.status === 'clarification' ? history.slice(1) : history).slice(0, VISIBLE_HISTORY)
 
   return (
     <div className={styles.root} data-panel={Boolean(variantId) || undefined} data-testid="assistant-command-bar">

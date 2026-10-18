@@ -164,7 +164,7 @@ describe('AssistantCommandBar', () => {
     expect(screen.queryByRole('button', { name: 'Для руководства' })).not.toBeInTheDocument()
   })
 
-  it('keeps only the last 3 commands in history', async () => {
+  it('shows only the last 2 commands in history', async () => {
     server.use(
       http.post('*/api/v1/projects/:projectId/commands', async ({ request }) => {
         const body = (await request.json()) as { text: string }
@@ -189,11 +189,10 @@ describe('AssistantCommandBar', () => {
     }
 
     const items = screen.getAllByRole('listitem')
-    expect(items).toHaveLength(3)
-    expect(screen.queryByText('Команда 1')).not.toBeInTheDocument()
+    expect(items).toHaveLength(2)
+    expect(screen.queryByText('Команда 2')).not.toBeInTheDocument()
     expect(screen.getByText('Команда 4')).toBeInTheDocument()
     expect(screen.getByText('Команда 3')).toBeInTheDocument()
-    expect(screen.getByText('Команда 2')).toBeInTheDocument()
   })
 
   it('hides the command bar when the endpoint returns 404', async () => {

@@ -157,9 +157,7 @@
 .historyCommand {
   color: var(--ink-2);
   font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .historyResult {
