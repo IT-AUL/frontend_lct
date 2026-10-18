@@ -153,4 +153,25 @@ describe('DownloadButton', () => {
     expect(await screen.findByRole('link', { name: 'PDF' })).toBeInTheDocument()
     expect(root()).toHaveAttribute('data-status', 'ready')
   })
+
+  it('downloads HTML as a file via blob without navigating away from the page', async () => {
+    const user = userEvent.setup()
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('<html><body>deck</body></html>', { status: 200 }))
+    const htmlFile = {
+      format: 'html' as const,
+      artifactId: 'art_html_1',
+      exportId: 'exp_html_1',
+      deckRevision: 1,
+      sizeBytes: 2048,
+      sha256: null,
+      mimeType: 'text/html',
+    }
+    renderButton({ format: 'html', file: htmlFile, fileName: 'квартальный-отчёт-сбалансированный.html', label: 'HTML' })
+
+    const link = screen.getByRole('link', { name: 'HTML' })
+    expect(link).toHaveAttribute('download', 'квартальный-отчёт-сбалансированный.html')
+    await user.click(link)
+    await waitFor(() => expect(click).toHaveBeenCalledTimes(1))
+  })
 })

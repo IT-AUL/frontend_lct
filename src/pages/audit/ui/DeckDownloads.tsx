@@ -12,12 +12,13 @@ import { PassportDrawer } from './PassportDrawer'
 
 interface DeckDownloadsProps {
   projectId: string
+  projectName?: string | null
   variant: VariantSummary
   templateFile: string | null
   slideCount: number | null
 }
 
-export function DeckDownloads({ projectId, variant, templateFile, slideCount }: DeckDownloadsProps) {
+export function DeckDownloads({ projectId, projectName, variant, templateFile, slideCount }: DeckDownloadsProps) {
   const [passportOpen, setPassportOpen] = useState(false)
   const variantFiles = useVariantFiles(variant.id)
   const passportQuery = usePassport(variantFiles.passportArtifactId)
@@ -27,13 +28,24 @@ export function DeckDownloads({ projectId, variant, templateFile, slideCount }: 
   const current = Math.max(audit.data?.deck_revision ?? 1, files?.pdf?.deckRevision ?? 1, files?.pptx?.deckRevision ?? 1)
   const passport = passportQuery.data ?? null
   const pptx = withPassportMeta(files?.pptx ?? null, passport, Boolean(passport) && !isStaleFile(files?.quality_passport ?? null, current))
-  const fileName = (format: ExportFormat, file: DeckFile | null) => exportFileName(variant.strategy, format, file?.deckRevision ?? current, file?.mimeType ?? null)
+  const fileName = (format: ExportFormat, file: DeckFile | null) =>
+    exportFileName(variant.strategy, format, file?.deckRevision ?? current, file?.mimeType ?? null, projectName)
 
   return (
     <div className={styles.downloads} role="group" aria-label="Скачать презентацию">
-      <Button size="sm" variant="ghost" onClick={() => setPassportOpen(true)}>
-        Паспорт качества
-      </Button>
+      <DownloadButton
+        key={`${variant.id}:pptx`}
+        projectId={projectId}
+        variantId={variant.id}
+        format="pptx"
+        file={pptx}
+        currentRevision={current}
+        supported
+        fileName={fileName('pptx', pptx)}
+        label="Скачать PPTX"
+        primary
+        compact
+      />
       <DownloadButton
         key={`${variant.id}:pdf`}
         projectId={projectId}
@@ -58,23 +70,14 @@ export function DeckDownloads({ projectId, variant, templateFile, slideCount }: 
         label="HTML"
         compact
       />
-      <DownloadButton
-        key={`${variant.id}:pptx`}
-        projectId={projectId}
-        variantId={variant.id}
-        format="pptx"
-        file={pptx}
-        currentRevision={current}
-        supported
-        fileName={fileName('pptx', pptx)}
-        label="Скачать PPTX"
-        primary
-        compact
-      />
+      <Button size="sm" variant="ghost" onClick={() => setPassportOpen(true)}>
+        Паспорт качества
+      </Button>
       <PassportDrawer
         open={passportOpen}
         onOpenChange={setPassportOpen}
         projectId={projectId}
+        projectName={projectName}
         variant={variant}
         files={files}
         passportArtifactId={variantFiles.passportArtifactId}

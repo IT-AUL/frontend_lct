@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { usePassport, type ExportFormat, type QualityPassport } from '@/entities/passport'
+import { useProjectEvidence } from '@/entities/project'
 import { useSkillManifest, useVersion } from '@/entities/system'
 import { strategyInfo, variantMetrics, type DeckFile, type DeckFiles, type VariantSummary } from '@/entities/variant'
 import { DownloadButton, FORMAT_LABEL, isStaleFile } from '@/features/export-deck'
@@ -15,6 +16,7 @@ interface PassportDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   projectId: string
+  projectName?: string | null
   variant: VariantSummary
   files: DeckFiles | null
   passportArtifactId: string | null
@@ -61,8 +63,31 @@ function FileSums({ files }: { files: DeckFiles | null }) {
   )
 }
 
+function EvidenceSummary({ projectId, hasDeck }: { projectId: string; hasDeck: boolean }) {
+  const evidence = useProjectEvidence(projectId)
+  const items = [
+    { key: 'generated', label: 'Сборка колоды', done: Boolean(evidence.generated) || hasDeck },
+    { key: 'repaired', label: 'Точечные правки и ремонт', done: Boolean(evidence.repaired) },
+    { key: 'reaudited', label: 'Повторная проверка', done: Boolean(evidence.reaudited) },
+    { key: 'exported', label: 'Скачивание PPTX', done: Boolean(evidence.exported) },
+  ]
+  return (
+    <section className={styles.sums} aria-label="Прохождение этапов проверки">
+      <h3 className={styles.sumsTitle}>Прохождение этапов проверки</h3>
+      <dl className={styles.sumList}>
+        {items.map((item) => (
+          <div key={item.key} className={styles.sumRow}>
+            <dt>{item.label}</dt>
+            <dd>{item.done ? '✓ Выполнено' : 'По желанию'}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  )
+}
+
 export function PassportDrawer(props: PassportDrawerProps) {
-  const { open, onOpenChange, projectId, variant, files, passportArtifactId, currentRevision, templateFile, slideCount } = props
+  const { open, onOpenChange, projectId, projectName, variant, files, passportArtifactId, currentRevision, templateFile, slideCount } = props
   const passportQuery = usePassport(passportArtifactId)
   const manifest = useSkillManifest()
   const version = useVersion()
@@ -87,7 +112,7 @@ export function PassportDrawer(props: PassportDrawerProps) {
   )
 
   const fileName = (format: ExportFormat, file: DeckFile | null) =>
-    exportFileName(variant.strategy, format, file?.deckRevision ?? currentRevision, file?.mimeType ?? null)
+    exportFileName(variant.strategy, format, file?.deckRevision ?? currentRevision, file?.mimeType ?? null, projectName)
 
   return (
     <Drawer
@@ -152,6 +177,7 @@ export function PassportDrawer(props: PassportDrawerProps) {
             }
           />
         )}
+        <EvidenceSummary projectId={projectId} hasDeck={Boolean(variant.deck_artifact_id)} />
         <FileSums files={files} />
         <ReproduceCommand
           templateFile={templateFile ?? passport?.inputs.templateName ?? null}

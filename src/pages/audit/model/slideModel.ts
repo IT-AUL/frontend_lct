@@ -341,8 +341,10 @@ export function buildSlideNotesView(
   headings: ReadonlyMap<string, string>,
   researchSources: readonly ResearchSource[] = [],
 ): SlideNotesView {
-  const speakerNote = planSlide?.speaker_note?.trim() || null
-  const keyMessage = planSlide?.key_message?.trim() || null
+  const rawSpeakerNote = planSlide?.speaker_note?.trim() || null
+  const speakerNote = rawSpeakerNote && !/^[a-z0-9_.-]+$/i.test(rawSpeakerNote) ? rawSpeakerNote : null
+  const rawKeyMessage = planSlide?.key_message?.trim() || null
+  const keyMessage = rawKeyMessage && !/^[a-z0-9_.-]+$/i.test(rawKeyMessage) ? rawKeyMessage : null
   const units = planSlide?.content_units ?? []
   const bullets = units
     .filter((unit) => unit.role !== 'title' && typeof unit.text === 'string' && unit.text.trim())
@@ -483,11 +485,77 @@ export function htmlExportSupported(capabilities: Capabilities | null | undefine
   return HTML_CAPABILITY_PATHS.some((path) => isCapabilityAvailable(capabilities, path))
 }
 
-export function exportFileName(strategy: string, format: ExportFormat, revision: number | null, mimeType: string | null = null): string {
-  const base = format === 'quality_passport' ? 'passport' : `deckdna_${strategy}`
-  const suffix = revision === null ? '' : `_r${revision}`
-  if (format === 'html' && !mimeType?.includes('text/html')) return `${base}${suffix}_html.zip`
-  return `${base}${suffix}.${EXTENSION[format]}`
+const STYLE_FILE_SLUG: Record<string, string> = {
+  faithful: 'точный',
+  balanced: 'сбалансированный',
+  visual: 'визуальный',
+}
+
+const AUDIT_MODE_LABEL: Record<string, string> = {
+  standard: 'Стандартный',
+  strict: 'Строгий',
+  fast: 'Быстрый',
+  quick: 'Быстрый',
+  deterministic: 'По правилам',
+  contextual: 'Со смысловой проверкой',
+}
+
+const AUDIT_STATUS_LABEL: Record<string, string> = {
+  passed: 'Пройдено',
+  completed: 'Пройдено',
+  failed: 'Есть замечания',
+  warning: 'С замечаниями',
+  warnings: 'С замечаниями',
+  running: 'Проверяется',
+  pending: 'В очереди',
+}
+
+function slugifyFilePart(raw: string | null | undefined, fallback: string): string {
+  const cleaned = (raw ?? '')
+    .trim()
+    .toLocaleLowerCase('ru-RU')
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+    .replace(/-+$/g, '')
+  return cleaned || fallback
+}
+
+export function formatAuditMode(mode: string | null | undefined): string {
+  if (!mode) return 'Стандартный'
+  return AUDIT_MODE_LABEL[mode.trim().toLowerCase()] ?? 'Стандартный'
+}
+
+export function formatAuditStatus(status: string | null | undefined): string {
+  if (!status) return 'Пройдено'
+  return AUDIT_STATUS_LABEL[status.trim().toLowerCase()] ?? 'Пройдено'
+}
+
+export function formatPlannerName(planner: string | null | undefined): string {
+  if (!planner) return 'По правилам'
+  const lower = planner.toLowerCase()
+  if (lower.includes('user_edited')) return 'Отредактирован вручную'
+  if (lower.includes('deterministic')) return 'По правилам'
+  if (lower.includes('hybrid')) return 'Смешанный'
+  return 'По правилам'
+}
+
+export function exportFileName(
+  strategy: string | undefined,
+  format: ExportFormat,
+  revision: number | null,
+  mimeType: string | null = null,
+  projectName?: string | null,
+): string {
+  const projectSlug = slugifyFilePart(projectName, 'презентация')
+  const styleSlug = (strategy && STYLE_FILE_SLUG[strategy]) || slugifyFilePart(strategy, 'колода')
+  const revSuffix = revision && revision > 1 ? `-r${revision}` : ''
+  const base =
+    format === 'quality_passport'
+      ? `${projectSlug}-${styleSlug}${revSuffix}-паспорт`
+      : `${projectSlug}-${styleSlug}${revSuffix}`
+  if (format === 'html' && mimeType?.includes('zip')) return `${base}-html.zip`
+  return `${base}.${EXTENSION[format]}`
 }
 
 export function withPassportMeta(file: DeckFile | null, passport: QualityPassport | null, passportFresh: boolean): DeckFile | null {

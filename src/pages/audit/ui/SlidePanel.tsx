@@ -4,7 +4,7 @@ import { useContentPack } from '@/entities/content-pack'
 import { parseResearch, useGeneration } from '@/entities/generation'
 import { useVariantSlides } from '@/entities/variant'
 import { isApiError, humanError } from '@/shared/api'
-import { Button, Skeleton, useToast } from '@/shared/ui'
+import { Button, useToast } from '@/shared/ui'
 import { contentPackSourceMap } from '@/widgets/deck-plan'
 import { buildExplainView, buildReworkChips, buildSlideNotesView, findPlanSlide, findSlideAt, type ReworkChip } from '../model/slideModel'
 import styles from './SlidePanel.module.css'
@@ -70,7 +70,12 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
     }
   }
 
-  const why = view.hasChart ? (view.whySummary ?? 'График подобран под структуру данных.') : view.fallbackNote
+  const slideTitle = slide?.title ?? null
+  const why = view.hasChart
+    ? (view.whySummary ?? 'График подобран под структуру данных и задачу сравнения.')
+    : (notes.keyMessage
+        ? `Ключевой тезис: «${notes.keyMessage}». Макет подобран под роль слайда и плотность пунктов с сохранением шрифтовой шкалы шаблона.`
+        : view.fallbackNote)
 
   return (
     <div className={styles.panel}>
@@ -78,7 +83,9 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
         <h3 id="slide-rework" className={styles.heading}>
           Переделать слайд {slideNumber}
         </h3>
-        <p className={styles.text}>Остальные слайды не изменятся.</p>
+        <p className={styles.text}>
+          {slideTitle ? `«${slideTitle}» — пересоберу только его, остальные слайды не изменятся.` : 'Остальные слайды не изменятся.'}
+        </p>
         {unsupported ? (
           <p className={styles.text} role="status">
             Сервер пока не умеет пересобирать один слайд.
@@ -111,37 +118,59 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
         <h3 id="slide-why" className={styles.heading}>
           Почему так
         </h3>
-        {explain.isLoading ? (
-          <Skeleton style={{ height: 48 }} />
-        ) : (
-          <>
-            <p className={styles.text}>{why}</p>
-            {view.datasetLabel && <p className={styles.muted}>Данные: {view.datasetLabel}</p>}
-            {view.rejected.length > 0 && (
-              <details className={styles.details}>
-                <summary>Почему не другие графики</summary>
-                <ul>
-                  {view.rejected.map((item) => (
-                    <li key={item.type}>
-                      {item.label}: {item.reason ?? 'не подходит под структуру данных'}
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            )}
-          </>
+        {view.exemplarLabel && <p className={styles.badge}>{view.exemplarLabel}</p>}
+        <p className={styles.text}>{why}</p>
+        {view.hasChart && view.chosenLabel && (
+          <p className={styles.muted}>
+            Вид визуализации: {view.chosenLabel}
+            {view.taskText ? ` · ${view.taskText}` : ''}
+          </p>
+        )}
+        {view.datasetLabel && <p className={styles.muted}>Данные: {view.datasetLabel}</p>}
+        {view.reasons.length > 0 && (
+          <ul className={styles.list}>
+            {view.reasons.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+        )}
+        {view.rejected.length > 0 && (
+          <details className={styles.details}>
+            <summary>Почему не другие графики</summary>
+            <ul>
+              {view.rejected.map((item) => (
+                <li key={item.type}>
+                  {item.label}: {item.reason ?? 'не подходит под структуру данных'}
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
       </section>
 
-      {(notes.speakerNote || notes.sources.length > 0) && (
-        <section className={styles.section} aria-labelledby="slide-notes">
-          <h3 id="slide-notes" className={styles.heading}>
-            Заметки докладчика
-          </h3>
-          {notes.speakerNote && <p className={styles.text}>{notes.speakerNote}</p>}
-          {notes.sources.length > 0 && <p className={styles.muted}>Опирается на: {notes.sources.map((source) => source.label).join(', ')}</p>}
-        </section>
-      )}
+      <section className={styles.section} aria-labelledby="slide-notes">
+        <h3 id="slide-notes" className={styles.heading}>
+          Заметки докладчика
+        </h3>
+        {notes.origins.length > 0 && (
+          <div className={styles.origins}>
+            {notes.origins.map((origin) => (
+              <span key={origin.kind} className={styles.badge}>
+                {origin.label}
+              </span>
+            ))}
+          </div>
+        )}
+        <p className={styles.text}>
+          {notes.speakerNote ??
+            (notes.keyMessage
+              ? `Сделайте акцент на главном выводе: ${notes.keyMessage}`
+              : 'Отдельные заметки для этого слайда не заданы — опирайтесь на заголовок и тезисы слайда.')}
+        </p>
+        {notes.sources.length > 0 && (
+          <p className={styles.muted}>Опирается на: {notes.sources.map((source) => source.label).join(', ')}</p>
+        )}
+      </section>
     </div>
   )
 }

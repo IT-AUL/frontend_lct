@@ -137,18 +137,35 @@ afterEach(() => {
 })
 
 describe('AuditPage', { timeout: 20_000 }, () => {
-  it('opens the default strategy variant and the slide from the query', async () => {
+  it('opens the default strategy variant and the slide from the query with Slide tab first', async () => {
     const router = renderAudit(`${routes.polish(PROJECT_ID, RUN_ID)}?slide=3`)
     await waitFor(() => expect(router.state.location.pathname).toBe(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID)))
     expect(router.state.location.search).toBe('?slide=3')
     expect(await screen.findByText('03 / 12')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Слайд' })).toHaveAttribute('aria-selected', 'true')
+    const summaryStatus = screen.getByRole('status', { name: 'Итог проверки' })
+    expect(summaryStatus).toHaveTextContent(/в стиле шаблона\s*100%\s*·\s*блокеров\s*0/i)
+  })
+
+  it('preserves the current slide query parameter when switching variants', async () => {
+    const user = userEvent.setup()
+    const router = renderAudit(`${routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID)}?slide=4`)
+
+    expect(await screen.findByText('04 / 12')).toBeInTheDocument()
+    const select = screen.getByLabelText('Вариант · ревизия')
+    await user.selectOptions(select, fixtures.faithful.variant.id)
+
+    await waitFor(() => expect(router.state.location.pathname).toBe(routes.polish(PROJECT_ID, RUN_ID, fixtures.faithful.variant.id)))
+    expect(router.state.location.search).toBe('?slide=4')
   })
 
   it('groups findings by rule with collapsed groups and a summary line', async () => {
     const user = userEvent.setup()
     renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
-    expect(await screen.findByRole('tab', { name: 'Проблемы · 108' })).toHaveAttribute('aria-selected', 'true')
+    const issuesTab = await screen.findByRole('tab', { name: 'Проблемы · 108' })
+    await user.click(issuesTab)
+    expect(issuesTab).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByText('108 находок')).toBeInTheDocument()
     expect(screen.getByText('· 6 правил')).toBeInTheDocument()
     expect(screen.getByText(`· ${fixableCount} исправимо`)).toBeInTheDocument()
@@ -174,10 +191,39 @@ describe('AuditPage', { timeout: 20_000 }, () => {
     expect(within(contrast).queryAllByRole('article')).toHaveLength(0)
   })
 
+  it('shows deck-level findings without slide_index and strips English All clear strings', async () => {
+    const user = userEvent.setup()
+    issues = []
+    audit = {
+      ...audit,
+      issue_count: 1,
+      summary_by_type: { 'narrative.ActionTitles': 2 },
+      deck_level_findings: [
+        {
+          id: 'deck_finding_1',
+          rule_code: 'deck.consistency',
+          severity: 'warning',
+          message: 'All clear',
+        },
+      ],
+    } as unknown as AuditRun
+
+    renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
+
+    const issuesTab = await screen.findByRole('tab', { name: 'Проблемы · 2' })
+    await user.click(issuesTab)
+
+    expect(screen.queryByText(/All clear/i)).not.toBeInTheDocument()
+    const actionTitlesGroup = screen.getByRole('region', { name: 'Заголовки-выводы на слайдах' })
+    await user.click(within(actionTitlesGroup).getByRole('button', { expanded: false }))
+    expect(within(actionTitlesGroup).getByText('Вся колода')).toBeInTheDocument()
+  })
+
   it('selects every auto-fixable issue of a rule from the group checkbox', async () => {
     const user = userEvent.setup()
     renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
+    await user.click(await screen.findByRole('tab', { name: 'Проблемы · 108' }))
     const contrastCount = deck.issues.filter((issue) => issue.rule_code === 'accessibility.contrast').length
     const groupCheck = await screen.findByRole('checkbox', { name: `Выбрать все исправимые в группе «Контраст текста ниже 4.5:1» (${contrastCount})` })
     await user.click(groupCheck)
@@ -200,15 +246,16 @@ describe('AuditPage', { timeout: 20_000 }, () => {
     expect(manual[0]).toHaveAttribute('aria-checked', 'false')
   })
 
-  it('keeps the D/N split, filters and alternative groupings', async () => {
+  it('keeps the D/N split, collapsed extra filters and alternative groupings', async () => {
     const user = userEvent.setup()
     renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
-    await screen.findByRole('tab', { name: 'Проблемы · 108' })
+    await user.click(await screen.findByRole('tab', { name: 'Проблемы · 108' }))
     const checks = screen.getByRole('group', { name: 'Типы проверок' })
     expect(within(checks).getByText('не запускалась')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('radio', { name: 'N · модель 0' }))
+    await user.click(screen.getByRole('button', { name: /Ещё фильтры/ }))
+    await user.click(screen.getByRole('radio', { name: 'N · смысл 0' }))
     expect(screen.getByText('По этим фильтрам проблем нет.')).toBeInTheDocument()
     await user.click(screen.getByRole('radio', { name: 'Все 108' }))
 
@@ -233,6 +280,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
     const router = renderAudit(`${routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID)}?slide=2`)
 
     expect(await screen.findByText('02 / 12')).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: 'Проблемы · 108' }))
     const bySlide = screen.getByRole('radio', { name: 'По слайдам' })
     bySlide.focus()
     await user.keyboard('{ArrowRight}')
@@ -252,6 +300,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
     const user = userEvent.setup()
     renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
+    await user.click(await screen.findByRole('tab', { name: 'Проблемы · 108' }))
     const overflow = await screen.findByRole('region', { name: 'Текст не помещается в рамку' })
     await user.click(within(overflow).getByRole('button', { expanded: false }))
     const [first, second] = within(overflow).getAllByRole('checkbox', { name: /^Выбрать для исправления/ })
@@ -273,6 +322,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
     expect(readOpenCounts(PROJECT_ID, RUN_ID)).toEqual({ blocker: 0, error: 53 })
 
     await user.click(screen.getByRole('tab', { name: /Проблемы/ }))
+    await user.click(screen.getByRole('button', { name: /Ещё фильтры/ }))
     await user.click(screen.getByRole('radio', { name: 'Решённые' }))
     expect(screen.getByRole('button', { name: /Текст не помещается в рамку/, expanded: true })).toBeInTheDocument()
     expect(screen.getAllByRole('article')).toHaveLength(1)
@@ -284,6 +334,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
     const user = userEvent.setup()
     renderAudit(routes.polish(PROJECT_ID, RUN_ID, fixtures.faithful.variant.id))
 
+    await user.click(await screen.findByRole('tab', { name: 'Проблемы · 108' }))
     const overflow = await screen.findByRole('region', { name: 'Текст не помещается в рамку' })
     await user.click(within(overflow).getByRole('button', { expanded: false }))
     const [first, second] = within(overflow).getAllByRole('checkbox', { name: /^Выбрать для исправления/ })
@@ -300,7 +351,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
     const user = userEvent.setup()
     renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
-    await screen.findByText('108 находок')
+    await screen.findByRole('tab', { name: 'Проблемы · 108' })
     auditRequestFails = true
     await user.click(screen.getByRole('button', { name: 'Повторный аудит' }))
 
@@ -312,6 +363,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
     const user = userEvent.setup()
     renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
+    await user.click(await screen.findByRole('tab', { name: 'Проблемы · 108' }))
     const fontScale = await screen.findByRole('region', { name: 'Кегль не из шкалы шаблона' })
     await user.click(within(fontScale).getByRole('button', { expanded: false }))
     const [card] = within(fontScale).getAllByRole('article')
@@ -329,13 +381,13 @@ describe('AuditPage', { timeout: 20_000 }, () => {
     expect(await screen.findByRole('tab', { name: 'Журнал · 1' })).toBeInTheDocument()
   })
 
-  it('explains next to a disabled button that contextual checks need a model provider', async () => {
+  it('explains next to a disabled button that contextual checks need a check service', async () => {
     renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
-    const button = await screen.findByRole('button', { name: /Смысл моделью/ })
+    const button = await screen.findByRole('button', { name: /Проверить смысл/ })
     expect(button).toBeDisabled()
-    expect(button).toHaveAccessibleDescription('нужна модель')
-    expect(screen.getByText('нужна модель')).toBeVisible()
+    expect(button).toHaveAccessibleDescription('нужен сервис проверки')
+    expect(screen.getByText('нужен сервис проверки')).toBeVisible()
     expect(postSpy).not.toHaveBeenCalledWith('/api/v1/variants/{variant_id}/audits', expect.objectContaining({ body: expect.objectContaining({ provider_session_id: expect.any(String) }) }))
   })
 
@@ -343,6 +395,7 @@ describe('AuditPage', { timeout: 20_000 }, () => {
     const user = userEvent.setup()
     renderAudit(routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID))
 
+    await user.click(await screen.findByRole('tab', { name: 'Проблемы · 108' }))
     const overflow = await screen.findByRole('region', { name: 'Текст не помещается в рамку' })
     await user.click(within(overflow).getByRole('button', { expanded: false }))
     const [first] = within(overflow).getAllByRole('checkbox', { name: /^Выбрать для исправления/ })
@@ -354,10 +407,10 @@ describe('AuditPage', { timeout: 20_000 }, () => {
 })
 
 describe('AuditPage slide tab', { timeout: 20_000 }, () => {
-  it('offers to rework only the current slide and downloads in one place', async () => {
+  it('offers to rework only the current slide and downloads in one place by default', async () => {
     renderAudit(`${routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID)}?slide=2`)
     expect(await screen.findByRole('group', { name: 'Скачать презентацию' })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('tab', { name: 'Слайд' }))
+    expect(screen.getByRole('tab', { name: 'Слайд' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('heading', { name: 'Переделать слайд 2' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Короче' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Почему так' })).toBeInTheDocument()

@@ -16,8 +16,8 @@ interface IssuePanelProps {
 export function IssuePanel({ tab, onTabChange, openCount, journalCount, issues, journal, slide }: IssuePanelProps) {
   const id = useId()
   const tabs: { value: PanelTab; label: string }[] = [
-    { value: 'issues', label: `Проблемы · ${openCount}` },
     ...(slide ? [{ value: 'slide' as const, label: 'Слайд' }] : []),
+    { value: 'issues', label: `Проблемы · ${openCount}` },
     { value: 'journal', label: `Журнал · ${journalCount}` },
   ]
 

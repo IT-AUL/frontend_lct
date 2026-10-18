@@ -48,6 +48,41 @@
   border-bottom: 1px solid var(--line);
 }
 
+.primaryFilterRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.primaryFilterRow .segments {
+  flex: 1;
+}
+
+.moreButton {
+  flex: none;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.moreButtonActive {
+  border-color: var(--ink);
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.moreFilters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+
 .segments {
   display: flex;
   gap: 2px;

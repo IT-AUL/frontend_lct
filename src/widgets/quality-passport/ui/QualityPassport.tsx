@@ -151,7 +151,7 @@ function IssuesBody({ view }: { view: PassportView }) {
 }
 
 function TimingTitle({ view }: { view: PassportView }) {
-  const { timing, usage } = view
+  const { timing } = view
   return (
     <span className={styles.titleRow}>
       Время сборки
@@ -160,7 +160,6 @@ function TimingTitle({ view }: { view: PassportView }) {
           {timing.total} из {timing.budget}
         </span>
       )}
-      {usage && <span className={styles.titleNote}>· {usage.map((item) => `${item.value} ${item.label.toLowerCase()}`).join(' · ')}</span>}
     </span>
   )
 }
@@ -274,9 +273,8 @@ export function QualityPassport({ view, revisionLabel, notice, actions }: Qualit
       </header>
       {view.skillVersion && (
         <div className={styles.versionBanner}>
-          <span className={styles.versionLabel}>Результат привязан к версии</span>
-          <span className={styles.versionValue}>скилл {view.skillVersion}</span>
-          {view.pipelineVersion && <span className={styles.versionValue}>{view.pipelineVersion}</span>}
+          <span className={styles.versionLabel}>Результат привязан к версии правил</span>
+          <span className={styles.versionValue}>{view.skillVersion}</span>
         </div>
       )}
       {notice}

@@ -1,5 +1,6 @@
 import { Navigate, useLocation, useParams, useSearchParams } from 'react-router'
 import { useGeneration } from '@/entities/generation'
+import { useProject } from '@/entities/project'
 import { useTemplate } from '@/entities/template'
 import { useVariant, useVariants } from '@/entities/variant'
 import { AuditWorkspace } from '@/widgets/audit-workspace'
@@ -41,6 +42,7 @@ function DefaultVariantRedirect({ projectId, runId }: { projectId: string; runId
 export function AuditPage() {
   const { projectId = '', runId = '', variantId } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
+  const project = useProject(projectId)
   const variant = useVariant(variantId)
   const generation = useGeneration(runId)
   const template = useTemplate(generation.data?.template_id)
@@ -68,11 +70,23 @@ export function AuditPage() {
       variantId={variantId}
       slide={parseSlideParam(searchParams.get('slide'))}
       onSlideChange={changeSlide}
-      variantHref={(id) => routes.polish(projectId, runId, id)}
+      variantHref={(id, slideNumber) => {
+        const next = new URLSearchParams(searchParams)
+        const targetSlide = slideNumber ?? parseSlideParam(searchParams.get('slide'))
+        if (targetSlide !== null && targetSlide !== undefined) next.set('slide', String(targetSlide))
+        const query = next.toString()
+        return `${routes.polish(projectId, runId, id)}${query ? `?${query}` : ''}`
+      }}
       renderStage={(stage) => <SlideInspector {...stage} />}
       actions={
         variant.data ? (
-          <DeckDownloads projectId={projectId} variant={variant.data} templateFile={template.data?.filename ?? null} slideCount={slideCount} />
+          <DeckDownloads
+            projectId={projectId}
+            projectName={project.data?.name ?? null}
+            variant={variant.data}
+            templateFile={template.data?.filename ?? null}
+            slideCount={slideCount}
+          />
         ) : null
       }
       renderSlidePanel={({ slideNumber }) => <SlidePanel key={slideNumber} runId={runId} variantId={variantId} strategy={strategy} slideNumber={slideNumber} />}

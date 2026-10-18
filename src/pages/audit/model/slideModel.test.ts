@@ -12,7 +12,10 @@ import {
   exportFileName,
   findPlanSlide,
   findSlideAt,
+  formatAuditMode,
+  formatAuditStatus,
   formatExemplarLabel,
+  formatPlannerName,
   openCriticalSummary,
   parseSlideParam,
   resolvePolishNote,
@@ -261,9 +264,14 @@ describe('polishModel', () => {
     ).toBe('Колода готова: все графики редактируемые, критичных ошибок вёрстки нет — можно скачивать или точечно поправить любой слайд.')
   })
 
-  it('computes export file names, revisions, and open critical counts', () => {
-    expect(exportFileName('balanced', 'pptx', 2)).toBe('deckdna_balanced_r2.pptx')
-    expect(exportFileName('visual', 'html', 1, 'application/zip')).toBe('deckdna_visual_r1_html.zip')
+  it('computes export file names from project name and style, revisions, and open critical counts', () => {
+    expect(exportFileName('balanced', 'pptx', 1, null, 'Квартальный отчёт')).toBe('квартальный-отчёт-сбалансированный.pptx')
+    expect(exportFileName('balanced', 'pptx', 2)).toBe('презентация-сбалансированный-r2.pptx')
+    expect(exportFileName('visual', 'html', 1, 'text/html', 'Закупки Q3')).toBe('закупки-q3-визуальный.html')
+    expect(exportFileName('visual', 'html', 1, 'application/zip', 'Закупки Q3')).toBe('закупки-q3-визуальный-html.zip')
+    expect(formatAuditMode('standard')).toBe('Стандартный')
+    expect(formatAuditStatus('passed')).toBe('Пройдено')
+    expect(formatPlannerName('story-director/deterministic-0.1.0')).toBe('По правилам')
     expect(currentRevisionOf(1, [{ format: 'pdf', artifactId: 'a1', exportId: 'e1', deckRevision: 2, sizeBytes: 100, sha256: null, mimeType: null }], 3)).toBe(3)
     expect(
       openCriticalSummary(undefined, {
