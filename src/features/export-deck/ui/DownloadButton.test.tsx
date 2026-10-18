@@ -174,4 +174,15 @@ describe('DownloadButton', () => {
     await user.click(link)
     await waitFor(() => expect(click).toHaveBeenCalledTimes(1))
   })
+
+  it('disables download and shows explanatory caption while slide changes are pending', () => {
+    renderButton({ format: 'pptx', file: files.pptx, label: 'Скачать PPTX', primary: true, pendingChanges: true })
+
+    expect(root()).toHaveAttribute('data-status', 'pending-changes')
+    const button = screen.getByRole('button', { name: 'Скачать PPTX' })
+    expect(button).toBeDisabled()
+    expect(screen.queryByRole('link', { name: 'Скачать PPTX' })).not.toBeInTheDocument()
+    expect(screen.getByText('Дождитесь завершения правок')).toBeInTheDocument()
+  })
 })
+

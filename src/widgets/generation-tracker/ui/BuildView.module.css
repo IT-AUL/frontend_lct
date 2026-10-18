@@ -318,6 +318,13 @@
   white-space: nowrap;
 }
 
+.captionStack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
 .captionRow {
   display: flex;
   align-items: baseline;
@@ -350,6 +357,84 @@
   flex: none;
   color: var(--ink-3);
   font-size: 12px;
+}
+
+.captionActionRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 8px;
+}
+
+.changeStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.changeStatusBadge[data-state='queued'] {
+  border-color: var(--warn, var(--line));
+  color: var(--ink);
+}
+
+.changeStatusBadge[data-state='running'] {
+  border-color: var(--info, var(--line));
+  color: var(--info, var(--ink));
+}
+
+.changeStatusBadge[data-state='completed'] {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.cardActionBtn {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.cardActionBtn:hover:not(:disabled) {
+  border-color: var(--line-2);
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.cardActionBtn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.cardActionBtn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.changeErrorText {
+  color: var(--error, var(--err));
+  font-size: 11px;
+  line-height: 1.3;
 }
 
 .inspectorWrap {

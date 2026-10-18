@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useVariantAudit } from '@/entities/audit'
 import { usePassport, type ExportFormat } from '@/entities/passport'
 import { useCapabilities } from '@/entities/system'
-import type { DeckFile, VariantSummary } from '@/entities/variant'
+import { hasPendingVariantChanges, useVariantChanges, type DeckFile, type VariantSummary } from '@/entities/variant'
 import { DownloadButton, isStaleFile } from '@/features/export-deck'
 import { useVariantFiles } from '@/features/variant-files'
 import { Button } from '@/shared/ui'
@@ -24,6 +24,8 @@ export function DeckDownloads({ projectId, projectName, variant, templateFile, s
   const passportQuery = usePassport(variantFiles.passportArtifactId)
   const capabilities = useCapabilities()
   const audit = useVariantAudit(variant.id)
+  const changes = useVariantChanges(variant.id)
+  const pendingChanges = hasPendingVariantChanges(changes.data)
   const files = variantFiles.files
   const current = Math.max(audit.data?.deck_revision ?? 1, files?.pdf?.deckRevision ?? 1, files?.pptx?.deckRevision ?? 1)
   const passport = passportQuery.data ?? null
@@ -45,6 +47,7 @@ export function DeckDownloads({ projectId, projectName, variant, templateFile, s
         label="Скачать PPTX"
         primary
         compact
+        pendingChanges={pendingChanges}
       />
       <DownloadButton
         key={`${variant.id}:pdf`}
@@ -57,6 +60,7 @@ export function DeckDownloads({ projectId, projectName, variant, templateFile, s
         fileName={fileName('pdf', files?.pdf ?? null)}
         label="PDF"
         compact
+        pendingChanges={pendingChanges}
       />
       <DownloadButton
         key={`${variant.id}:html`}
@@ -69,7 +73,13 @@ export function DeckDownloads({ projectId, projectName, variant, templateFile, s
         fileName={fileName('html', files?.html ?? null)}
         label="HTML"
         compact
+        pendingChanges={pendingChanges}
       />
+      {pendingChanges && (
+        <span className={styles.downloadsPendingNote} role="status">
+          Дождитесь завершения правок
+        </span>
+      )}
       <Button size="sm" variant="ghost" onClick={() => setPassportOpen(true)}>
         Паспорт качества
       </Button>

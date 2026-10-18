@@ -1,5 +1,6 @@
 import type { JobEvent } from '@/entities/assistant'
 import type { DeckPlan, GenerationTracker } from '@/entities/generation'
+import { useSlideChangeQueue } from '@/features/slide-change'
 import { formatIndex } from '@/shared/lib/format'
 import { Button, SlideGrid, SlideTile } from '@/shared/ui'
 import { buildStageSummary, type BuildStageSummary, type FilmstripSlot } from '../lib/filmstrip'
@@ -140,15 +141,24 @@ export function BuildTable({
   slots: externalSlots,
   selectedSlideIndex = null,
   onSelectSlide,
+  onSlideChangeRequested,
 }: BuildViewProps & {
   cards: readonly VariantCard[]
   selectedKey: string | null
   slots?: readonly FilmstripSlot[]
   selectedSlideIndex?: number | null
   onSelectSlide?: (index: number) => void
+  onSlideChangeRequested?: () => void
 }) {
   const internal = useBuildSlots({ tracker, events, deckPlan, cards, selectedKey })
   const slots = externalSlots ?? internal.slots
+  const selectedCard = cards.find((card) => card.key === selectedKey) ?? cards[0]
+  const eventVariantId =
+    events
+      .map((event) => (typeof event.data?.variant_id === 'string' ? event.data.variant_id : null))
+      .find((id): id is string => Boolean(id)) ?? null
+  const variantId = selectedCard?.variant?.id ?? internal.variantId ?? eventVariantId
+  const queue = useSlideChangeQueue(variantId)
 
   if (slots.length === 0) return <p className={styles.empty}>Слайды появятся здесь по мере готовности.</p>
   return (
@@ -156,13 +166,22 @@ export function BuildTable({
       {slots.map((slot) => {
         const cornerBadge =
           slot.previewBadge ?? (slot.imageUrl === null && slot.state === 'building' ? 'собираю' : null)
+        const isReady = slot.state === 'ready' || Boolean(slot.imageUrl)
+        const candidateIds = [slot.slideId, slot.slideKey, String(slot.slideNumber)]
+        const slideChange = queue.getSlideChange(candidateIds)
+        const slideNote = queue.getSlideNote(candidateIds)
+        const slideError = queue.getSlideError(candidateIds)
+        const isSubmitting = queue.submittingSlideId === slot.slideId
+        const changeState = slideChange?.state ?? (slideNote ? 'completed' : null)
+        const isBusy = isSubmitting || changeState === 'queued' || changeState === 'running'
+        const showActions = Boolean(variantId && (isReady || changeState || isSubmitting || slideError))
 
         return (
           <div role="listitem" key={slot.key} data-slide-key={slot.slideKey} data-preview-revision={slot.previewRevision ?? undefined}>
             <SlideTile
               title={slot.title}
               image={slot.imageUrl}
-              pending={slot.state === 'building' || slot.previewBadge === 'обновляется'}
+              pending={slot.state === 'building' || slot.previewBadge === 'обновляется' || changeState === 'running'}
               selected={selectedSlideIndex === slot.index}
               onOpen={onSelectSlide ? () => onSelectSlide(slot.index) : undefined}
               openLabel={`Слайд ${slot.slideNumber}: ${slot.title}${slot.previewBadge ? ` (${slot.previewBadge})` : ''}`}
@@ -174,10 +193,67 @@ export function BuildTable({
                 ) : undefined
               }
               caption={
-                <span className={styles.captionRow}>
-                  <span className={styles.captionNum}>{formatIndex(slot.slideNumber)}</span>
-                  <span className={styles.captionTitle}>{slot.title}</span>
-                  {slot.purposeLabel && <span className={styles.captionRole}>{slot.purposeLabel}</span>}
+                <span className={styles.captionStack}>
+                  <span className={styles.captionRow}>
+                    <span className={styles.captionNum}>{formatIndex(slot.slideNumber)}</span>
+                    <span className={styles.captionTitle}>{slot.title}</span>
+                    {slot.purposeLabel && <span className={styles.captionRole}>{slot.purposeLabel}</span>}
+                  </span>
+                  {showActions && (
+                    <span className={styles.captionActionRow}>
+                      {changeState === 'queued' && (
+                        <>
+                          <span className={styles.changeStatusBadge} data-state="queued" role="status">
+                            правка в очереди
+                          </span>
+                          {slideChange && (
+                            <button
+                              type="button"
+                              className={styles.cardActionBtn}
+                              disabled={queue.cancellingChangeId === slideChange.change_id}
+                              onClick={() => {
+                                onSlideChangeRequested?.()
+                                void queue.cancelChange(slideChange.change_id)
+                              }}
+                            >
+                              Отменить
+                            </button>
+                          )}
+                        </>
+                      )}
+                      {(changeState === 'running' || (isSubmitting && !changeState)) && (
+                        <span className={styles.changeStatusBadge} data-state="running" role="status">
+                          применяю
+                        </span>
+                      )}
+                      {changeState === 'completed' && (
+                        <span className={styles.changeStatusBadge} data-state="completed" role="status">
+                          готово
+                        </span>
+                      )}
+                      {isReady && !isBusy && (
+                        <button
+                          type="button"
+                          className={styles.cardActionBtn}
+                          onClick={() => {
+                            onSlideChangeRequested?.()
+                            void queue.submitChange({
+                              slideId: slot.slideId,
+                              action: 'shorter',
+                              fallbackRevision: slot.previewRevision ?? 1,
+                            })
+                          }}
+                        >
+                          Поправить
+                        </button>
+                      )}
+                      {slideError && (
+                        <span className={styles.changeErrorText} role="alert">
+                          {slideError}
+                        </span>
+                      )}
+                    </span>
+                  )}
                 </span>
               }
             >

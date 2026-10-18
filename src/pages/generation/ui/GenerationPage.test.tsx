@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { useJobEvents, type JobEvent } from '@/entities/assistant'
 import { useGenerationTracker, useRetryGeneration, useSlideDrafts, type GenerationTracker } from '@/entities/generation'
 import { markEvidence, projectRunId, rememberRun } from '@/entities/project'
-import { ApiError } from '@/shared/api'
+import { api, ApiError } from '@/shared/api'
 import { generationFixture } from '@/shared/api/mocks'
 import { routes } from '@/shared/config'
 import { ToastProvider } from '@/shared/ui'
@@ -419,4 +419,120 @@ describe('GenerationPage', () => {
     expect(screen.getByRole('link', { name: 'К плану' })).toHaveAttribute('href', routes.planDraft(PROJECT))
     expect(screen.queryByRole('timer')).not.toBeInTheDocument()
   })
+
+  it('queues a slide edit from a ready slide card during build and allows cancelling it', async () => {
+    const user = userEvent.setup()
+    const singleVariantRunning = {
+      ...running,
+      variants: running.variants.slice(1, 2).map((variant) => ({
+        ...variant,
+        id: 'var_build_edit',
+        strategy: 'balanced' as const,
+        status: 'running' as const,
+      })),
+    }
+    const events: JobEvent[] = [
+      {
+        sequence: 1,
+        type: 'slide.ready',
+        timestamp: '2026-10-18T12:00:00Z',
+        jobId: 'job_1',
+        stage: 'render',
+        progress: 0.2,
+        message: null,
+        data: {
+          variant_id: 'var_build_edit',
+          slide_key: 'var_build_edit:1',
+          index: 1,
+          slide_id: 'slide-0',
+          preview_revision: 2,
+          status: 'rendered',
+          preview_artifact_id: 'art_slide_1_ready',
+        },
+      },
+    ]
+
+    let queuedItems: Record<string, unknown>[] = []
+    vi.spyOn(api, 'GET').mockImplementation(((path: string) => {
+      if (path === '/api/v1/variants/{variant_id}/changes') {
+        return Promise.resolve({
+          data: {
+            variant_id: 'var_build_edit',
+            applied_revision: 1,
+            accepted_revision: queuedItems.some((item) => item.state === 'queued') ? 2 : 1,
+            items: queuedItems,
+          },
+          error: undefined,
+          response: new Response(null, { status: 200 }),
+        }) as never
+      }
+      return Promise.resolve({
+        data: undefined,
+        error: { error: { code: 'not_found', message: path } },
+        response: new Response(null, { status: 404 }),
+      }) as never
+    }) as unknown as typeof api.GET)
+
+    const postSpy = vi.spyOn(api, 'POST').mockImplementation(((path: string, init?: unknown) => {
+      const body = (init as { body?: { slide_id?: string; expected_revision?: number; action?: string } } | undefined)?.body
+      if (path === '/api/v1/variants/{variant_id}/changes') {
+        const created = {
+          change_id: 'chg_build_1',
+          variant_id: 'var_build_edit',
+          slide_id: body?.slide_id ?? 'slide-0',
+          action: body?.action ?? 'shorter',
+          state: 'queued',
+          base_revision: body?.expected_revision ?? 1,
+          target_revision: 2,
+        }
+        queuedItems = [created]
+        return Promise.resolve({
+          data: created,
+          error: undefined,
+          response: new Response(null, { status: 202 }),
+        }) as never
+      }
+      if (path === '/api/v1/variants/{variant_id}/changes/{change_id}/cancel') {
+        const cancelled = {
+          ...(queuedItems[0] ?? {}),
+          change_id: 'chg_build_1',
+          state: 'canceled',
+        }
+        queuedItems = [cancelled]
+        return Promise.resolve({
+          data: cancelled,
+          error: undefined,
+          response: new Response(null, { status: 200 }),
+        }) as never
+      }
+      return Promise.resolve({
+        data: undefined,
+        error: { error: { code: 'not_found', message: path } },
+        response: new Response(null, { status: 404 }),
+      }) as never
+    }) as unknown as typeof api.POST)
+
+    vi.mocked(useJobEvents).mockReturnValue({ events, lastEvent: events[0] ?? null, done: false, error: null })
+    useTracker(makeTracker({ generationId: RUN, generation: singleVariantRunning, phase: 'running', canCancel: true }))
+    renderPage(RUN)
+
+    const grid = within(screen.getByRole('list', { name: 'Слайды презентации' }))
+    const editBtn = grid.getByRole('button', { name: 'Поправить' })
+    await user.click(editBtn)
+
+    expect(postSpy).toHaveBeenCalledWith(
+      '/api/v1/variants/{variant_id}/changes',
+      expect.objectContaining({
+        params: { path: { variant_id: 'var_build_edit' } },
+      }),
+    )
+    expect(await grid.findByText('правка в очереди')).toBeInTheDocument()
+    const cancelCardBtn = grid.getByRole('button', { name: 'Отменить' })
+    await user.click(cancelCardBtn)
+
+    expect(await grid.findByRole('button', { name: 'Поправить' })).toBeInTheDocument()
+    expect(grid.queryByText('правка в очереди')).not.toBeInTheDocument()
+    vi.restoreAllMocks()
+  })
 })
+

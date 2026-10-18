@@ -415,4 +415,88 @@ describe('AuditPage slide tab', { timeout: 20_000 }, () => {
     expect(screen.getByRole('button', { name: 'Короче' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Почему так' })).toBeInTheDocument()
   })
+
+  it('queues a slide edit, blocks downloads while pending, and cancels the queued change', async () => {
+    const user = userEvent.setup()
+    let queuedItems: Record<string, unknown>[] = []
+
+    vi.spyOn(api, 'GET').mockImplementation(((path: string, init?: FakeInit) => {
+      if (path === '/api/v1/variants/{variant_id}/changes') {
+        return ok({
+          variant_id: VARIANT_ID,
+          applied_revision: 1,
+          accepted_revision: queuedItems.some((item) => item.state === 'queued') ? 2 : 1,
+          items: queuedItems,
+        })
+      }
+      return fakeGet(path, init)
+    }) as unknown as typeof api.GET)
+
+    postSpy.mockImplementation(((path: string, init?: FakeInit) => {
+      if (path === '/api/v1/variants/{variant_id}/changes') {
+        const body = init?.body as { slide_id?: string; expected_revision?: number; action?: string } | undefined
+        const created = {
+          change_id: 'chg_slide_2',
+          variant_id: VARIANT_ID,
+          slide_id: body?.slide_id ?? 'slide-1',
+          action: body?.action ?? 'shorter',
+          state: 'queued',
+          base_revision: body?.expected_revision ?? 1,
+          target_revision: 2,
+        }
+        queuedItems = [created]
+        return ok(created)
+      }
+      if (path === '/api/v1/variants/{variant_id}/changes/{change_id}/cancel') {
+        const cancelled = {
+          ...(queuedItems[0] ?? {}),
+          change_id: 'chg_slide_2',
+          state: 'canceled',
+        }
+        queuedItems = [cancelled]
+        return ok(cancelled)
+      }
+      return fakePost(path, init)
+    }) as unknown as typeof api.POST)
+
+    renderAudit(`${routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID)}?slide=2`)
+
+    const downloads = await screen.findByRole('group', { name: 'Скачать презентацию' })
+    expect(within(downloads).getByRole('link', { name: 'Скачать PPTX' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Короче' }))
+
+    expect(await screen.findByText('Правка в очереди')).toBeInTheDocument()
+    const cancelBtn = screen.getByRole('button', { name: 'Отменить' })
+    expect(cancelBtn).toBeInTheDocument()
+
+    expect(within(downloads).getByRole('button', { name: 'Скачать PPTX' })).toBeDisabled()
+    expect(within(downloads).getByText('Дождитесь завершения правок')).toBeInTheDocument()
+
+    await user.click(cancelBtn)
+
+    await waitFor(() => expect(screen.queryByText('Правка в очереди')).not.toBeInTheDocument())
+    expect(within(downloads).getByRole('link', { name: 'Скачать PPTX' })).toBeInTheDocument()
+    expect(within(downloads).queryByText('Дождитесь завершения правок')).not.toBeInTheDocument()
+  })
+
+  it('falls back to legacy regenerate when /changes returns 404', async () => {
+    const user = userEvent.setup()
+
+    postSpy.mockImplementation(((path: string, init?: FakeInit) => {
+      if (path === '/api/v1/variants/{variant_id}/slides/{slide_id}/regenerate') {
+        return ok({ assistant_note: 'Сделал слайд короче.' })
+      }
+      return fakePost(path, init)
+    }) as unknown as typeof api.POST)
+
+    renderAudit(`${routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID)}?slide=2`)
+    await screen.findByRole('heading', { name: 'Переделать слайд 2' })
+
+    await user.click(screen.getByRole('button', { name: 'Короче' }))
+
+    expect(await screen.findByText('Готово')).toBeInTheDocument()
+    expect(screen.getByText('Сделал слайд короче.')).toBeInTheDocument()
+  })
 })
+

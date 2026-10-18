@@ -37,6 +37,49 @@
   font-size: 13px;
 }
 
+.error {
+  margin: 0;
+  color: var(--err);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.queueStatusRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.queueBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.queueBadge[data-state='queued'] {
+  border-color: var(--warn, var(--line));
+  color: var(--ink);
+}
+
+.queueBadge[data-state='running'] {
+  border-color: var(--accent, var(--line));
+  color: var(--ink);
+}
+
+.queueBadge[data-state='completed'] {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

@@ -3,8 +3,9 @@ import type { RequestHandler } from 'msw'
 import { API_BASE } from '@/shared/config'
 import type { MockContext } from '../context'
 import { designDnaFixture, templateDetailFixture } from '../fixtures'
-import { json, notFound, validationError } from '../http'
-import { prefixedId, rebrand } from '../ids'
+import { json, notFound, stateConflict, validationError } from '../http'
+import { nowIso, prefixedId, rebrand } from '../ids'
+import type { MockVariantChangeItem } from '../store'
 import { isRecord, readJson } from '../validate'
 
 type Object = Record<string, unknown>
@@ -83,6 +84,101 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
     mark(current.projectId, 2, [1])
     store.touchProject(current.projectId, { content_pack_id: packId })
     return { content_pack_id: packId, filled_from: id, understanding }
+  }
+  const ALLOWED_CHANGE_ACTIONS = [
+    'shorter',
+    'other_layout',
+    'other_chart',
+    'style:faithful',
+    'style:balanced',
+    'style:visual',
+    'replace_title',
+    'replace_text',
+    'larger_chart',
+    'punchier',
+    'add_figure',
+    'to_chart',
+    'to_table',
+    'split_slide',
+  ]
+  const CHANGE_NOTES: Record<string, string> = {
+    shorter: 'Сделал слайд короче.',
+    other_layout: 'Поменял раскладку слайда.',
+    other_chart: 'Поменял график на слайде.',
+    'style:faithful': 'Пересобрал слайд в строгом стиле.',
+    'style:balanced': 'Пересобрал слайд в сбалансированном стиле.',
+    'style:visual': 'Пересобрал слайд в визуальном стиле.',
+    punchier: 'Усилил главный вывод.',
+  }
+  function hasVariant(variantId: string): boolean {
+    if (store.variants.has(variantId)) return true
+    return (['idea', 'data'] as const).some((scenario) =>
+      objects(fixture(scenario, 'variants').items).some((variant) => variant.id === variantId),
+    )
+  }
+  function variantChangeBucket(variantId: string): MockVariantChangeItem[] {
+    let bucket = store.variantChanges.get(variantId)
+    if (!bucket) {
+      bucket = []
+      store.variantChanges.set(variantId, bucket)
+    }
+    return bucket
+  }
+  function appliedRevisionFor(variantId: string): number {
+    const base = store.variants.get(variantId)?.revision ?? 1
+    return variantChangeBucket(variantId)
+      .filter((entry) => entry.state === 'completed')
+      .reduce((max, entry) => Math.max(max, entry.target_revision), base)
+  }
+  function acceptedRevisionFor(variantId: string): number {
+    const applied = appliedRevisionFor(variantId)
+    return variantChangeBucket(variantId)
+      .filter((entry) => entry.state === 'queued' || entry.state === 'running' || entry.state === 'completed')
+      .reduce((max, entry) => Math.max(max, entry.target_revision), applied)
+  }
+  function scheduleChangeTransitions(variantId: string, item: MockVariantChangeItem): void {
+    const runTimer = setTimeout(() => {
+      if (item.state !== 'queued') return
+      item.state = 'running'
+      item.started_at = nowIso()
+    }, 220)
+    ;(runTimer as { unref?: () => void }).unref?.()
+
+    const doneTimer = setTimeout(() => {
+      if (item.state !== 'queued' && item.state !== 'running') return
+      item.state = 'completed'
+      item.completed_at = nowIso()
+      const regen = fixture('data', 'regenerate')
+      const note = CHANGE_NOTES[item.action] ?? String(regen.assistant_note ?? 'Сделал слайд короче.')
+      item.result = {
+        ...regen,
+        variant_id: variantId,
+        deck_revision: item.target_revision,
+        slide: {
+          ...object(regen.slide),
+          id: item.slide_id,
+          variant_id: variantId,
+          revision: item.target_revision,
+        },
+        assistant_note: note,
+      }
+      const variantRecord = store.variants.get(variantId)
+      if (variantRecord) {
+        variantRecord.revision = item.target_revision
+        if (variantRecord.auditId && store.audits.has(variantRecord.auditId)) {
+          const auditRecord = store.audits.get(variantRecord.auditId)
+          if (auditRecord) {
+            auditRecord.run = { ...auditRecord.run, deck_revision: item.target_revision }
+          }
+        }
+        for (const [expId, exp] of store.exports.entries()) {
+          if (exp.variant_id === variantId) {
+            store.exports.set(expId, { ...exp, deck_revision: item.target_revision })
+          }
+        }
+      }
+    }, 480)
+    ;(doneTimer as { unref?: () => void }).unref?.()
   }
   const { route } = router
   return [
@@ -374,6 +470,79 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
     http.get(`*${API_BASE}/slides/:slideId`, ({ params }) => {
       const found = (['idea', 'data'] as const).flatMap((scenario) => objects(fixture(scenario, 'slides').items)).find((item) => item.id === params.slideId)
       return found ? json(found) : undefined
+    }),
+    route('get', '/variants/:variantId/changes', ({ param }) => {
+      const variantId = param('variantId')
+      if (!hasVariant(variantId)) throw notFound('Variant', variantId)
+      const applied = appliedRevisionFor(variantId)
+      const accepted = acceptedRevisionFor(variantId)
+      const items = variantChangeBucket(variantId).map((entry) => ({ ...entry }))
+      return json({
+        variant_id: variantId,
+        revision: applied,
+        applied_revision: applied,
+        accepted_revision: accepted,
+        items,
+      })
+    }),
+    route('post', '/variants/:variantId/changes', async ({ request, param }) => {
+      const variantId = param('variantId')
+      if (!hasVariant(variantId)) throw notFound('Variant', variantId)
+      const body = await readJson(request)
+      const action = String(body.action ?? 'shorter')
+      if (!ALLOWED_CHANGE_ACTIONS.includes(action)) throw validationError('action', 'Неизвестное действие')
+      const slideId = String(body.slide_id ?? '').trim()
+      if (!slideId) throw validationError('slide_id', 'Не указан слайд')
+      const accepted = acceptedRevisionFor(variantId)
+      if (typeof body.expected_revision === 'number' && body.expected_revision !== accepted) {
+        throw stateConflict('accepted revision changed', { actual_revision: accepted })
+      }
+      const targetRevision = accepted + 1
+      const changeId = prefixedId('chg')
+      const jobId = prefixedId('job')
+      const item: MockVariantChangeItem = {
+        id: changeId,
+        change_id: changeId,
+        job_id: jobId,
+        variant_id: variantId,
+        slide_id: slideId,
+        action,
+        chart_type: typeof body.chart_type === 'string' ? body.chart_type : null,
+        text: typeof body.text === 'string' ? body.text : null,
+        expected_revision: accepted,
+        base_revision: accepted,
+        target_revision: targetRevision,
+        state: 'queued',
+        created_at: nowIso(),
+        started_at: null,
+        completed_at: null,
+        result: null,
+        error: null,
+        events_url: `${API_BASE}/jobs/${jobId}/events`,
+      }
+      variantChangeBucket(variantId).push(item)
+      scheduleChangeTransitions(variantId, item)
+      return json({ ...item }, 202)
+    }),
+    route('post', '/variants/:variantId/changes/:changeId/cancel', ({ param }) => {
+      const variantId = param('variantId')
+      const changeId = param('changeId')
+      if (!hasVariant(variantId)) throw notFound('Variant', variantId)
+      const bucket = variantChangeBucket(variantId)
+      const idx = bucket.findIndex((entry) => entry.change_id === changeId || entry.id === changeId)
+      const target = idx >= 0 ? bucket[idx] : undefined
+      if (!target) throw notFound('Change', changeId)
+      if (target.state !== 'queued') {
+        throw stateConflict('only queued changes can be canceled', { state: target.state })
+      }
+      for (let i = idx; i < bucket.length; i += 1) {
+        const candidate = bucket[i]
+        if (candidate && candidate.state === 'queued') {
+          candidate.state = 'canceled'
+          candidate.completed_at = nowIso()
+        }
+      }
+      return json({ ...target })
     }),
     route('post', '/variants/:variantId/slides/:slideId/regenerate', async ({ request, param }) => {
       const body = await readJson(request)

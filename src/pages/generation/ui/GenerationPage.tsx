@@ -4,6 +4,7 @@ import { useAssistantSession, useJobEvents } from '@/entities/assistant'
 import { isTrackingId, useGenerationTracker, useJob, type DeckPlan, type GenerationPhase, type GenerationTracker } from '@/entities/generation'
 import { markEvidence, projectRunId, rememberRun, useProject } from '@/entities/project'
 import { useTemplate } from '@/entities/template'
+import { hasPendingVariantChanges, useVariantChanges } from '@/entities/variant'
 import { CancelGenerationButton } from '@/features/cancel-generation'
 import { fetchAndStorePlan, readPlanRequest, type StoredPlanRequest } from '@/features/edit-deck-plan'
 import { useRerunGeneration } from '@/features/rerun-generation'
@@ -247,13 +248,15 @@ export function GenerationPage() {
 
   const cards = useBuildCards(effectiveTracker, requestedStrategies)
   const [selectedKey, setSelectedKey] = useSelectedBuildKey(cards)
-  const { slots, stageSummary } = useBuildSlots({
+  const { slots, stageSummary, variantId: activeVariantId } = useBuildSlots({
     tracker: effectiveTracker,
     events: jobEvents.events,
     deckPlan,
     cards,
     selectedKey,
   })
+  const changesQuery = useVariantChanges(activeVariantId)
+  const hasPendingChanges = hasPendingVariantChanges(changesQuery.data)
 
   const [inspectedSlideIndex, setInspectedSlideIndex] = useState<number | null>(null)
   const [autoPolishCanceled, setAutoPolishCanceled] = useState(false)
@@ -278,6 +281,7 @@ export function GenerationPage() {
       generationId &&
       shouldAutoPolish &&
       !autoPolishCanceled &&
+      !hasPendingChanges &&
       inspectedSlot === null,
   )
 
@@ -326,6 +330,7 @@ export function GenerationPage() {
             slots={slots}
             selectedSlideIndex={inspectedSlideIndex}
             onSelectSlide={handleSelectSlide}
+            onSlideChangeRequested={() => setAutoPolishCanceled(true)}
           />
         )
       }

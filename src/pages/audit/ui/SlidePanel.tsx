@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useRegenerateSlide, useSlideExplain } from '@/entities/assistant'
+import { useSlideExplain } from '@/entities/assistant'
 import { useContentPack } from '@/entities/content-pack'
 import { parseResearch, useGeneration } from '@/entities/generation'
 import { useVariantSlides } from '@/entities/variant'
-import { isApiError, humanError } from '@/shared/api'
-import { Button, useToast } from '@/shared/ui'
+import { useSlideChangeQueue } from '@/features/slide-change'
+import { Button } from '@/shared/ui'
 import { contentPackSourceMap } from '@/widgets/deck-plan'
 import { buildExplainView, buildReworkChips, buildSlideNotesView, findPlanSlide, findSlideAt, type ReworkChip } from '../model/slideModel'
 import styles from './SlidePanel.module.css'
@@ -16,19 +16,10 @@ interface SlidePanelProps {
   slideNumber: number
 }
 
-const errorText = (error: unknown) => humanError(error)
-
-const DONE_NOTE: Record<string, string> = {
-  shorter: 'Сократил текст на слайде.',
-  other_layout: 'Поменял раскладку слайда.',
-  other_chart: 'Поменял график на слайде.',
-}
-
 export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePanelProps) {
-  const toast = useToast()
   const slides = useVariantSlides(variantId)
   const generation = useGeneration(runId)
-  const regenerate = useRegenerateSlide(variantId)
+  const queue = useSlideChangeQueue(variantId)
   const slide = findSlideAt(slides.data ?? [], slideNumber)
   const planSlide = findPlanSlide(generation.data?.deck_plan, slide, slideNumber)
   const explain = useSlideExplain(slide?.id)
@@ -44,27 +35,29 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
   const research = parseResearch((generation.data?.deck_plan as unknown as Record<string, unknown> | undefined)?.research)?.sources ?? []
   const notes = buildSlideNotesView(planSlide, view, headings, research)
   const [pendingKey, setPendingKey] = useState<string | null>(null)
-  const [unsupported, setUnsupported] = useState(false)
-  const [rejected, setRejected] = useState<ReadonlyMap<string, string>>(() => new Map())
-  const [note, setNote] = useState<string | null>(null)
+
+  const planSlideId = planSlide?.id ?? slide?.slide_plan_id ?? slide?.id ?? null
+  const fallbackSlideId = slide?.id ?? planSlide?.id ?? null
+  const candidateSlideIds = [planSlide?.id, slide?.slide_plan_id, slide?.id]
+
+  const slideChange = queue.getSlideChange(candidateSlideIds)
+  const note = queue.getSlideNote(candidateSlideIds)
+  const error = queue.getSlideError(candidateSlideIds)
+  const isSubmitting = Boolean(planSlideId && queue.submittingSlideId === planSlideId)
+  const changeState = slideChange?.state ?? (note ? 'completed' : null)
+  const isBusy = isSubmitting || changeState === 'queued' || changeState === 'running'
 
   const rework = async (chip: ReworkChip) => {
-    const slideId = slide?.id ?? planSlide?.id
-    if (!slideId || pendingKey) return
+    if (!planSlideId || isBusy) return
     setPendingKey(chip.key)
-    setNote(null)
     try {
-      const result = await regenerate.mutateAsync({ slideId, action: chip.action, ...(chip.chartType ? { chart_type: chip.chartType } : {}) })
-      if (!result) {
-        setUnsupported(true)
-        return
-      }
-      const message = result.assistant_note ?? DONE_NOTE[chip.action] ?? 'Пересобрал слайд в выбранном стиле.'
-      setNote(message)
-      toast.show(message)
-    } catch (error) {
-      if (isApiError(error) && error.status === 422) setRejected((current) => new Map(current).set(chip.key, errorText(error)))
-      else toast.show(`Не удалось переделать слайд: ${errorText(error)}`)
+      await queue.submitChange({
+        slideId: planSlideId,
+        fallbackSlideId,
+        action: chip.action,
+        chartType: chip.chartType ?? null,
+        fallbackRevision: slide?.revision ?? 1,
+      })
     } finally {
       setPendingKey(null)
     }
@@ -86,7 +79,7 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
         <p className={styles.text}>
           {slideTitle ? `«${slideTitle}» — пересоберу только его, остальные слайды не изменятся.` : 'Остальные слайды не изменятся.'}
         </p>
-        {unsupported ? (
+        {queue.unsupported ? (
           <p className={styles.text} role="status">
             Сервер пока не умеет пересобирать один слайд.
           </p>
@@ -97,9 +90,9 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
                 key={chip.key}
                 size="sm"
                 variant="secondary"
-                disabled={pendingKey !== null || rejected.has(chip.key)}
+                disabled={isBusy}
                 aria-busy={pendingKey === chip.key || undefined}
-                title={rejected.get(chip.key) ?? chip.title}
+                title={chip.title}
                 onClick={() => void rework(chip)}
               >
                 {pendingKey === chip.key ? 'Переделываю…' : chip.label}
@@ -107,9 +100,41 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
             ))}
           </div>
         )}
-        {note && (
-          <p className={styles.note} role="status">
-            {note}
+        {changeState === 'queued' && (
+          <div className={styles.queueStatusRow} role="status">
+            <span className={styles.queueBadge} data-state="queued">
+              Правка в очереди
+            </span>
+            {slideChange && (
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={queue.cancellingChangeId === slideChange.change_id}
+                onClick={() => void queue.cancelChange(slideChange.change_id)}
+              >
+                Отменить
+              </Button>
+            )}
+          </div>
+        )}
+        {(changeState === 'running' || (isSubmitting && !changeState)) && (
+          <div className={styles.queueStatusRow} role="status">
+            <span className={styles.queueBadge} data-state="running">
+              Применяю
+            </span>
+          </div>
+        )}
+        {changeState === 'completed' && (
+          <div className={styles.queueStatusRow} role="status">
+            <span className={styles.queueBadge} data-state="completed">
+              Готово
+            </span>
+            {note && <span className={styles.note}>{note}</span>}
+          </div>
+        )}
+        {error && (
+          <p className={styles.error} role="alert">
+            {error}
           </p>
         )}
       </section>

@@ -20,7 +20,10 @@ export interface DownloadButtonProps {
   label: string
   primary?: boolean
   compact?: boolean
+  pendingChanges?: boolean
 }
+
+const PENDING_CHANGES_NOTE = 'Дождитесь завершения правок'
 
 function revision(value: number | null | undefined): string {
   return value === null || value === undefined ? '' : `r${value}`
@@ -30,7 +33,19 @@ function meta(file: DeckFile | null): string {
   return [file?.sizeBytes != null ? formatBytes(file.sizeBytes) : null, revision(file?.deckRevision)].filter(Boolean).join(' · ')
 }
 
-export function DownloadButton({ projectId, variantId, format, file, currentRevision, supported, fileName, label, primary, compact }: DownloadButtonProps) {
+export function DownloadButton({
+  projectId,
+  variantId,
+  format,
+  file,
+  currentRevision,
+  supported,
+  fileName,
+  label,
+  primary,
+  compact,
+  pendingChanges = false,
+}: DownloadButtonProps) {
   const { state, create, markDownloaded } = useDeckExport({ projectId, variantId, format, file, currentRevision, supported })
   const fresh = state.file && !state.stale ? state.file : null
   const previous = state.file && state.stale ? state.file : null
@@ -51,7 +66,15 @@ export function DownloadButton({ projectId, variantId, format, file, currentRevi
 
   let action
   let note: string | null = null
-  if (state.status === 'creating') {
+  if (pendingChanges) {
+    action = (
+      <button type="button" className={buttonClass} disabled aria-busy="true" title={PENDING_CHANGES_NOTE}>
+        <Icon as={Download} size={16} />
+        {label}
+      </button>
+    )
+    note = compact ? null : PENDING_CHANGES_NOTE
+  } else if (state.status === 'creating') {
     action = (
       <button type="button" className={buttonClass} disabled aria-busy="true">
         Собираем {FORMAT_LABEL[format]}…
@@ -84,15 +107,19 @@ export function DownloadButton({ projectId, variantId, format, file, currentRevi
     note = state.status === 'error' ? state.message : previous ? `соберём для ${revision(currentRevision)}` : null
   }
 
-  if (compact && state.status === 'unavailable' && !state.file) return null
+  if (compact && state.status === 'unavailable' && !state.file && !pendingChanges) return null
 
   return (
-    <div className={clsx(styles.root, compact && styles.compact)} data-status={state.status} data-format={format}>
+    <div
+      className={clsx(styles.root, compact && styles.compact)}
+      data-status={pendingChanges ? 'pending-changes' : state.status}
+      data-format={format}
+    >
       {action}
-      {(note || (previous && state.status !== 'unavailable')) && (
+      {(note || (!pendingChanges && previous && state.status !== 'unavailable')) && (
         <div className={clsx(styles.note, state.status === 'error' && styles.error)} role={state.status === 'error' ? 'alert' : undefined}>
           {note}
-          {previous && state.status !== 'unavailable' && (
+          {!pendingChanges && previous && state.status !== 'unavailable' && (
             <>
               {note ? ' · ' : ''}
               {link(previous, `прежний ${revision(previous.deckRevision)}`, styles.previous)}

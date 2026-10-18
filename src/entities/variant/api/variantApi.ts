@@ -12,6 +12,7 @@ export const variantKeys = {
   forGeneration: (generationId: string) => ['variant', 'generation', generationId] as const,
   detail: (variantId: string) => ['variant', variantId] as const,
   slides: (variantId: string) => ['variant', variantId, 'slides'] as const,
+  changes: (variantId: string) => ['variant', variantId, 'changes'] as const,
 }
 
 function pollWhile<T>(unsettled: (data: T) => boolean) {
