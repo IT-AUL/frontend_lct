@@ -101,12 +101,14 @@ describe('DraftDeck', () => {
     expect(within(card).getByRole('img', { name: 'График: Продажи' })).toBeInTheDocument()
   })
 
-  it('renders a mini chart on every data insight, not only the first', () => {
+  it('draws the table chart once, on the first insight of that table', () => {
     const data = understanding({
       datasets: [dataset({ insights: [insight({ id: 'i-1', headline: 'Первый' }), insight({ id: 'i-2', headline: 'Второй' })] })],
     })
     render(<DraftDeck understanding={data} selection={null} />)
-    expect(screen.getAllByRole('img', { name: 'График: Продажи' })).toHaveLength(2)
+    const charts = screen.getAllByRole('img', { name: 'График: Продажи' })
+    expect(charts).toHaveLength(1)
+    expect(screen.getByRole('listitem', { name: 'Вывод: Первый' })).toContainElement(charts[0] as HTMLElement)
   })
 
   it('fires card actions', async () => {

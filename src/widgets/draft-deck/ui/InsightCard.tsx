@@ -12,6 +12,7 @@ export interface InsightCardProps {
   onEdit?: () => void
   onPatch?: (insightId: string, patch: InsightPatch) => void
   onExclude?: (insightId: string) => void
+  showChart?: boolean
 }
 
 function StatusBadge({ entry }: { entry: InsightEntry }) {
@@ -80,8 +81,9 @@ function MeaningRows({ meaningText, implicationText, decide }: { meaningText: st
   )
 }
 
-function InsightVisual({ entry, figure, chartType }: { entry: InsightEntry; figure: string | null; chartType: string | null | undefined }) {
-  const { dataset, preview } = entry
+function InsightVisual({ entry, figure, chartType, showChart }: { entry: InsightEntry; figure: string | null; chartType: string | null | undefined; showChart: boolean }) {
+  const { dataset } = entry
+  const preview = showChart ? entry.preview : null
   if (!preview && !figure) return null
   return (
     <div className={styles.insightVisual}>
@@ -91,7 +93,7 @@ function InsightVisual({ entry, figure, chartType }: { entry: InsightEntry; figu
   )
 }
 
-export function InsightCard({ entry, selected, onOpen, onEdit, onPatch, onExclude }: InsightCardProps) {
+export function InsightCard({ entry, selected, onOpen, onEdit, onPatch, onExclude, showChart = true }: InsightCardProps) {
   const { insight, dataset, preview } = entry
   const title = sanitizeAssistantCopy(insightTitle(insight))
   const factText = sanitizeAssistantCopy(insight.fact)
@@ -133,7 +135,7 @@ export function InsightCard({ entry, selected, onOpen, onEdit, onPatch, onExclud
       <MeaningRows meaningText={meaningText} implicationText={implicationText} decide={decide} />
 
         </div>
-        <InsightVisual entry={entry} figure={figure} chartType={chartType} />
+        <InsightVisual entry={entry} figure={figure} chartType={chartType} showChart={showChart} />
       </div>
 
       <footer className={styles.insightFooter}>

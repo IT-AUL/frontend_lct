@@ -70,7 +70,7 @@ export function DraftDeck({
                     )}
                   </header>
 
-                  {shown.map((entry) => {
+                  {shown.map((entry, index) => {
                     const insight = entry.insight
                     return (
                       <InsightCard
@@ -81,6 +81,7 @@ export function DraftDeck({
                         onEdit={onSelect ? () => onSelect({ kind: 'insight', id: insight.id, edit: true }) : undefined}
                         onPatch={onPatchInsight}
                         onExclude={onExcludeInsight}
+                        showChart={index === 0}
                       />
                     )
                   })}
