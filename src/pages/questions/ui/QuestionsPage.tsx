@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { Navigate, useNavigate, useParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   assistantKeys,
@@ -200,6 +200,7 @@ export function QuestionsPage() {
       questionsQuery.isSuccess &&
       questionsQuery.data !== null &&
       questionsQuery.data.questions.length === 0 &&
+      !session?.artifacts.plan_id &&
       !autoSkippedRef.current
     ) {
       autoSkippedRef.current = true
@@ -302,6 +303,10 @@ export function QuestionsPage() {
     } catch (error) {
       setActionError(errorMessage(error))
     }
+  }
+
+  if (!buildingPlan && session?.artifacts.plan_id && questionsQuery.data?.questions.length === 0) {
+    return <Navigate to={routes.planDraft(projectId)} replace />
   }
 
   if (projectError) {

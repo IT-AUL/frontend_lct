@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useRegenerateSlide, useSlideExplain } from '@/entities/assistant'
-import { useGeneration } from '@/entities/generation'
+import { useContentPack } from '@/entities/content-pack'
+import { parseResearch, useGeneration } from '@/entities/generation'
 import { useVariantSlides } from '@/entities/variant'
 import { isApiError, humanError } from '@/shared/api'
 import { Button, Skeleton, useToast } from '@/shared/ui'
-import { buildExplainView, buildReworkChips, findPlanSlide, findSlideAt, type ReworkChip } from '../model/slideModel'
+import { buildExplainView, buildReworkChips, buildSlideNotesView, findPlanSlide, findSlideAt, type ReworkChip } from '../model/slideModel'
 import styles from './SlidePanel.module.css'
 
 interface SlidePanelProps {
@@ -32,6 +33,10 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
   const explain = useSlideExplain(slide?.id)
   const view = buildExplainView(explain.data, planSlide, slide)
   const chips = buildReworkChips(strategy, view.alternatives, view.hasChart)
+  const contentPack = useContentPack(generation.data?.content_pack_id)
+  const headings = new Map((contentPack.data?.sections ?? []).map((section) => [section.id, section.heading]))
+  const research = parseResearch((generation.data?.deck_plan as unknown as Record<string, unknown> | undefined)?.research)?.sources ?? []
+  const notes = buildSlideNotesView(planSlide, view, headings, research)
   const [pendingKey, setPendingKey] = useState<string | null>(null)
   const [unsupported, setUnsupported] = useState(false)
   const [rejected, setRejected] = useState<ReadonlyMap<string, string>>(() => new Map())
@@ -100,7 +105,7 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
         <h3 id="slide-why" className={styles.heading}>
           Почему так
         </h3>
-        {explain.isPending && slide?.id ? (
+        {explain.isLoading ? (
           <Skeleton style={{ height: 48 }} />
         ) : (
           <>
@@ -121,6 +126,16 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
           </>
         )}
       </section>
+
+      {(notes.speakerNote || notes.sources.length > 0) && (
+        <section className={styles.section} aria-labelledby="slide-notes">
+          <h3 id="slide-notes" className={styles.heading}>
+            Заметки докладчика
+          </h3>
+          {notes.speakerNote && <p className={styles.text}>{notes.speakerNote}</p>}
+          {notes.sources.length > 0 && <p className={styles.muted}>Опирается на: {notes.sources.map((source) => source.label).join(', ')}</p>}
+        </section>
+      )}
     </div>
   )
 }
