@@ -66,6 +66,25 @@ export function generationRoutes(context: MockContext): RequestHandler[] {
       return json(page(store.variant(param('variantId')).slides.slice(0, limit)))
     }),
 
+    route('get', '/variants/:variantId/slide-drafts', ({ param }) => {
+      const variantId = param('variantId')
+      const record = store.variant(variantId)
+      const slides = record.slides.map((slide, idx) => {
+        const index = typeof slide.index === 'number' ? slide.index : idx + 1
+        return {
+          variant_id: variantId,
+          index,
+          slide_id: slide.slide_plan_id ?? `slide-${idx}`,
+          slide_key: `${variantId}:${index}`,
+          revision: record.revision,
+          preview_revision: record.summary.status === 'completed' ? 2 : 1,
+          preview_artifact_id: slide.preview_artifact_id ?? null,
+          status: record.summary.status === 'completed' ? 'rendered' : 'draft',
+        }
+      })
+      return json({ variant_id: variantId, state: record.summary.status, slides })
+    }),
+
     route('get', '/slides/:slideId', ({ param }) => json(store.slide(param('slideId')))),
 
     route('get', '/slides/:slideId/preview', ({ param }) => {

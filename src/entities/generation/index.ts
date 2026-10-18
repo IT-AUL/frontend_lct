@@ -1,4 +1,5 @@
-export { generationKeys, useCancelGeneration, useGeneration, useJob, useRetryGeneration } from './api/generationApi'
+export { generationKeys, useCancelGeneration, useGeneration, useJob, useRetryGeneration, useSlideDrafts } from './api/generationApi'
+export { fetchSlideDrafts } from './api/requests'
 export { parsePlanDraft, PLAN_POLL_INTERVAL_MS, requestPlans } from './api/plans'
 export type { PlanRequestOptions } from './api/plans'
 export { applyPlanEvent, EMPTY_PROGRESS, isUnitLocked, parseResearch, parseSse, parseSufficiency, unitOrigin, unitSourceId } from './lib/planExtras'
@@ -33,6 +34,9 @@ export type {
   PlanDraftResult,
   PlanProposal,
   PlanRequest,
+  SlideDraftItem,
+  SlideDraftsResponse,
+  SlideDraftStatus,
   SlidePlan,
   SlidePurpose,
   VariantRequest,

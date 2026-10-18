@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { useJobEvents } from '@/entities/assistant'
 import { isTrackingId, useGenerationTracker, useJob, type DeckPlan, type GenerationPhase, type GenerationTracker } from '@/entities/generation'
@@ -8,6 +8,7 @@ import { CancelGenerationButton } from '@/features/cancel-generation'
 import { readPlanRequest } from '@/features/edit-deck-plan'
 import { useRerunGeneration } from '@/features/rerun-generation'
 import {
+  BuildSlideInspector,
   BuildTable,
   BuildVariants,
   describeFailure,
@@ -17,14 +18,17 @@ import {
   latestAssistantNote,
   RunNotice,
   useBuildCards,
+  useBuildSlots,
   useSelectedBuildKey,
 } from '@/widgets/generation-tracker'
 import { StepShell } from '@/widgets/step-shell'
 import { routes } from '@/shared/config'
+import { formatIndex } from '@/shared/lib/format'
 import { Button } from '@/shared/ui'
 import styles from './GenerationPage.module.css'
 
-const AUTO_POLISH_DELAY_MS = 450
+const AUTO_POLISH_SECONDS = 3
+const AUTO_POLISH_TICK_MS = 900
 
 interface RunLocationState {
   fromStyle?: boolean
@@ -122,7 +126,7 @@ function RecoveryNotice({ projectId, runId, tracker }: { projectId: string; runI
   return (
     <RunNotice
       tone={phase === 'failed' ? 'error' : 'neutral'}
-      title={phase === 'failed' ? 'Вёрстка не завершилась' : 'Генерация отменена'}
+      title={phase === 'failed' ? 'Вёрстка не завершилась' : 'Сборка отменена'}
       message={failure ? failure.message : 'Сборку можно запустить заново с теми же данными.'}
       meta={failure ? failureMeta(failure) : null}
       details={failure?.technical ? [failureMeta(failure), failure.technical].filter(Boolean).join('\n') : null}
@@ -208,6 +212,29 @@ export function GenerationPage() {
     if (phase === 'completed') markEvidence(projectId, 'generated')
   }, [phase, projectId])
 
+  const effectiveTracker: GenerationTracker = useMemo(
+    () => (isJobRun && !resolvedRunIdFromJob ? { ...tracker, phase, jobId: runId } : tracker),
+    [isJobRun, resolvedRunIdFromJob, tracker, phase, runId],
+  )
+
+  const cards = useBuildCards(effectiveTracker, requestedStrategies)
+  const [selectedKey, setSelectedKey] = useSelectedBuildKey(cards)
+  const { slots, stageSummary } = useBuildSlots({
+    tracker: effectiveTracker,
+    events: jobEvents.events,
+    deckPlan,
+    cards,
+    selectedKey,
+  })
+
+  const [inspectedSlideIndex, setInspectedSlideIndex] = useState<number | null>(null)
+  const [autoPolishCanceled, setAutoPolishCanceled] = useState(false)
+  const [autoPolishTicks, setAutoPolishTicks] = useState(0)
+
+  const inspectedSlot = inspectedSlideIndex !== null ? (slots[inspectedSlideIndex] ?? null) : null
+  const done = phase === 'completed' && Boolean(generationId)
+  const deckShownOnTable = done && slots.length > 0 && slots.some((slot) => slot.state === 'ready')
+
   const shouldAutoPolish = Boolean(
     routeState?.fromStyle ||
       routeState?.fromAutopilot ||
@@ -217,22 +244,40 @@ export function GenerationPage() {
       tracker.generation?.variants.length === 1,
   )
 
-  useEffect(() => {
-    if (phase !== 'completed' || !generationId || !shouldAutoPolish) return
-    const timer = setTimeout(() => {
-      navigate(routes.polish(projectId, generationId))
-    }, AUTO_POLISH_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [phase, generationId, shouldAutoPolish, navigate, projectId])
-
-  const effectiveTracker: GenerationTracker = useMemo(
-    () => (isJobRun && !resolvedRunIdFromJob ? { ...tracker, phase, jobId: runId } : tracker),
-    [isJobRun, resolvedRunIdFromJob, tracker, phase, runId],
+  const autoPolishActive = Boolean(
+    deckShownOnTable &&
+      generationId &&
+      shouldAutoPolish &&
+      !autoPolishCanceled &&
+      inspectedSlot === null,
   )
 
-  const cards = useBuildCards(effectiveTracker, requestedStrategies)
-  const [selectedKey, setSelectedKey] = useSelectedBuildKey(cards)
-  const done = phase === 'completed' && Boolean(generationId)
+  const autoPolishSecondsLeft = autoPolishActive ? Math.max(0, AUTO_POLISH_SECONDS - autoPolishTicks) : null
+
+  useEffect(() => {
+    if (!autoPolishActive || !generationId) return
+    let ticks = 0
+    const interval = setInterval(() => {
+      ticks += 1
+      setAutoPolishTicks(ticks)
+      if (ticks >= AUTO_POLISH_SECONDS) {
+        clearInterval(interval)
+        navigate(routes.polish(projectId, generationId))
+      }
+    }, AUTO_POLISH_TICK_MS)
+    return () => clearInterval(interval)
+  }, [autoPolishActive, generationId, navigate, projectId])
+
+  const handleSelectStyle = (key: string) => {
+    setSelectedKey(key)
+    setInspectedSlideIndex(null)
+  }
+
+  const handleSelectSlide = (index: number) => {
+    setAutoPolishCanceled(true)
+    setInspectedSlideIndex((prev) => (prev === index ? null : index))
+  }
+
   const title = lost ? 'Сборка потерялась' : phase === 'completed' ? 'Презентация готова' : phase === 'failed' ? 'Не получилось собрать' : 'Собираю презентацию'
   const note = lost ? 'Материалы и план сохранены.' : phase === 'completed' ? lead(phase, null) : (assistantNote ?? lead(phase, template?.filename ?? null))
 
@@ -241,7 +286,36 @@ export function GenerationPage() {
       title={title}
       note={note}
       canvasLabel="Слайды презентации"
-      canvas={lost ? null : <BuildTable tracker={effectiveTracker} events={jobEvents.events} deckPlan={deckPlan} cards={cards} selectedKey={selectedKey} />}
+      canvas={
+        lost ? null : (
+          <BuildTable
+            tracker={effectiveTracker}
+            events={jobEvents.events}
+            deckPlan={deckPlan}
+            cards={cards}
+            selectedKey={selectedKey}
+            slots={slots}
+            selectedSlideIndex={inspectedSlideIndex}
+            onSelectSlide={handleSelectSlide}
+          />
+        )
+      }
+      inspector={
+        inspectedSlot
+          ? {
+              title: `${formatIndex(inspectedSlot.slideNumber)} · ${inspectedSlot.title}`,
+              wide: true,
+              onClose: () => setInspectedSlideIndex(null),
+              content: (
+                <BuildSlideInspector
+                  slot={inspectedSlot}
+                  totalSlides={slots.length}
+                  onSelectSlide={(nextIdx) => setInspectedSlideIndex(nextIdx)}
+                />
+              ),
+            }
+          : null
+      }
       actions={
         done && generationId ? (
           <Button variant="primary" size="lg" onClick={() => navigate(routes.polish(projectId, generationId))}>
@@ -254,7 +328,14 @@ export function GenerationPage() {
         ) : undefined
       }
     >
-      <BuildVariants cards={cards} selectedKey={selectedKey} onSelect={setSelectedKey} />
+      <BuildVariants
+        cards={cards}
+        selectedKey={selectedKey}
+        onSelect={handleSelectStyle}
+        stageSummary={stageSummary}
+        autoPolishSecondsLeft={autoPolishSecondsLeft}
+        onCancelAutoPolish={() => setAutoPolishCanceled(true)}
+      />
       <RecoveryNotice projectId={projectId} runId={runId} tracker={effectiveTracker} />
     </StepShell>
   )

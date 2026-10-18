@@ -1,9 +1,17 @@
 export { describeFailure, failureMeta, isTrackingLost } from './lib/failure'
 export type { FailureView } from './lib/failure'
-export { buildFilmstripSlots, extractEventGenerationId, latestAssistantNote } from './lib/filmstrip'
-export type { BuildFilmstripSlotsOptions, FilmstripSlot, FilmstripSlotState } from './lib/filmstrip'
+export { buildFilmstripSlots, buildStageSummary, extractEventGenerationId, latestAssistantNote } from './lib/filmstrip'
+export type {
+  BuildFilmstripSlotsOptions,
+  BuildStageItem,
+  BuildStageItemState,
+  BuildStageSummary,
+  FilmstripSlot,
+  FilmstripSlotState,
+  SlidePreviewBadge,
+} from './lib/filmstrip'
 export { GenerationProgress } from './ui/GenerationProgress'
 export { RunNotice } from './ui/RunNotice'
 export { SlideFilmstrip } from './ui/SlideFilmstrip'
-export { BuildTable, BuildVariants } from './ui/BuildView'
-export { useBuildCards, useSelectedBuildKey } from './model/buildSelection'
+export { BuildSlideInspector, BuildTable, BuildVariants } from './ui/BuildView'
+export { useBuildCards, useBuildSlots, useSelectedBuildKey } from './model/buildSelection'

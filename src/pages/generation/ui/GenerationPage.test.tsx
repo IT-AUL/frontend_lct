@@ -1,21 +1,29 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
-import { useGenerationTracker, useRetryGeneration, type GenerationTracker } from '@/entities/generation'
+import { useJobEvents, type JobEvent } from '@/entities/assistant'
+import { useGenerationTracker, useRetryGeneration, useSlideDrafts, type GenerationTracker } from '@/entities/generation'
 import { markEvidence, projectRunId, rememberRun } from '@/entities/project'
 import { ApiError } from '@/shared/api'
 import { generationFixture } from '@/shared/api/mocks'
 import { routes } from '@/shared/config'
 import { ToastProvider } from '@/shared/ui'
 import { GenerationPage } from './GenerationPage'
+import type * as AssistantModule from '@/entities/assistant'
 import type * as GenerationModule from '@/entities/generation'
 import type * as ProjectModule from '@/entities/project'
+
+vi.mock('@/entities/assistant', async (importOriginal) => ({
+  ...(await importOriginal<typeof AssistantModule>()),
+  useJobEvents: vi.fn(() => ({ events: [], lastEvent: null, done: false, error: null })),
+}))
 
 vi.mock('@/entities/generation', async (importOriginal) => ({
   ...(await importOriginal<typeof GenerationModule>()),
   useGenerationTracker: vi.fn(),
   useRetryGeneration: vi.fn(),
+  useSlideDrafts: vi.fn(() => ({ data: null })),
 }))
 
 vi.mock('@/entities/project', async (importOriginal) => ({
@@ -93,9 +101,15 @@ describe('GenerationPage', () => {
   beforeEach(() => {
     retryMutate.mockReset()
     vi.mocked(useRetryGeneration).mockReturnValue({ mutate: retryMutate, isPending: false } as unknown as ReturnType<typeof useRetryGeneration>)
+    vi.mocked(useJobEvents).mockReturnValue({ events: [], lastEvent: null, done: false, error: null })
+    vi.mocked(useSlideDrafts).mockReturnValue({ data: null } as unknown as ReturnType<typeof useSlideDrafts>)
     vi.mocked(projectRunId).mockReturnValue(undefined)
     vi.mocked(markEvidence).mockClear()
     vi.mocked(rememberRun).mockClear()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('shows the styles being prepared without a countdown while the request is pending', () => {
@@ -134,15 +148,181 @@ describe('GenerationPage', () => {
     expect(rememberRun).not.toHaveBeenCalled()
   })
 
-  it('offers to open the finished deck when done', async () => {
+  it('always shows build stages and progress in the left column even when building a single style', () => {
+    const singleVariantRunning = {
+      ...running,
+      variants: running.variants.slice(1, 2).map((variant) => ({
+        ...variant,
+        id: 'var_single_balanced',
+        strategy: 'balanced' as const,
+        status: 'running' as const,
+      })),
+    }
+    useTracker(makeTracker({ generationId: RUN, generation: singleVariantRunning, phase: 'running', canCancel: true }))
+    renderPage(RUN)
+
+    const stages = within(screen.getByRole('list', { name: 'Этапы сборки' }))
+    expect(stages.getByText('План')).toBeInTheDocument()
+    expect(stages.getByText(/Слайды 0 из 12/)).toBeInTheDocument()
+    expect(stages.getByText('Проверка')).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'Прогресс сборки' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Стиль сборки')).toHaveTextContent('Сбалансированный')
+    expect(screen.queryByRole('list', { name: 'Стили сборки' })).not.toBeInTheDocument()
+  })
+
+  it('replaces cards with live PNG previews, shows draft/superseded badges, and opens slide inspector on click', async () => {
+    const singleVariantRunning = {
+      ...running,
+      variants: running.variants.slice(1, 2).map((variant) => ({
+        ...variant,
+        id: 'var_live',
+        strategy: 'balanced' as const,
+        status: 'running' as const,
+      })),
+    }
+    const events: JobEvent[] = [
+      {
+        sequence: 1,
+        type: 'slide.ready',
+        timestamp: '2026-10-18T12:00:00Z',
+        jobId: 'job_1',
+        stage: 'render',
+        progress: 0.2,
+        message: null,
+        data: {
+          variant_id: 'var_live',
+          slide_key: 'var_live:1',
+          index: 1,
+          slide_id: 's1',
+          preview_revision: 1,
+          status: 'draft',
+          preview_artifact_id: 'art_slide_1_draft',
+        },
+      },
+      {
+        sequence: 2,
+        type: 'slide.ready',
+        timestamp: '2026-10-18T12:00:02Z',
+        jobId: 'job_1',
+        stage: 'render',
+        progress: 0.3,
+        message: null,
+        data: {
+          variant_id: 'var_live',
+          slide_key: 'var_live:2',
+          index: 2,
+          slide_id: 's2',
+          preview_revision: 1,
+          status: 'superseded',
+          preview_artifact_id: 'art_slide_2_draft',
+        },
+      },
+      {
+        sequence: 3,
+        type: 'slide.ready',
+        timestamp: '2026-10-18T12:00:04Z',
+        jobId: 'job_1',
+        stage: 'render',
+        progress: 0.4,
+        message: null,
+        data: {
+          variant_id: 'var_live',
+          slide_key: 'var_live:3',
+          index: 3,
+          slide_id: 's3',
+          preview_revision: 2,
+          status: 'rendered',
+          preview_artifact_id: 'art_slide_3_final',
+        },
+      },
+    ]
+    vi.mocked(useJobEvents).mockReturnValue({ events, lastEvent: events[2] ?? null, done: false, error: null })
+    useTracker(makeTracker({ generationId: RUN, generation: singleVariantRunning, phase: 'running', canCancel: true }))
+    renderPage(RUN)
+
+    const grid = within(screen.getByRole('list', { name: 'Слайды презентации' }))
+    expect(grid.getAllByText('черновик').length).toBeGreaterThanOrEqual(1)
+    expect(grid.getByText('обновляется')).toBeInTheDocument()
+
+    const stages = within(screen.getByRole('list', { name: 'Этапы сборки' }))
+    expect(stages.getByText('Слайды 3 из 12')).toBeInTheDocument()
+
+    await userEvent.click(grid.getByRole('button', { name: /Слайд 1:/ }))
+    expect(screen.getByRole('complementary', { name: /^01 ·/ })).toBeInTheDocument()
+  })
+
+  it('restores slide previews from GET /variants/{id}/slide-drafts after refresh when SSE is empty', () => {
+    const singleVariantRunning = {
+      ...running,
+      variants: running.variants.slice(1, 2).map((variant) => ({
+        ...variant,
+        id: 'var_refresh',
+        strategy: 'balanced' as const,
+        status: 'running' as const,
+      })),
+    }
+    vi.mocked(useSlideDrafts).mockReturnValue({
+      data: {
+        variant_id: 'var_refresh',
+        state: 'running',
+        slides: [
+          {
+            variant_id: 'var_refresh',
+            index: 1,
+            slide_id: 's1',
+            slide_key: 'var_refresh:1',
+            revision: 1,
+            preview_revision: 2,
+            preview_artifact_id: 'art_restored_1',
+            status: 'rendered',
+          },
+          {
+            variant_id: 'var_refresh',
+            index: 2,
+            slide_id: 's2',
+            slide_key: 'var_refresh:2',
+            revision: 1,
+            preview_revision: 1,
+            preview_artifact_id: 'art_restored_2',
+            status: 'draft',
+          },
+        ],
+      },
+    } as unknown as ReturnType<typeof useSlideDrafts>)
+    useTracker(makeTracker({ generationId: RUN, generation: singleVariantRunning, phase: 'running', canCancel: true }))
+    renderPage(RUN)
+
+    const stages = within(screen.getByRole('list', { name: 'Этапы сборки' }))
+    expect(stages.getByText('Слайды 2 из 12')).toBeInTheDocument()
+    const grid = within(screen.getByRole('list', { name: 'Слайды презентации' }))
+    expect(grid.getByText('черновик')).toBeInTheDocument()
+  })
+
+  it('offers to open the finished deck when done and allows staying when auto-polish countdown is shown', async () => {
+    vi.useFakeTimers()
+    const singleCompleted = {
+      ...completed,
+      variants: completed.variants.slice(1, 2),
+    }
     const startedAt = Date.parse(completed.created_at)
-    useTracker(makeTracker({ generationId: RUN, generation: completed, phase: 'completed', startedAt, finishedAt: startedAt + 8_196 }))
+    useTracker(makeTracker({ generationId: RUN, generation: singleCompleted, phase: 'completed', startedAt, finishedAt: startedAt + 8_196 }))
     renderPage(RUN)
 
     expect(screen.getByRole('heading', { level: 1, name: 'Презентация готова' })).toBeInTheDocument()
     expect(screen.getByText('Проверьте слайды и доработайте то, что нужно.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Отменить' })).not.toBeInTheDocument()
     expect(markEvidence).toHaveBeenCalledWith(PROJECT, 'generated')
+    expect(screen.getByText(/Открою доводку через 3 с/)).toBeInTheDocument()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900)
+    })
+    expect(screen.getByText(/Открою доводку через 2 с/)).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent(routes.run(PROJECT, RUN))
+
+    vi.useRealTimers()
+    await userEvent.click(screen.getByRole('button', { name: 'Остаться здесь' }))
+    expect(screen.queryByText(/Открою доводку через/)).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Открыть и доработать' }))
     expect(screen.getByTestId('location')).toHaveTextContent(routes.polish(PROJECT, RUN))

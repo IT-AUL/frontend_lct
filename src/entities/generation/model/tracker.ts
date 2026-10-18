@@ -128,7 +128,8 @@ export function isTrackingId(id: string): boolean {
 }
 
 export function startGeneration(projectId: string, body: GenerationCreate): string {
-  return track('create', projectId, null, () => submitGeneration(projectId, body))
+  const payload: GenerationCreate = { progressive_previews: true, ...body }
+  return track('create', projectId, null, () => submitGeneration(projectId, payload))
 }
 
 export function retryGeneration(generationId: string): string {

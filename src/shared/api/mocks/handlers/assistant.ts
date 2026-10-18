@@ -339,6 +339,25 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
       const scenario = (['idea', 'data'] as const).find((scenario) => objects(fixture(scenario, 'variants').items).some((variant) => variant.id === params.variantId))
       return scenario ? json(fixture(scenario, 'slides')) : undefined
     }),
+    http.get(`*${API_BASE}/variants/:variantId/slide-drafts`, ({ params }) => {
+      const variantId = String(params.variantId)
+      const scenario = (['idea', 'data'] as const).find((scenario) => objects(fixture(scenario, 'variants').items).some((variant) => variant.id === variantId))
+      if (!scenario) return undefined
+      const slides = objects(fixture(scenario, 'slides').items).map((slide, idx) => {
+        const index = typeof slide.index === 'number' ? slide.index : idx + 1
+        return {
+          variant_id: variantId,
+          index,
+          slide_id: typeof slide.slide_plan_id === 'string' ? slide.slide_plan_id : `slide-${idx}`,
+          slide_key: `${variantId}:${index}`,
+          revision: 1,
+          preview_revision: 2,
+          preview_artifact_id: typeof slide.preview_artifact_id === 'string' ? slide.preview_artifact_id : null,
+          status: 'rendered',
+        }
+      })
+      return json({ variant_id: variantId, state: 'completed', slides })
+    }),
     http.get(`*${API_BASE}/generations/:runId`, ({ params }) => {
       const found = (['idea', 'data'] as const).map((scenario) => fixture(scenario, 'generation-detail')).find((item) => item.id === params.runId)
       return found ? json(found) : undefined
