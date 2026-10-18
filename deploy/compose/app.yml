@@ -44,8 +44,7 @@ services:
       HOME: /tmp
     volumes:
       - api-artifacts:/data/artifacts
-    tmpfs:
-      - /tmp:size=512m
+      - api-tmp:/tmp
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=3).status == 200 else 1)"]
       interval: 15s
@@ -97,6 +96,8 @@ services:
 volumes:
   api-artifacts:
     name: deckdna_api_artifacts
+  api-tmp:
+    name: deckdna_api_tmp
 
 networks:
   deckdna:
