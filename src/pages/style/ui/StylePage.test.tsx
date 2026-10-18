@@ -263,6 +263,26 @@ describe('StylePage', () => {
     )
   })
 
+  it('reuses the trial slides already made for this plan instead of starting new ones', () => {
+    vi.mocked(useAssistantSession).mockReturnValue({
+      data: { ...defaultSession, artifacts: { ...defaultSession.artifacts, preview_id: PREVIEW_ID } },
+      isPending: false,
+    } as unknown as ReturnType<typeof useAssistantSession>)
+    vi.mocked(useStartStylePreviews).mockReturnValue({
+      mutate: startPreviewsMutate,
+      data: undefined,
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useStartStylePreviews>)
+
+    renderStylePage()
+
+    expect(startPreviewsMutate).not.toHaveBeenCalled()
+    expect(screen.getByRole('radiogroup', { name: 'Стиль вёрстки' })).toBeInTheDocument()
+  })
+
   it('starts autopilot from step 5 when clicking «Сделай сам»', async () => {
     autopilotMutateAsync.mockResolvedValue({
       job_id: 'job_autopilot_5',

@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { usePatchPlanSlide, usePlanSlideAction } from '@/entities/assistant'
 import { hasChartData, type DeckPlan, type GenerationCreate } from '@/entities/generation'
 import { applyQuickAction, changeSlideChart, usePlanDraft, useResearchPlanSlide, type QuickSlideAction } from '@/features/edit-deck-plan'
+import { humanError } from '@/shared/api'
 import { pluralize } from '@/shared/lib/format'
 import { Button, SlideGrid, SlideTile } from '@/shared/ui'
 import { plannedVisual } from '@/widgets/deck-plan'
@@ -84,7 +85,7 @@ export function PlanStep(props: PlanStepProps) {
         },
         onError: (cause) => {
           draft.undo()
-          setError(cause instanceof Error ? cause.message : String(cause))
+          setError(humanError(cause))
         },
       },
     )
@@ -104,7 +105,7 @@ export function PlanStep(props: PlanStepProps) {
         },
         onError: (cause) => {
           draft.undo()
-          setError(cause instanceof Error ? cause.message : String(cause))
+          setError(humanError(cause))
         },
       },
     )
@@ -133,7 +134,7 @@ export function PlanStep(props: PlanStepProps) {
         onServerPlanSet(result.plan_set, nextPlan)
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause))
+      setError(humanError(cause))
     } finally {
       setResearching(null)
     }

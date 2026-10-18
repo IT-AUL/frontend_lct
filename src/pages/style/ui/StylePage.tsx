@@ -126,15 +126,9 @@ export function StylePage() {
   const startPreviews = useStartStylePreviews(planId ?? '')
   const { mutate: triggerStartPreviews } = startPreviews
 
-  useEffect(() => {
-    if (!planId) return
-    if (previewStartedForPlanRef.current === planId) return
-    previewStartedForPlanRef.current = planId
-    triggerStartPreviews({})
-  }, [planId, triggerStartPreviews])
-
   const acceptedPreview = startPreviews.data
-  const previewId = acceptedPreview?.preview_id ?? session?.artifacts.preview_id ?? null
+  const sessionPreviewId = session?.artifacts.preview_id ?? null
+  const previewId = acceptedPreview?.preview_id ?? sessionPreviewId
   const jobId = acceptedPreview?.job_id ?? null
 
   const jobEvents = useJobEvents(jobId)
@@ -142,6 +136,16 @@ export function StylePage() {
 
   const stylePreviewQuery = useStylePreview(previewId)
   const stylePreview = stylePreviewQuery.data
+  const sessionPreviewPending = Boolean(sessionPreviewId) && !acceptedPreview && stylePreviewQuery.isPending
+  const sessionPreviewFits = Boolean(sessionPreviewId) && !acceptedPreview && stylePreview?.plan_id === planId
+
+  useEffect(() => {
+    if (!planId || sessionQuery.isPending || sessionPreviewPending) return
+    if (previewStartedForPlanRef.current === planId) return
+    previewStartedForPlanRef.current = planId
+    if (sessionPreviewFits) return
+    triggerStartPreviews({})
+  }, [planId, sessionQuery.isPending, sessionPreviewPending, sessionPreviewFits, triggerStartPreviews])
 
   const unsupported =
     startPreviews.isSuccess &&

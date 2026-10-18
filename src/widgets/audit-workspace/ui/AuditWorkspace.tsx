@@ -38,6 +38,7 @@ import { orderVariants, slidePreviewUrl, useVariants, useVariantSlides } from '@
 import { RepairBar, selectionKey, useRepairPreview, useRepairSelected } from '@/features/repair-issues'
 import { useIssueSelection } from '@/features/select-issues'
 import { useVariantFiles } from '@/features/variant-files'
+import { humanError } from '@/shared/api'
 import { pluralize } from '@/shared/lib/format'
 import { Button, EmptyState, Skeleton, useToast } from '@/shared/ui'
 import { shouldIgnoreShortcut } from '../lib/keyboard'
@@ -101,7 +102,7 @@ interface ReauditSnapshot {
 
 const EMPTY_ISSUES: AuditIssue[] = []
 
-const errorText = (error: unknown) => (error instanceof Error ? error.message : 'неизвестная ошибка')
+const errorText = (error: unknown) => humanError(error)
 
 const onSlide = (view: IssueView, number: number) => view.issue.slide_index === number - 1
 

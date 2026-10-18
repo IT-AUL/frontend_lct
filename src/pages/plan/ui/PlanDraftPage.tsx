@@ -16,7 +16,7 @@ import {
   usePlanBuild,
   type StoredPlanRequest,
 } from '@/features/edit-deck-plan'
-import { requestOptionalJson } from '@/shared/api'
+import { requestOptionalJson, humanError } from '@/shared/api'
 import { routes } from '@/shared/config'
 import { Button, Skeleton } from '@/shared/ui'
 import { StepShell } from '@/widgets/step-shell'
@@ -47,7 +47,7 @@ function defaultProposal(proposals: readonly PlanProposal[]): string {
 
 function errorText(error: unknown): string | null {
   if (!error || isAbortError(error)) return null
-  return error instanceof Error ? error.message : String(error)
+  return humanError(error)
 }
 
 function adjustedRequest(stored: StoredPlanRequest, adjustment: PlanAdjustment, excluded: readonly string[]): StoredPlanRequest['request'] {

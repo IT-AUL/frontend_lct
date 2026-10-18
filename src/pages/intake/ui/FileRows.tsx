@@ -1,4 +1,5 @@
 import type { IntakeFile, IntakeKind } from '@/entities/assistant'
+import type { ExistingFile } from '../lib/existing'
 import { FILE_KIND_LABEL, FILE_KIND_OPTIONS, Icon, X } from '@/shared/ui'
 import type { PendingFile } from '@/widgets/intake-board'
 import styles from './IntakePage.module.css'
@@ -48,6 +49,22 @@ export function FileRows({ files, pending, onKind, onRemove }: FileRowsProps) {
             <span className={styles.filePending}>загружаю</span>
           </li>
         ))}
+    </ul>
+  )
+}
+
+export function ExistingRows({ files }: { files: readonly ExistingFile[] }) {
+  if (files.length === 0) return null
+  return (
+    <ul className={styles.files} aria-label="Уже в проекте">
+      {files.map((file) => (
+        <li key={`${file.kind}:${file.name}`} className={styles.file}>
+          <span className={styles.fileName} title={file.name}>
+            {file.name}
+          </span>
+          <span className={styles.fileKind}>{FILE_KIND_LABEL[file.kind]}</span>
+        </li>
+      ))}
     </ul>
   )
 }

@@ -16,7 +16,7 @@ import {
   type Understanding,
 } from '@/entities/assistant'
 import { useContentPack } from '@/entities/content-pack'
-import { requestJson } from '@/shared/api'
+import { requestJson, humanError } from '@/shared/api'
 import { rememberRun, useProject } from '@/entities/project'
 import { useActiveProviderSession } from '@/entities/provider-session'
 import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
@@ -35,7 +35,7 @@ interface UndoEntry {
 
 function errorMessage(error: unknown): string | null {
   if (!error || isAbortError(error)) return null
-  return error instanceof Error ? error.message : String(error)
+  return humanError(error)
 }
 
 export function UnderstandingPage() {

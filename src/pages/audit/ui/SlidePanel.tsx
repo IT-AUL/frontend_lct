@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useRegenerateSlide, useSlideExplain } from '@/entities/assistant'
 import { useGeneration } from '@/entities/generation'
 import { useVariantSlides } from '@/entities/variant'
-import { isApiError } from '@/shared/api'
+import { isApiError, humanError } from '@/shared/api'
 import { Button, Skeleton, useToast } from '@/shared/ui'
 import { buildExplainView, buildReworkChips, findPlanSlide, findSlideAt, type ReworkChip } from '../model/slideModel'
 import styles from './SlidePanel.module.css'
@@ -14,7 +14,7 @@ interface SlidePanelProps {
   slideNumber: number
 }
 
-const errorText = (error: unknown) => (error instanceof Error ? error.message : 'неизвестная ошибка')
+const errorText = (error: unknown) => humanError(error)
 
 const DONE_NOTE: Record<string, string> = {
   shorter: 'Сократил текст на слайде.',

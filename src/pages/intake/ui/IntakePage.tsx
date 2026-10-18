@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useAssistantSession, useBrandbookSummary, useIntake, useJobEvents, useSetBrandPriority, useSetIntakeKind, useStartAutopilot, useTemplateSummary } from '@/entities/assistant'
 import type { BrandPriority, IntakeFile, IntakeKind, IntakeResult } from '@/entities/assistant'
-import { uploadContentPack } from '@/entities/content-pack'
+import { uploadContentPack, useContentPack } from '@/entities/content-pack'
 import { useInvalidateProject, useProject } from '@/entities/project'
 import { uploadTemplate, useDesignDna, useTemplate } from '@/entities/template'
 import { isApiError } from '@/shared/api'
@@ -12,7 +12,8 @@ import { DesignDnaSkeleton } from '@/widgets/design-dna'
 import { guessKind, IntakeDropzone, isContentFile, isIntakeFile, mergeIntakeFiles } from '@/widgets/intake-board'
 import type { PendingFile } from '@/widgets/intake-board'
 import { StepShell } from '@/widgets/step-shell'
-import { FileRows } from './FileRows'
+import { existingFiles, topicFromBrief } from '../lib/existing'
+import { ExistingRows, FileRows } from './FileRows'
 import { TemplateRules } from './TemplateRules'
 import { TemplateTable } from './TemplateTable'
 import styles from './IntakePage.module.css'
@@ -47,7 +48,7 @@ export function IntakePage() {
   const patchKind = useSetIntakeKind(projectId)
   const autopilot = useStartAutopilot(projectId)
 
-  const [idea, setIdea] = useState('')
+  const [idea, setIdea] = useState<string | null>(null)
   const [files, setFiles] = useState<IntakeFile[]>([])
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([])
   const [intake, setIntake] = useState<IntakeResult | null>(null)
@@ -66,6 +67,9 @@ export function IntakePage() {
 
   const templateSummary = useTemplateSummary(templateId)
   const brandbookSummary = useBrandbookSummary(brandbookId)
+  const contentPack = useContentPack(files.length === 0 ? packId : null)
+  const savedTopic = topicFromBrief(session.data?.brief)
+  const ideaText = idea ?? savedTopic
   const patchPriority = useSetBrandPriority(brandbookId ?? '')
   const templateDetail = useTemplate(dnaOpen ? templateId : null)
   const dna = useDesignDna(templateId, dnaOpen)
@@ -89,7 +93,7 @@ export function IntakePage() {
     const templates = picked.filter((file) => /\.(pptx|potx)$/i.test(file.name))
     const templateNames = new Set(templates)
     const others = picked.filter((file) => !templateNames.has(file) && isIntakeFile(file.name))
-    const text = idea.trim()
+    const text = ideaText.trim()
     const ideaFile = text ? new File([text], 'idea.md', { type: 'text/markdown' }) : null
     try {
       if (templates[0]) await uploadTemplate(projectId, templates[0])
@@ -113,7 +117,7 @@ export function IntakePage() {
     }
     setPendingFiles(picked.map((file) => ({ name: file.name, size: file.size })))
     upload.mutate(
-      { files: picked, idea: idea.trim() || undefined },
+      { files: picked, idea: ideaText.trim() || undefined },
       {
         onSuccess: (data) => {
           setPendingFiles([])
@@ -166,7 +170,7 @@ export function IntakePage() {
     )
   }
 
-  const hasContent = Boolean(packId) || files.some(isContentFile) || Boolean(idea.trim())
+  const hasContent = Boolean(packId) || files.some(isContentFile) || Boolean(ideaText.trim())
   const canContinue = Boolean(templateId) && hasContent && !advancing
   const busy = upload.isPending || pendingFiles.length > 0 || advancing
   const analyzing = Boolean(templateId) && templateSummary.isPending
@@ -178,7 +182,7 @@ export function IntakePage() {
 
   const goNext = () => {
     if (!canContinue) return
-    const text = idea.trim()
+    const text = ideaText.trim()
     if (text && !packId) {
       setAdvancing(true)
       if (intakeMissing.current) {
@@ -299,12 +303,22 @@ export function IntakePage() {
         <textarea
           className={styles.idea}
           rows={3}
-          value={idea}
+          value={ideaText}
           placeholder="Например, итоги продаж за год для совета директоров"
           onChange={(event) => setIdea(event.target.value)}
         />
       </label>
       <IntakeDropzone onFiles={sendFiles} disabled={busy} compact />
+      {files.length === 0 && pendingFiles.length === 0 && (
+        <ExistingRows
+          files={existingFiles({
+            template: templateSummary.data?.filename,
+            brandbook: brandbookSummary.data?.name,
+            datasets: contentPack.data?.datasets ?? [],
+            sections: contentPack.data?.sections.length ?? 0,
+          })}
+        />
+      )}
       {(files.length > 0 || pendingFiles.length > 0) && <FileRows files={files} pending={pendingFiles} onKind={changeKind} onRemove={removeFile} />}
       {uploadError && (
         <p className={styles.error} role="alert">

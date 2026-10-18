@@ -237,3 +237,9 @@
   font-size: 15px;
   line-height: 1.5;
 }
+
+.fileKind {
+  flex: none;
+  color: var(--ink-3);
+  font-size: 13px;
+}
