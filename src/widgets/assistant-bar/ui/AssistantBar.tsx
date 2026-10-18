@@ -28,7 +28,7 @@ function StepItem({ step }: { step: AssistantStepView }) {
   const title = step.hint ?? step.label
   if (step.href && step.state !== 'current') {
     return (
-      <Link to={step.href} className={styles.step} data-state={step.state} title={title}>
+      <Link to={step.href} state={{ fromStepBar: true }} className={styles.step} data-state={step.state} title={title}>
         {content}
       </Link>
     )

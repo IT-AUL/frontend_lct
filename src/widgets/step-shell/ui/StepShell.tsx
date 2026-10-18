@@ -47,18 +47,25 @@ export function StepShell({ title, note, children, actions, canvas, canvasLabel,
         </div>
         {actions && <div className={styles.actions}>{actions}</div>}
       </section>
-      <section className={styles.table} aria-label={canvasLabel}>
+      <section
+        className={styles.table}
+        data-inspector={inspector ? (inspector.wide ? 'wide' : 'side') : undefined}
+        aria-label={canvasLabel}
+      >
         <div className={styles.tableScroll}>{canvas}</div>
         {inspector && (
-          <aside className={styles.inspector} data-wide={inspector.wide || undefined} aria-label={inspector.title}>
-            <header className={styles.inspectorHeader}>
-              <h2 className={styles.inspectorTitle}>{inspector.title}</h2>
-              <button ref={closeRef} type="button" className={styles.close} onClick={inspector.onClose} aria-label="Закрыть">
-                <Icon as={X} size={16} />
-              </button>
-            </header>
-            <div className={styles.inspectorBody}>{inspector.content}</div>
-          </aside>
+          <>
+            <div className={styles.inspectorBackdrop} aria-hidden="true" onClick={inspector.onClose} />
+            <aside className={styles.inspector} data-wide={inspector.wide || undefined} aria-label={inspector.title}>
+              <header className={styles.inspectorHeader}>
+                <h2 className={styles.inspectorTitle}>{inspector.title}</h2>
+                <button ref={closeRef} type="button" className={styles.close} onClick={inspector.onClose} aria-label="Закрыть">
+                  <Icon as={X} size={16} />
+                </button>
+              </header>
+              <div className={styles.inspectorBody}>{inspector.content}</div>
+            </aside>
+          </>
         )}
       </section>
     </div>

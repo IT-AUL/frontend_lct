@@ -33,6 +33,7 @@ const AUTO_POLISH_TICK_MS = 900
 interface RunLocationState {
   fromStyle?: boolean
   fromAutopilot?: boolean
+  fromStepBar?: boolean
   strategies?: string[]
   deckPlan?: DeckPlan | null
   previewId?: string | null
@@ -236,12 +237,13 @@ export function GenerationPage() {
   const deckShownOnTable = done && slots.length > 0 && slots.some((slot) => slot.state === 'ready')
 
   const shouldAutoPolish = Boolean(
-    routeState?.fromStyle ||
-      routeState?.fromAutopilot ||
-      isJobRun ||
-      jobEvents.done ||
-      jobEvents.events.some((event) => event.type === 'slide.ready' || event.type === 'stage.started') ||
-      tracker.generation?.variants.length === 1,
+    !routeState?.fromStepBar &&
+      (routeState?.fromStyle ||
+        routeState?.fromAutopilot ||
+        isJobRun ||
+        jobEvents.done ||
+        jobEvents.events.some((event) => event.type === 'slide.ready' || event.type === 'stage.started') ||
+        tracker.generation?.variants.length === 1),
   )
 
   const autoPolishActive = Boolean(

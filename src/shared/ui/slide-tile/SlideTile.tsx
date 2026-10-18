@@ -1,11 +1,12 @@
 import { clsx } from 'clsx'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import styles from './SlideTile.module.css'
 
 interface SlideTileProps {
   title?: ReactNode
   children?: ReactNode
   image?: string | null
+  aspectRatio?: string
   caption?: ReactNode
   selected?: boolean
   muted?: boolean
@@ -16,11 +17,14 @@ interface SlideTileProps {
   fill?: boolean
 }
 
-export function SlideTile({ title, children, image, caption, selected, muted, pending, onOpen, openLabel, corner, fill }: SlideTileProps) {
+export function SlideTile({ title, children, image, aspectRatio, caption, selected, muted, pending, onOpen, openLabel, corner, fill }: SlideTileProps) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null)
+  const showImage = Boolean(image && failedSrc !== image)
+  const frameStyle = aspectRatio ? { aspectRatio } : undefined
   const face = fill ? (
     <span className={styles.fill}>{children}</span>
-  ) : image ? (
-    <img className={styles.image} src={image} alt="" loading="lazy" />
+  ) : showImage && image ? (
+    <img className={styles.image} src={image} alt="" loading="lazy" onError={() => setFailedSrc(image)} />
   ) : (
     <span className={styles.draft}>
       {title && <span className={styles.title}>{title}</span>}
@@ -31,11 +35,11 @@ export function SlideTile({ title, children, image, caption, selected, muted, pe
     <figure className={clsx(styles.tile, muted && styles.muted)} data-selected={selected || undefined}>
       <div className={styles.frameWrap}>
         {onOpen ? (
-          <button type="button" className={styles.frame} onClick={onOpen} aria-label={openLabel} aria-busy={pending || undefined}>
+          <button type="button" className={styles.frame} style={frameStyle} onClick={onOpen} aria-label={openLabel} aria-busy={pending || undefined}>
             {face}
           </button>
         ) : (
-          <div className={styles.frame} aria-busy={pending || undefined}>
+          <div className={styles.frame} style={frameStyle} aria-busy={pending || undefined}>
             {face}
           </div>
         )}

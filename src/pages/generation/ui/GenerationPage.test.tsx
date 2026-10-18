@@ -69,12 +69,13 @@ function LocationProbe() {
   return <output data-testid="location">{useLocation().pathname}</output>
 }
 
-function renderPage(runId: string) {
+function renderPage(runId: string, state?: Record<string, unknown>) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  const entry = state ? { pathname: routes.run(PROJECT, runId), state } : routes.run(PROJECT, runId)
   return render(
     <QueryClientProvider client={client}>
       <ToastProvider>
-        <MemoryRouter initialEntries={[routes.run(PROJECT, runId)]}>
+        <MemoryRouter initialEntries={[entry]}>
           <Routes>
             <Route path="/projects/:projectId/runs/:runId" element={<GenerationPage />} />
             <Route path="*" element={<div>other screen</div>} />
@@ -326,6 +327,20 @@ describe('GenerationPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Открыть и доработать' }))
     expect(screen.getByTestId('location')).toHaveTextContent(routes.polish(PROJECT, RUN))
+  })
+
+  it('does not start auto-polish countdown when navigated explicitly from StepBar', () => {
+    const singleCompleted = {
+      ...completed,
+      variants: completed.variants.slice(1, 2),
+    }
+    const startedAt = Date.parse(completed.created_at)
+    useTracker(makeTracker({ generationId: RUN, generation: singleCompleted, phase: 'completed', startedAt, finishedAt: startedAt + 8_196 }))
+    renderPage(RUN, { fromStepBar: true })
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Презентация готова' })).toBeInTheDocument()
+    expect(screen.queryByText(/Открою доводку через/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Открыть и доработать' })).toBeInTheDocument()
   })
 
   it('explains a failure from the error envelope and retries the same run', async () => {
