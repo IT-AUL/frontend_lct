@@ -17,6 +17,7 @@ export type DeckPlanProvenance = Schemas['deckdna__contracts__deck_plan__Provena
 export type ContentUnit = Schemas['ContentUnit-Output']
 export type GenerationCreate = Schemas['GenerationCreate'] & {
   progressive_previews?: boolean
+  execution_mode?: 'fast' | 'checked'
 }
 
 export type SlideDraftStatus = 'draft' | 'rendered' | 'superseded' | 'preview_failed' | (string & {})

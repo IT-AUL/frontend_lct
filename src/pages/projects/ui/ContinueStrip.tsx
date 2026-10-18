@@ -33,7 +33,6 @@ function ContinueCard({ project }: { project: Project }) {
             <img className={styles.image} src={cover} alt="" loading="lazy" />
           ) : (
             <span className={styles.placeholder} aria-hidden>
-              <span className={styles.placeholderTitle}>{project.name}</span>
               <span className={styles.placeholderLines}>
                 <span />
                 <span />

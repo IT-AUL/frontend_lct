@@ -5,6 +5,7 @@ import type { BrandPriority, IntakeFile, IntakeKind, IntakeResult } from '@/enti
 import { uploadContentPack, useContentPack } from '@/entities/content-pack'
 import { useInvalidateProject, useProject } from '@/entities/project'
 import { buildDesignSystem, uploadTemplate, useDesignDna, useTemplate } from '@/entities/template'
+import { clearPlanRequest } from '@/features/edit-deck-plan'
 import { isApiError } from '@/shared/api'
 import { routes } from '@/shared/config'
 import { readIntakeHandoff } from '@/shared/lib/intake-handoff'
@@ -33,6 +34,30 @@ import { ExistingRows, FileRows } from './FileRows'
 import { TemplateRules } from './TemplateRules'
 import { TemplateTable } from './TemplateTable'
 import styles from './IntakePage.module.css'
+
+const INTAKE_FILES_STORAGE_PREFIX = 'deckdna.intake-files.v1:'
+
+function readStoredIntakeFiles(projectId: string): IntakeFile[] {
+  if (!projectId || typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(`${INTAKE_FILES_STORAGE_PREFIX}${projectId}`)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as unknown
+    return Array.isArray(parsed) ? (parsed as IntakeFile[]) : []
+  } catch {
+    return []
+  }
+}
+
+function writeStoredIntakeFiles(projectId: string, files: IntakeFile[]): void {
+  if (!projectId || typeof window === 'undefined') return
+  try {
+    if (files.length === 0) window.localStorage.removeItem(`${INTAKE_FILES_STORAGE_PREFIX}${projectId}`)
+    else window.localStorage.setItem(`${INTAKE_FILES_STORAGE_PREFIX}${projectId}`, JSON.stringify(files))
+  } catch {
+    return
+  }
+}
 
 function errorText(error: unknown, fallback: string): string {
   return isApiError(error) && error.message ? error.message : fallback
@@ -68,7 +93,7 @@ export function IntakePage() {
   const analyzeBrandbook = useAnalyzeBrandbook()
 
   const [idea, setIdea] = useState<string | null>(null)
-  const [files, setFiles] = useState<IntakeFile[]>([])
+  const [files, setFilesState] = useState<IntakeFile[]>(() => readStoredIntakeFiles(projectId))
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([])
   const [intake, setIntake] = useState<IntakeResult | null>(null)
   const [note, setNote] = useState<string | null>(null)
@@ -78,6 +103,14 @@ export function IntakePage() {
   const [priorityOverride, setPriorityOverride] = useState<BrandPriority | null>(null)
   const [autopilotStarted, setAutopilotStarted] = useState(false)
   const [legacyError, setLegacyError] = useState<string | null>(null)
+
+  const setFiles = (updater: IntakeFile[] | ((prev: IntakeFile[]) => IntakeFile[])) => {
+    setFilesState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      writeStoredIntakeFiles(projectId, next)
+      return next
+    })
+  }
 
   const artifacts = session.data?.artifacts
   const templateId = intake?.template_id ?? artifacts?.template_id ?? project.data?.template_id ?? null
@@ -103,6 +136,7 @@ export function IntakePage() {
   const applyIntake = (data: IntakeResult) => {
     setIntake(data)
     setFiles((prev) => mergeIntakeFiles(prev, data.files))
+    if (data.files.length > 0) clearPlanRequest(projectId)
     if (data.assistant_note) setNote(data.assistant_note)
   }
 
@@ -119,6 +153,7 @@ export function IntakePage() {
       if (templates[0]) await uploadTemplate(projectId, templates[0])
       const rest = [...templates.slice(1), ...others, ...(ideaFile ? [ideaFile] : [])]
       if (rest.length) await uploadContentPack(projectId, rest, text ? { topic: text } : {})
+      clearPlanRequest(projectId)
       void invalidateProject(projectId)
       setNote('Принял по прежнему пути: шаблон и материалы по отдельности.')
     } catch (error) {
@@ -410,6 +445,7 @@ export function IntakePage() {
             brandbook: brandbookSummary.data?.name,
             datasets: contentPack.data?.datasets ?? [],
             sections: contentPack.data?.sections.length ?? 0,
+            hasText: (contentPack.data?.sections.length ?? 0) > (contentPack.data?.datasets?.length ?? 0),
           })}
         />
       )}

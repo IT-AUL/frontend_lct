@@ -36,14 +36,19 @@ describe('parseSlideChartView', () => {
     expect(view?.options[0]).toMatchObject({ active: true, label: 'Линия' })
   })
 
-  it('falls back to reasons when why is missing and dedupes alternatives', () => {
+  it('falls back to reasons when why is missing, normalizes Russian case grammar, and dedupes alternatives', () => {
     const slide: SlidePlan = {
       ...charted,
-      chart: { type: 'bar', reasons: ['три категории'], alternatives: [{ type: 'bar' }, { type: 'line', reasons: ['тренд'] }] },
+      chart: {
+        type: 'bar',
+        reasons: ['три категории', 'в задаче сказано про динамика'],
+        alternatives: [{ type: 'bar' }, { type: 'line', reasons: ['тренд', 'в задаче сказано про структура'] }],
+      },
     }
     const view = parseSlideChartView(slide)
-    expect(view?.why).toBe('Столбцы: три категории.')
+    expect(view?.why).toBe('Столбцы: три категории, в задаче сказано про динамику.')
     expect(view?.options.map((option) => option.type)).toEqual(['bar', 'line'])
+    expect(view?.options[1]?.reasons).toEqual(['тренд', 'в задаче сказано про структуру'])
   })
 
   it('returns null without a chart', () => {

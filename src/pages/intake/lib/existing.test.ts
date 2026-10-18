@@ -29,8 +29,21 @@ describe('existingFiles', () => {
     ).toEqual([{ name: 'Продажи', kind: 'data', meta: '240 строк · 6 колонок' }])
   })
 
-  it('names plain text materials when there is no table', () => {
+  it('names plain text materials when there is no table or when hasText is true alongside datasets', () => {
     expect(existingFiles({ template: null, brandbook: null, datasets: [], sections: 3 })).toEqual([{ name: 'Текст материалов', kind: 'content' }])
+    expect(
+      existingFiles({
+        template: 'vk.pptx',
+        brandbook: null,
+        datasets: [{ title: 'Продажи' }],
+        sections: 2,
+        hasText: true,
+      }),
+    ).toEqual([
+      { name: 'vk.pptx', kind: 'template' },
+      { name: 'Продажи', kind: 'data' },
+      { name: 'Текст материалов', kind: 'content' },
+    ])
   })
 })
 

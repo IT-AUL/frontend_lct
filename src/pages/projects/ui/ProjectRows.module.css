@@ -59,7 +59,7 @@
 .link {
   display: grid;
   flex: 1;
-  grid-template-columns: minmax(0, 1fr) 132px 96px 64px;
+  grid-template-columns: minmax(0, 1fr) 132px auto 64px;
   align-items: center;
   gap: var(--space-4);
   min-width: 0;

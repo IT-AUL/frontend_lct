@@ -1,6 +1,6 @@
 import type { Insight, Understanding, UnderstandingBlock, UnderstandingDataset } from '@/entities/assistant'
 import { pluralize } from '@/shared/lib/format'
-import { deduplicateTextBlocks, extractFigure, isInsightRecommendation } from './understanding'
+import { chartTypeLabel, deduplicateTextBlocks, extractFigure, isInsightRecommendation } from './understanding'
 
 export interface InsightEntry {
   insight: Insight
@@ -12,6 +12,29 @@ export interface DatasetGroup {
   dataset: UnderstandingDataset
   preview: UnderstandingBlock['preview']
   entries: InsightEntry[]
+}
+
+export function normalizeReasonGrammar(text: string): string {
+  return text
+    .replace(/в задаче сказано про динамика(?!\p{L})/giu, 'в задаче сказано про динамику')
+    .replace(/в задаче сказано про структура(?!\p{L})/giu, 'в задаче сказано про структуру')
+    .replace(/про динамика(?!\p{L})/giu, 'про динамику')
+    .replace(/про структура(?!\p{L})/giu, 'про структуру')
+}
+
+export function datasetChartWhy(dataset: UnderstandingDataset): string | null {
+  if (typeof dataset.why === 'string' && dataset.why.trim()) {
+    return normalizeReasonGrammar(dataset.why.trim())
+  }
+  const topRec = dataset.recommendations?.[0]
+  if (topRec?.reasons && topRec.reasons.length > 0) {
+    const cleanReasons = topRec.reasons.map((item) => normalizeReasonGrammar(item.trim())).filter(Boolean)
+    if (cleanReasons.length > 0) {
+      const label = chartTypeLabel(topRec.chart_type)
+      return `${label}: ${cleanReasons.join(', ')}`
+    }
+  }
+  return null
 }
 
 export function insightTitle(insight: Insight): string {

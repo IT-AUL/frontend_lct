@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { InsightPatch, Understanding } from '@/entities/assistant'
-import { datasetGroups, insightTitle, profileFacts, textBlocks } from '../lib/table'
+import { datasetChartWhy, datasetGroups, insightTitle, profileFacts, textBlocks } from '../lib/table'
 import { InsightCard } from './InsightCard'
 import { ThoughtCard } from './ThoughtCard'
 import styles from './DraftDeck.module.css'
@@ -52,6 +52,7 @@ export function DraftDeck({
               const hidden = entries.filter((entry) => excluded.has(entry.insight.id))
               const shown = showAllInsights ? active : active.slice(0, VISIBLE_INSIGHTS)
               const facts = [...profileFacts(dataset.profile_summary), ...(dataset.task_ru ? [dataset.task_ru] : [])]
+              const chartWhy = datasetChartWhy(dataset)
               return (
                 <div className={styles.dataset} role="group" aria-label={dataset.title ?? dataset.file ?? 'Таблица'} key={dataset.id}>
                   <header className={styles.datasetHead}>
@@ -68,6 +69,7 @@ export function DraftDeck({
                         ))}
                       </ul>
                     )}
+                    {chartWhy && <p className={styles.datasetWhy}>{chartWhy}</p>}
                   </header>
 
                   {shown.map((entry, index) => {

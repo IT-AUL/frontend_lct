@@ -32,4 +32,12 @@ describe('progressSnapshot', () => {
     expect(snapshot.current).toBe(4)
     expect(snapshot.hrefs[3]).toBe('/projects/p1/questions')
   })
+
+  it('does not unlock step 3 on step 1 when only a template is uploaded', () => {
+    const session = { step: 1, completed_steps: [], skipped_steps: [] } as unknown as Parameters<typeof progressSnapshot>[1]
+    const snapshot = progressSnapshot({ ...base, hasTemplate: true, hasContent: false }, session)
+    expect(snapshot.hrefs[1]).toBe('/projects/p1/start')
+    expect(snapshot.hrefs[2]).toBeUndefined()
+    expect(snapshot.hrefs[3]).toBeUndefined()
+  })
 })

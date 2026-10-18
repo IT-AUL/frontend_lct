@@ -98,7 +98,25 @@ describe('buildPassportView', () => {
     expect(rows('skill')).toMatchObject({ value: '0.1.0', note: 'сейчас на сервере 0.2.0 — прогон собран предыдущей версией' })
     expect(rows('planner').value).toBe('По правилам')
     expect(rows('mode').value).toBe('Стандартный (по правилам шаблона)')
-    expect(rows('config:configs/generation.default.yaml').value).toBe('sha 80f8…6056')
+    expect(rows('config:configs/generation.default.yaml')).toMatchObject({
+      label: 'Конфигурация сборки',
+      value: 'sha 80f8…6056',
+    })
+    expect(rows('config:configs/audit.default.yaml')).toMatchObject({
+      label: 'Конфигурация проверки',
+      value: 'sha 686b…3694',
+    })
+
+    const dupRaw = structuredClone(passportFixture) as unknown as { provenance: { config_hashes: Record<string, string> } }
+    dupRaw.provenance.config_hashes = {
+      'configs/generation.default.yaml': '80f89b7a7a3b8aae4c3ac5ac571b7e926abf4841ce9afbda9337a24b92426056',
+      'configs/audit.default.yaml': '80f89b7a7a3b8aae4c3ac5ac571b7e926abf4841ce9afbda9337a24b92426056',
+    }
+    const dupView = buildPassportView(parsePassport(dupRaw), context)
+    const configRows = dupView.provenance.filter((row) => row.key.startsWith('config:'))
+    expect(configRows).toEqual([
+      { key: 'config:configs/generation.default.yaml', label: 'Конфигурация', value: 'sha 80f8…6056' },
+    ])
   })
 
   it('marks extended check mode when semantic profiles are present', () => {

@@ -169,6 +169,14 @@ export interface ExplainView {
   fallbackNote: string
 }
 
+function normalizeReasonText(text: string): string {
+  return text
+    .replace(/в задаче сказано про динамика(?!\p{L})/giu, 'в задаче сказано про динамику')
+    .replace(/в задаче сказано про структура(?!\p{L})/giu, 'в задаче сказано про структуру')
+    .replace(/про динамика(?!\p{L})/giu, 'про динамику')
+    .replace(/про структура(?!\p{L})/giu, 'про структуру')
+}
+
 function parseOptionList(items: unknown): ExplainOption[] {
   if (!Array.isArray(items)) return []
   const seen = new Set<string>()
@@ -178,11 +186,12 @@ function parseOptionList(items: unknown): ExplainOption[] {
     const type = asText(item.type) ?? asText(item.chart_type)
     if (!type || seen.has(type)) continue
     seen.add(type)
-    const reasons = asStrings(item.reasons)
+    const reasons = asStrings(item.reasons).map(normalizeReasonText)
+    const rawReason = asText(item.reason)
     result.push({
       type,
       label: chartTypeLabel(type),
-      reason: reasons.length > 0 ? reasons.join(', ') : asText(item.reason),
+      reason: reasons.length > 0 ? reasons.join(', ') : rawReason ? normalizeReasonText(rawReason) : null,
     })
   }
   return result
@@ -209,14 +218,15 @@ export function buildExplainView(
   const aggregationText = isRecord(explain) ? asText(explain.aggregation) : null
   const chosenLabel = chosenType ? chartTypeLabel(chosenType) : null
 
-  const explainReasons = explain?.chosen?.reasons ?? []
-  const planReasons = planChart ? asStrings(planChart.reasons) : []
+  const explainReasons = (explain?.chosen?.reasons ?? []).map(normalizeReasonText)
+  const planReasons = planChart ? asStrings(planChart.reasons).map(normalizeReasonText) : []
   const reasons = explainReasons.length > 0 ? explainReasons : planReasons
-  const planWhy = planChart ? asText(planChart.why) : null
+  const rawPlanWhy = planChart ? asText(planChart.why) : null
+  const planWhy = rawPlanWhy ? normalizeReasonText(rawPlanWhy) : null
   const whySummary =
     reasons.length > 0
       ? `${chosenLabel ?? 'График'}: ${reasons.join(', ')}.`
-      : planWhy ?? (explain?.assistant_note && hasChart ? explain.assistant_note : null)
+      : planWhy ?? (explain?.assistant_note && hasChart ? normalizeReasonText(explain.assistant_note) : null)
 
   const alternatives = [
     ...parseOptionList(explain?.alternatives),

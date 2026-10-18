@@ -12,6 +12,7 @@ import {
 } from '@/entities/assistant'
 import { startGeneration, whenGenerationAccepted, type DeckPlan } from '@/entities/generation'
 import { rememberRun, useProject } from '@/entities/project'
+import { useDesignDna } from '@/entities/template'
 import { DEFAULT_STRATEGY, STRATEGY_ORDER, type CatalogStrategy } from '@/entities/variant'
 import { clearPlanDraft, fetchAndStorePlan, readPlanRequest, requestAndStorePlan, type StoredPlanRequest } from '@/features/edit-deck-plan'
 import { routes } from '@/shared/config'
@@ -79,6 +80,8 @@ export function StylePage() {
 
   const templateId = stored?.request.template_id ?? session?.artifacts.template_id ?? project?.template_id ?? null
   const contentPackId = stored?.request.content_pack_id ?? session?.artifacts.content_pack_id ?? project?.content_pack_id ?? null
+  const dna = useDesignDna(templateId)
+  const slideAspectRatio = dna.data?.slide_size.aspect_ratio ?? null
 
   useEffect(() => {
     if (stored || (!planId && (!templateId || !contentPackId))) return
@@ -197,6 +200,7 @@ export function StylePage() {
       project,
       previewId,
       strategies,
+      executionMode: buildExecutionMode,
     })
     if (!payload) return
     setBuildingMode(mode)
@@ -214,6 +218,7 @@ export function StylePage() {
         strategies: [...strategies],
         deckPlan: payload.deck_plan ?? activePlan ?? null,
         previewId,
+        executionMode: buildExecutionMode,
       },
     })
   }
@@ -222,7 +227,7 @@ export function StylePage() {
     try {
       const accepted = await autopilot.mutateAsync({
         from_step: 5,
-        use_llm: stored?.request.use_llm ?? false,
+        use_llm: buildExecutionMode === 'fast' ? false : (stored?.request.use_llm ?? false),
         ...(stored?.request.provider_session_id ? { provider_session_id: stored.request.provider_session_id } : {}),
       })
       if (accepted?.job_id) {
@@ -232,6 +237,7 @@ export function StylePage() {
             fromAutopilot: true,
             deckPlan: activePlan ?? null,
             previewId,
+            executionMode: buildExecutionMode,
           },
         })
       } else {
@@ -266,6 +272,7 @@ export function StylePage() {
       project,
       previewId,
       strategies: [selectedStrategy],
+      executionMode: buildExecutionMode,
     }),
   )
   const isSubmitting = buildingMode !== null || autopilot.isPending
@@ -312,6 +319,7 @@ export function StylePage() {
                         <button
                           type="button"
                           className={styles.slideButton}
+                          style={slideAspectRatio ? { aspectRatio: String(slideAspectRatio) } : undefined}
                           aria-label={
                             column.strategy === 'visual'
                               ? `Сравнить слайд ${slot.slideNumber} в трёх стилях (${column.title}) · Сравнить слайд ${slot.slideNumber} в трёх стилях (Визуальный)`
@@ -413,6 +421,7 @@ export function StylePage() {
         }}
         onBuildSelected={() => handleBuild('single')}
         buildDisabled={!canBuild || isSubmitting}
+        aspectRatio={slideAspectRatio}
       />
     </StepShell>
   )
