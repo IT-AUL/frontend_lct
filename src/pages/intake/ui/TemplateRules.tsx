@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { DesignDna, TemplateDetail } from '@/entities/template'
 import { pluralize } from '@/shared/lib/format'
 import { buildDnaView } from '@/widgets/design-dna'
+import { colorName } from '../lib/passport'
 import styles from './TemplateRules.module.css'
 
 const ROLE_NAME: Record<string, string> = {
@@ -26,7 +27,7 @@ export function TemplateRules({ detail, dna }: { detail: TemplateDetail; dna: De
     ...understanding.conflicts.map((conflict) =>
       conflict.kind === 'font'
         ? `В теме заявлены ${conflict.declared.join(', ')}, а на слайдах набрано ${conflict.observed.map((font) => font.name).join(', ')}.`
-        : `Цвет ${conflict.color.hex} встречается на слайдах, но его нет в палитре темы.`,
+        : `Цвет «${colorName(conflict.color.hex)}» встречается на слайдах, но его нет в палитре темы.`,
     ),
     ...understanding.gaps.flatMap((gap) => {
       if (gap.kind === 'unused_layouts') return [`${gap.unused} из ${gap.total} макетов не используются ни на одном слайде.`]
@@ -48,8 +49,8 @@ export function TemplateRules({ detail, dna }: { detail: TemplateDetail; dna: De
         <ul className={styles.swatches} aria-label="Палитра темы">
           {system.palette.map((slot) => (
             <li key={`${slot.slot}-${slot.hex}`} className={styles.swatchItem}>
-              <span className={styles.swatch} style={{ background: slot.hex }} />
-              <span className={styles.hex}>{slot.hex}</span>
+              <span className={styles.swatch} style={{ background: slot.hex }} role="img" aria-label={colorName(slot.hex)} />
+              <span className={styles.hex}>{colorName(slot.hex)}</span>
             </li>
           ))}
         </ul>
