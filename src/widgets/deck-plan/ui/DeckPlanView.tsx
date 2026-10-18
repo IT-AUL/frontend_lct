@@ -2,7 +2,16 @@ import { clsx } from 'clsx'
 import { Fragment, useMemo, type ReactNode } from 'react'
 import type { DeckPlan, ResearchSource, SlidePlan } from '@/entities/generation'
 import { pluralize } from '@/shared/lib/format'
-import { availableQuickActions, buildPlanView, deckPurposeLabel, resolveDeckKeyMessage, type PlanRow, type QuickActionKind } from '../lib/plan'
+import {
+  availableQuickActions,
+  buildPlanView,
+  deckPurposeLabel,
+  resolveDeckKeyMessage,
+  resolveSufficiencyBanner,
+  type PlanRow,
+  type QuickActionKind,
+  type SufficiencyLike,
+} from '../lib/plan'
 import styles from './DeckPlanView.module.css'
 import { ArrowDown, ArrowRightLeft, ArrowUp, CornerDownRight, Icon, ListOrdered, Minus, Plus, Search, Sparkles, X } from '@/shared/ui'
 import { ChartReasoningBox } from './ChartReasoningBox'
@@ -12,7 +21,7 @@ import { SlideContentEditor } from './SlideContentEditor'
 export interface PlanEditor {
   onMove: (slideId: string, delta: -1 | 1) => void
   onRemove: (slideId: string) => void
-  onUpdate: (slideId: string, patch: { title_intent?: string; key_message?: string; desired_visual?: SlidePlan['desired_visual'] }) => void
+  onUpdate: (slideId: string, patch: { title_intent?: string; key_message?: string; desired_visual?: SlidePlan['desired_visual']; purpose?: SlidePlan['purpose'] }) => void
   onAdd: () => void
   onUnitChange: (slideId: string, position: number, text: string) => void
   onUnitAdd: (slideId: string) => void
@@ -35,12 +44,28 @@ interface DeckPlanViewProps {
   sources?: readonly ResearchSource[]
   asideTop?: ReactNode
   keyMessage?: string | null
+  sessionBrief?: Record<string, unknown> | null
+  sufficiency?: SufficiencyLike | null
+  targetCount?: number | null
+  onExpand?: () => void
 }
 
 const NO_SOURCES: readonly ResearchSource[] = []
 
 const BAR_TONES = 5
-const BOOKEND_PURPOSES = new Set(['title', 'thank_you', 'cta', 'agenda'])
+const BOOKEND_PURPOSES = new Set(['title', 'thank_you', 'cta', 'agenda', 'closing'])
+
+function plannerText(planner: string): string {
+  if (!planner) return 'По структуре материалов'
+  if (planner.startsWith('data_story')) return 'По данным и тезисам'
+  if (planner === 'deterministic' || planner === 'heuristic') return 'По правилам структуры'
+  return /[а-яё]/i.test(planner) ? planner : 'По структуре материалов'
+}
+
+function modeText(mode: string | null | undefined): string {
+  if (!mode || mode === 'deterministic' || mode === 'none' || mode === 'heuristic') return 'По правилам'
+  return /[а-яё]/i.test(mode) ? mode : 'Расширенный разбор'
+}
 
 interface PlanRowItemProps {
   row: PlanRow
@@ -272,7 +297,18 @@ function PlanRowItem({ row, slide, quickActions, sources, first, last, single, e
   )
 }
 
-export function DeckPlanView({ plan, headings, editor, sources = NO_SOURCES, asideTop, keyMessage }: DeckPlanViewProps) {
+export function DeckPlanView({
+  plan,
+  headings,
+  editor,
+  sources = NO_SOURCES,
+  asideTop,
+  keyMessage,
+  sessionBrief,
+  sufficiency,
+  targetCount,
+  onExpand,
+}: DeckPlanViewProps) {
   const view = useMemo(() => buildPlanView(plan, headings), [plan, headings])
   const slidesById = useMemo(() => new Map(plan.slides.map((slide) => [slide.id, slide])), [plan.slides])
   const sourcesById = useMemo(() => new Map(sources.map((source) => [source.id, source])), [sources])
@@ -280,8 +316,9 @@ export function DeckPlanView({ plan, headings, editor, sources = NO_SOURCES, asi
   const { provenance, brief } = plan
   const namedSections = sections.filter((section) => section.id !== 'unassigned').length
   const audience = (plan.audience || brief.audience || '').trim()
-  const resolvedKeyMessage = resolveDeckKeyMessage(plan, keyMessage)
-  const showKeyMessage = Boolean(editor?.onKeyMessageChange || keyMessage || brief.key_message)
+  const resolvedKeyMessage = resolveDeckKeyMessage(plan, keyMessage, sessionBrief)
+  const showKeyMessage = Boolean(editor?.onKeyMessageChange || keyMessage || brief.key_message || sessionBrief)
+  const sufficiencyBanner = resolveSufficiencyBanner(sufficiency, targetCount ?? brief.target_slide_count)
 
   return (
     <div className={styles.planWrapper}>
@@ -293,6 +330,16 @@ export function DeckPlanView({ plan, headings, editor, sources = NO_SOURCES, asi
           canUndo={editor?.canUndo}
           onUndo={editor?.onUndo}
         />
+      )}
+      {sufficiencyBanner && (
+        <div className={styles.sufficiencyBanner} role="status">
+          <span className={styles.sufficiencyText}>{sufficiencyBanner.text}</span>
+          {sufficiencyBanner.canExpand && (
+            <button type="button" className={clsx(styles.sufficiencyAction, styles.live)} onClick={onExpand}>
+              Дополнить
+            </button>
+          )}
+        </div>
       )}
       <div className={styles.layout}>
         <div className={styles.listColumn}>
@@ -393,17 +440,16 @@ export function DeckPlanView({ plan, headings, editor, sources = NO_SOURCES, asi
           <dl className={styles.provenanceList}>
             <div>
               <dt>Планировщик</dt>
-              <dd>{provenance.planner}</dd>
+              <dd>{plannerText(provenance.planner)}</dd>
             </div>
             <div>
-              <dt>Модель</dt>
-              <dd>{provenance.model_id ?? 'не указана'}</dd>
+              <dt>Режим</dt>
+              <dd>{modeText(provenance.model_id)}</dd>
             </div>
             <div>
-              <dt>Промпт</dt>
+              <dt>Версия правил</dt>
               <dd>{provenance.prompt_version}</dd>
             </div>
-
           </dl>
         </div>
       </aside>

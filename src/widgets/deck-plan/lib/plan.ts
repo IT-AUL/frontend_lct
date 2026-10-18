@@ -1,7 +1,36 @@
 import { isEditableUnit, slidePurposeLabel, unitOrigin, type DeckPlan, type SlidePlan, type UnitOrigin } from '@/entities/generation'
-import { formatIndex } from '@/shared/lib/format'
+import { formatIndex, pluralize } from '@/shared/lib/format'
 
 export type QuickActionKind = 'shorten' | 'split' | 'merge_next' | 'to_chart' | 'to_diagram' | 'remove'
+
+export const EDITOR_PURPOSES = ['title', 'summary', 'data', 'comparison', 'roadmap', 'closing'] as const
+export type EditorSlidePurpose = (typeof EDITOR_PURPOSES)[number]
+
+export const EDITOR_PURPOSE_LABEL: Record<EditorSlidePurpose, string> = {
+  title: 'Титул',
+  summary: 'Вывод',
+  data: 'Данные',
+  comparison: 'Сравнение',
+  roadmap: 'План',
+  closing: 'Финал',
+}
+
+export interface SufficiencyLike {
+  status?: string | null
+  contentSlides?: number | null
+  targetSlides?: number | null
+  estimated_slides?: number | null
+  content_slides?: number | null
+  target_slides?: number | null
+}
+
+export interface SufficiencyBannerView {
+  kind: 'short' | 'enough' | 'excess'
+  estimatedSlides: number | null
+  targetSlides: number
+  text: string
+  canExpand: boolean
+}
 
 export interface SlideChartOption {
   type: string
@@ -119,7 +148,114 @@ export const SOURCE_KIND_LABEL: Record<SourceKind, string> = {
 
 const SOURCE_KIND_ORDER: readonly SourceKind[] = ['table', 'text', 'web']
 
-const BOOKENDS = new Set(['title', 'thank_you', 'cta', 'agenda'])
+const BOOKENDS = new Set(['title', 'thank_you', 'cta', 'agenda', 'closing'])
+
+const TECHNICAL_KEY_MESSAGES = new Set([
+  'presentation',
+  'презентация',
+  'feature',
+  'product',
+  'project',
+  'initiative',
+])
+
+export function isMeaningfulKeyMessage(value: unknown): value is string {
+  if (typeof value !== 'string') return false
+  const trimmed = value.trim()
+  if (!trimmed) return false
+  return !TECHNICAL_KEY_MESSAGES.has(trimmed.toLowerCase())
+}
+
+export function resolveEditorPurpose(purpose: string): EditorSlidePurpose | null {
+  if (purpose === 'title') return 'title'
+  if (purpose === 'summary' || purpose === 'overview') return 'summary'
+  if (purpose === 'data') return 'data'
+  if (purpose === 'comparison') return 'comparison'
+  if (purpose === 'roadmap' || purpose === 'agenda' || purpose === 'timeline' || purpose === 'process') return 'roadmap'
+  if (purpose === 'closing' || purpose === 'thank_you' || purpose === 'cta') return 'closing'
+  return null
+}
+
+export interface RoleSlideLike {
+  id: string
+  purpose: string
+  evidence_ids: readonly string[]
+  content_units?: readonly { origin?: string | null }[]
+}
+
+export function isUserAddedSlide(slide: RoleSlideLike): boolean {
+  if (slide.purpose !== 'custom') return false
+  if (slide.id.startsWith('slide-user-')) return true
+  if (slide.evidence_ids.some((raw) => raw.trim().length > 0)) return false
+  const units = slide.content_units ?? []
+  if (units.some((unit) => unit.origin === 'user')) return true
+  return !/^slide-\d+$/i.test(slide.id)
+}
+
+export function slideRoleLabel(slide: RoleSlideLike): string {
+  if (slide.purpose === 'custom') {
+    return isUserAddedSlide(slide) ? 'Свой слайд' : 'Контент'
+  }
+  if (slide.purpose in EDITOR_PURPOSE_LABEL) {
+    return EDITOR_PURPOSE_LABEL[slide.purpose as EditorSlidePurpose]
+  }
+  return slidePurposeLabel(slide.purpose) ?? 'Контент'
+}
+
+export function resolveSufficiencyBanner(
+  sufficiency: SufficiencyLike | null | undefined,
+  fallbackTargetSlides?: number | null,
+): SufficiencyBannerView | null {
+  if (!sufficiency) return null
+  const estimatedRaw = sufficiency.contentSlides ?? sufficiency.estimated_slides ?? sufficiency.content_slides ?? null
+  const estimated = typeof estimatedRaw === 'number' && Number.isFinite(estimatedRaw) ? estimatedRaw : null
+  const targetRaw = fallbackTargetSlides ?? sufficiency.targetSlides ?? sufficiency.target_slides ?? null
+  const target = typeof targetRaw === 'number' && Number.isFinite(targetRaw) && targetRaw > 0 ? targetRaw : 8
+  const status = sufficiency.status ?? null
+
+  if (estimated !== null && estimated < target) {
+    return {
+      kind: 'short',
+      estimatedSlides: estimated,
+      targetSlides: target,
+      text: `Материала хватает на ${estimated} ${pluralize(estimated, ['слайд', 'слайда', 'слайдов'])} из ${target}.`,
+      canExpand: true,
+    }
+  }
+
+  if (estimated !== null && estimated >= target) {
+    const reserve = estimated > target ? `, запас — до ${estimated}` : ''
+    const baseText = `Материала достаточно для ${target} ${pluralize(target, ['слайда', 'слайдов', 'слайдов'])}${reserve}`
+    if (status === 'excess') {
+      return {
+        kind: 'excess',
+        estimatedSlides: estimated,
+        targetSlides: target,
+        text: `${baseText}. Самое важное оставлю, остальное сожму.`,
+        canExpand: false,
+      }
+    }
+    return {
+      kind: 'enough',
+      estimatedSlides: estimated,
+      targetSlides: target,
+      text: `${baseText}.`,
+      canExpand: false,
+    }
+  }
+
+  if (status === 'excess') {
+    return {
+      kind: 'excess',
+      estimatedSlides: null,
+      targetSlides: target,
+      text: `Материала больше, чем помещается в ${target} ${pluralize(target, ['слайд', 'слайда', 'слайдов'])}. Самое важное оставлю, остальное сожму.`,
+      canExpand: false,
+    }
+  }
+
+  return null
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -164,17 +300,35 @@ export function parseSlideChartView(slide: Pick<SlidePlan, 'chart'>): SlideChart
   }
 }
 
-export function resolveDeckKeyMessage(plan: DeckPlan, explicit?: string | null): string {
+export function resolveDeckKeyMessage(
+  plan: DeckPlan,
+  explicit?: string | null,
+  sessionBrief?: Record<string, unknown> | null,
+): string {
+  const ordered = [...plan.slides].sort((a, b) => a.index - b.index)
+  const overview = ordered.find((slide) => {
+    const purpose: string = slide.purpose
+    return purpose === 'overview' || purpose === 'summary'
+  })
+  const dataSlide = ordered.find((slide) => slide.purpose === 'data')
+  const firstTakeaway = ordered.find((slide) => !BOOKENDS.has(slide.purpose))
   const candidates = [
     explicit,
     plan.brief.key_message,
-    plan.slides.find((slide) => slide.purpose === 'overview')?.key_message,
-    plan.slides.find((slide) => slide.purpose === 'data')?.key_message,
+    sessionBrief?.key_message,
+    sessionBrief?.purpose,
+    overview?.key_message,
+    dataSlide?.key_message,
+    firstTakeaway?.key_message,
+    firstTakeaway?.title_intent,
     plan.objective,
     plan.brief.purpose,
+    overview?.title_intent,
+    ordered[0]?.key_message,
+    ordered[0]?.title_intent,
   ]
   for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim()) return candidate.trim()
+    if (isMeaningfulKeyMessage(candidate)) return candidate.trim()
   }
   return ''
 }
@@ -211,6 +365,7 @@ const DECK_PURPOSE_LABEL: Record<string, string> = {
   product: 'продукт',
   project: 'проект',
   initiative: 'инициатива',
+  presentation: 'презентация',
 }
 
 const UNASSIGNED_SECTION = 'Вне разделов'
@@ -431,7 +586,7 @@ export function buildPlanView(plan: DeckPlan, headings: ReadonlyMap<string, stri
     return {
       id: slide.id,
       number: formatIndex(position + 1),
-      purpose: slidePurposeLabel(slide.purpose) ?? 'Контент',
+      purpose: slideRoleLabel(slide),
       title: slide.title_intent.trim() || 'Без заголовка',
       titleIntent: slide.title_intent,
       keyMessage: slide.key_message,
@@ -472,3 +627,72 @@ export function buildPlanView(plan: DeckPlan, headings: ReadonlyMap<string, stri
     },
   }
 }
+
+export interface SlidePatchEntry {
+  slideId: string
+  body: Record<string, unknown>
+}
+
+const DRAFT_STORAGE_PREFIX = 'deckdna.plan-draft.v1:'
+
+export function syncPlanDraftToStorage(draftKey: string, basePlan: DeckPlan, activePlan: DeckPlan): void {
+  if (typeof window === 'undefined') return
+  try {
+    const baseId = basePlan.slides.map((slide) => slide.id).join('|')
+    window.localStorage.setItem(
+      `${DRAFT_STORAGE_PREFIX}${draftKey}`,
+      JSON.stringify({ baseId, plan: activePlan }),
+    )
+  } catch {
+    return
+  }
+}
+
+function slideBullets(slide: SlidePlan): string[] {
+  return slide.content_units.filter(isEditableUnit).map((unit) => unit.text ?? '')
+}
+
+function sameStringList(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((item, index) => item === right[index])
+}
+
+export function collectSlidePatches(basePlan: DeckPlan, activePlan: DeckPlan): SlidePatchEntry[] {
+  const baseById = new Map(basePlan.slides.map((slide) => [slide.id, slide]))
+  const patches: SlidePatchEntry[] = []
+
+  for (const slide of activePlan.slides) {
+    const baseSlide = baseById.get(slide.id)
+    if (!baseSlide) continue
+    const body: Record<string, unknown> = {}
+
+    if (slide.title_intent !== baseSlide.title_intent) {
+      body.title = slide.title_intent
+      body.title_intent = slide.title_intent
+    }
+    if (slide.key_message !== baseSlide.key_message) {
+      body.key_message = slide.key_message
+    }
+    const nextBullets = slideBullets(slide)
+    const prevBullets = slideBullets(baseSlide)
+    if (!sameStringList(nextBullets, prevBullets)) {
+      body.bullets = nextBullets
+      body.content_units = slide.content_units
+    }
+    if (slide.purpose !== baseSlide.purpose) {
+      body.purpose = slide.purpose
+    }
+    if (slide.desired_visual !== baseSlide.desired_visual) {
+      body.desired_visual = slide.desired_visual
+    }
+    if (slide.index !== baseSlide.index) {
+      body.index = slide.index
+    }
+
+    if (Object.keys(body).length > 0) {
+      patches.push({ slideId: slide.id, body })
+    }
+  }
+
+  return patches
+}
+

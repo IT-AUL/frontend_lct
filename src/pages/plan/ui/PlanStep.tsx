@@ -1,14 +1,14 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { usePatchPlanSlide, usePlanSlideAction } from '@/entities/assistant'
-import { hasChartData, type DeckPlan, type GenerationCreate } from '@/entities/generation'
+import { hasChartData, slidePurposeLabel, type DeckPlan, type GenerationCreate, type SlidePlan } from '@/entities/generation'
 import { applyQuickAction, changeSlideChart, usePlanDraft, useResearchPlanSlide, type QuickSlideAction } from '@/features/edit-deck-plan'
 import { humanError } from '@/shared/api'
 import { pluralize } from '@/shared/lib/format'
 import { Button, Segmented } from '@/shared/ui'
-import { PlanCard } from '@/widgets/deck-plan'
+import { PlanCard, resolveDeckKeyMessage } from '@/widgets/deck-plan'
 import { StepShell } from '@/widgets/step-shell'
 import styles from './PlanPage.module.css'
-import { SlideEditor } from './SlideEditor'
+import { SlideEditor, type EditorSlidePurpose, type SlideEditorPatch } from './SlideEditor'
 
 interface PlanStepProps {
   draftKey: string
@@ -33,6 +33,51 @@ const VIEW_OPTIONS: readonly { value: PlanView; label: string }[] = [
   { value: 'list', label: 'Список' },
   { value: 'grid', label: 'Сетка' },
 ]
+
+const DRAFT_STORAGE_PREFIX = 'deckdna.plan-draft.v1:'
+
+const EDITOR_ROLE_LABEL: Record<EditorSlidePurpose, string> = {
+  title: 'Титул',
+  summary: 'Вывод',
+  data: 'Данные',
+  comparison: 'Сравнение',
+  roadmap: 'План',
+  closing: 'Финал',
+}
+
+function isUserAddedSlide(slide: SlidePlan): boolean {
+  if (slide.purpose !== 'custom') return false
+  if (slide.id.startsWith('slide-user-')) return true
+  if (slide.evidence_ids.some((raw) => raw.trim().length > 0)) return false
+  if (slide.content_units.some((unit) => unit.origin === 'user')) return true
+  return !/^slide-\d+$/i.test(slide.id)
+}
+
+function toCardSlide(slide: SlidePlan): SlidePlan {
+  const purpose: string = slide.purpose
+  if (purpose === 'title') return slide
+  if (purpose === 'closing' || purpose === 'thank_you') {
+    return purpose === 'thank_you' ? slide : { ...slide, purpose: 'thank_you' }
+  }
+  let roleLabel: string
+  if (purpose === 'custom') {
+    roleLabel = isUserAddedSlide(slide) ? 'Свой слайд' : 'Контент'
+  } else if (purpose in EDITOR_ROLE_LABEL) {
+    roleLabel = EDITOR_ROLE_LABEL[purpose as EditorSlidePurpose]
+  } else {
+    roleLabel = slidePurposeLabel(purpose) ?? 'Контент'
+  }
+  return purpose === roleLabel ? slide : { ...slide, purpose: roleLabel as SlidePlan['purpose'] }
+}
+
+function persistDraftToStorage(draftKey: string, baseId: string, plan: DeckPlan) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(`${DRAFT_STORAGE_PREFIX}${draftKey}`, JSON.stringify({ baseId, plan }))
+  } catch {
+    return
+  }
+}
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
@@ -61,7 +106,15 @@ export function PlanStep(props: PlanStepProps) {
   const [researching, setResearching] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [view, setView] = useState<PlanView>('list')
-  const [message, setMessage] = useState(draft.plan.brief.key_message ?? keyMessage ?? '')
+  const resolvedKeyMessage = resolveDeckKeyMessage(draft.plan, keyMessage)
+  const [message, setMessage] = useState(resolvedKeyMessage)
+  const [prevResolved, setPrevResolved] = useState(resolvedKeyMessage)
+  if (resolvedKeyMessage !== prevResolved) {
+    setPrevResolved(resolvedKeyMessage)
+    if (!message.trim() && resolvedKeyMessage) {
+      setMessage(resolvedKeyMessage)
+    }
+  }
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -78,6 +131,20 @@ export function PlanStep(props: PlanStepProps) {
   const ordered = [...draft.plan.slides].sort((a, b) => a.index - b.index)
   const selected = ordered.find((slide) => slide.id === selectedId) ?? null
   const untitled = ordered.some((slide) => slide.title_intent.trim() === '')
+
+  const updateSlideDraft = (slideId: string, patch: SlideEditorPatch) => {
+    const { purpose, ...rest } = patch
+    if (purpose === undefined) {
+      draft.update(slideId, rest)
+      return
+    }
+    const nextPlan: DeckPlan = {
+      ...draft.plan,
+      slides: draft.plan.slides.map((item) => (item.id === slideId ? { ...item, ...rest, purpose: purpose as SlidePlan['purpose'] } : item)),
+    }
+    draft.replace(nextPlan, true)
+    persistDraftToStorage(draftKey, basePlan.id, nextPlan)
+  }
 
   const changeChart = (slideId: string, chartType: string) => {
     setError(null)
@@ -154,6 +221,15 @@ export function PlanStep(props: PlanStepProps) {
     onKeyMessageCommit(next, { ...draft.plan, brief: { ...draft.plan.brief, key_message: next } })
   }
 
+  const planWithCurrentMessage = (): DeckPlan => {
+    const next = message.trim()
+    if (!next || next === (draft.plan.brief.key_message ?? '').trim()) return draft.plan
+    const nextPlan: DeckPlan = { ...draft.plan, brief: { ...draft.plan.brief, key_message: next } }
+    draft.updateKeyMessage(next)
+    persistDraftToStorage(draftKey, basePlan.id, nextPlan)
+    return nextPlan
+  }
+
   const busy = autopilotPending
   const disabled = busy || untitled
 
@@ -174,7 +250,7 @@ export function PlanStep(props: PlanStepProps) {
             {ordered.map((slide, position) => (
               <li key={slide.id}>
                 <PlanCard
-                  slide={slide}
+                  slide={toCardSlide(slide)}
                   number={position + 1}
                   selected={slide.id === selectedId}
                   offTopic={slide.supports_key_message === false}
@@ -209,7 +285,7 @@ export function PlanStep(props: PlanStepProps) {
                   last={ordered.indexOf(selected) === ordered.length - 1}
                   researching={researching === selected.id}
                   canResearch={Boolean(planId) && researchSupported}
-                  onUpdate={(patch) => draft.update(selected.id, patch)}
+                  onUpdate={(patch) => updateSlideDraft(selected.id, patch)}
                   onUnitChange={(position, text) => draft.updateUnit(selected.id, position, text)}
                   onUnitAdd={() => draft.addUnit(selected.id)}
                   onUnitRemove={(position) => draft.removeUnit(selected.id, position)}
@@ -225,10 +301,10 @@ export function PlanStep(props: PlanStepProps) {
       }
       actions={
         <>
-          <Button variant="primary" size="lg" disabled={disabled} onClick={() => onSelectStyle(draft.plan)}>
+          <Button variant="primary" size="lg" disabled={disabled} onClick={() => onSelectStyle(planWithCurrentMessage())}>
             Выбрать стиль
           </Button>
-          <Button variant="ghost" size="lg" disabled={disabled} onClick={() => onAutopilot(draft.plan)}>
+          <Button variant="ghost" size="lg" disabled={disabled} onClick={() => onAutopilot(planWithCurrentMessage())}>
             {autopilotPending ? 'Запускаю…' : 'Сделай сам'}
           </Button>
         </>

@@ -19,9 +19,13 @@ interface PlanExtrasProps {
 
 export function PlanExtras({ sufficiency, sources, targetSlides, disabled, onAdjust, onRemoveSource }: PlanExtrasProps) {
   const content = sufficiency?.contentSlides ?? null
+  const isShort = content !== null && content < targetSlides && sufficiency?.status === 'short'
+  const isEnough = content !== null && content >= targetSlides && (sufficiency?.status === 'short' || sufficiency?.status === 'ok' || sufficiency?.status === 'excess')
+  const reserve = content !== null && content > targetSlides ? `, запас — до ${content}` : ''
+
   return (
     <>
-      {sufficiency?.status === 'short' && content !== null && (
+      {isShort && (
         <div className={styles.extra}>
           <p className={styles.extraText}>
             Материала хватает на {content} {pluralize(content, ['слайд', 'слайда', 'слайдов'])} из {targetSlides}.
@@ -36,9 +40,20 @@ export function PlanExtras({ sufficiency, sources, targetSlides, disabled, onAdj
           </div>
         </div>
       )}
-      {sufficiency?.status === 'excess' && (
+      {isEnough && (
         <div className={styles.extra}>
-          <p className={styles.extraText}>Материала больше, чем помещается в {targetSlides} слайдов. Самое важное оставлю, остальное сожму.</p>
+          <p className={styles.extraText}>
+            Материала достаточно для {targetSlides} {pluralize(targetSlides, ['слайда', 'слайдов', 'слайдов'])}
+            {reserve}.
+            {sufficiency?.status === 'excess' ? ' Самое важное оставлю, остальное сожму.' : ''}
+          </p>
+        </div>
+      )}
+      {!isEnough && sufficiency?.status === 'excess' && (
+        <div className={styles.extra}>
+          <p className={styles.extraText}>
+            Материала больше, чем помещается в {targetSlides} {pluralize(targetSlides, ['слайд', 'слайда', 'слайдов'])}. Самое важное оставлю, остальное сожму.
+          </p>
         </div>
       )}
       {sources.length > 0 && (

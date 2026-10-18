@@ -29,8 +29,37 @@
   color: var(--ink-3);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.sufficiencyBanner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+
+.sufficiencyText {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sufficiencyAction {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .keyMessageValue {
@@ -135,12 +164,10 @@
 .sectionHead {
   margin-top: 8px;
   padding: 0 14px;
-  overflow: hidden;
   color: var(--ink-3);
   font-size: 12px;
   font-weight: 500;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .list > .sectionHead:first-child {
@@ -170,12 +197,10 @@
   display: inline-block;
   max-width: 100%;
   padding: 3px 8px;
-  overflow: hidden;
   border-radius: var(--radius-sm);
   background: var(--sunken);
   font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .main {
@@ -219,14 +244,12 @@
 .source {
   max-width: 100%;
   padding: 2px 7px;
-  overflow: hidden;
   border: 1px solid var(--line-2);
   border-radius: var(--radius-xs);
   color: var(--ink-2);
   font-family: var(--font-mono);
   font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .noSource {
@@ -333,10 +356,8 @@
 
 .sectionName {
   min-width: 0;
-  overflow: hidden;
   font-weight: 500;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .sectionRange {
@@ -406,11 +427,9 @@
 
 .provenanceList dd {
   margin: 0;
-  overflow: hidden;
   font-family: var(--font-mono);
   font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .live {
@@ -563,14 +582,11 @@
   flex: none;
   gap: 3px;
   align-items: center;
-  max-width: 140px;
+  max-width: 180px;
   padding: 1px 6px;
-  overflow: hidden;
   border-radius: 999px;
   font-size: 11px;
   text-decoration: none;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .origin[data-origin='user'] {
@@ -834,8 +850,7 @@ a.origin:hover {
   color: var(--ink-3);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .chartWhyText {

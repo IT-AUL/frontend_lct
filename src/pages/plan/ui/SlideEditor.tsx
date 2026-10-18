@@ -16,6 +16,30 @@ import {
 } from '@/widgets/deck-plan'
 import styles from './PlanPage.module.css'
 
+const EDITOR_PURPOSES = ['title', 'summary', 'data', 'comparison', 'roadmap', 'closing'] as const
+export type EditorSlidePurpose = (typeof EDITOR_PURPOSES)[number]
+
+const EDITOR_PURPOSE_LABEL: Record<EditorSlidePurpose, string> = {
+  title: 'Титул',
+  summary: 'Вывод',
+  data: 'Данные',
+  comparison: 'Сравнение',
+  roadmap: 'План',
+  closing: 'Финал',
+}
+
+export type SlideEditorPatch = SlidePatch & { purpose?: SlidePlan['purpose'] | EditorSlidePurpose }
+
+function resolveEditorPurpose(purpose: string): EditorSlidePurpose | null {
+  if (purpose === 'title') return 'title'
+  if (purpose === 'summary' || purpose === 'overview') return 'summary'
+  if (purpose === 'data') return 'data'
+  if (purpose === 'comparison') return 'comparison'
+  if (purpose === 'roadmap' || purpose === 'agenda' || purpose === 'timeline' || purpose === 'process') return 'roadmap'
+  if (purpose === 'closing' || purpose === 'thank_you' || purpose === 'cta') return 'closing'
+  return null
+}
+
 const ACTION_LABEL: Partial<Record<QuickSlideAction, string>> = {
   shorten: 'Сократить',
   split: 'Разбить на два',
@@ -40,7 +64,7 @@ interface SlideEditorProps {
   researching: boolean
   canResearch: boolean
   contentPack?: SourcePackLike | null
-  onUpdate: (patch: SlidePatch) => void
+  onUpdate: (patch: SlideEditorPatch) => void
   onUnitChange: (position: number, text: string) => void
   onUnitAdd: () => void
   onUnitRemove: (position: number) => void
@@ -64,6 +88,7 @@ export function SlideEditor(props: SlideEditorProps) {
   const chart = parseSlideChartView(slide)
   const actions = availableQuickActions(plan, slide.id).filter((action) => ACTION_LABEL[action as QuickSlideAction])
   const visual = slide.desired_visual ?? 'none'
+  const activePurpose = resolveEditorPurpose(slide.purpose)
 
   return (
     <div className={styles.editor}>
@@ -86,6 +111,17 @@ export function SlideEditor(props: SlideEditorProps) {
           </div>
         </div>
       )}
+
+      <div className={styles.field}>
+        <span>Роль слайда</span>
+        <div className={styles.chips} role="radiogroup" aria-label="Роль слайда">
+          {EDITOR_PURPOSES.map((role) => (
+            <button key={role} type="button" role="radio" aria-checked={activePurpose === role} className={styles.chip} onClick={() => onUpdate({ purpose: role })}>
+              {EDITOR_PURPOSE_LABEL[role]}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <label className={styles.field}>
         <span>Заголовок — вывод слайда</span>
@@ -161,10 +197,10 @@ export function SlideEditor(props: SlideEditorProps) {
 
       <div className={styles.inline}>
         <Button variant="ghost" size="sm" disabled={first} onClick={() => onMove(-1)}>
-          Выше
+          Вверх
         </Button>
         <Button variant="ghost" size="sm" disabled={last} onClick={() => onMove(1)}>
-          Ниже
+          Вниз
         </Button>
         <Button variant="ghost" size="sm" onClick={() => onAction('remove')}>
           Убрать слайд
