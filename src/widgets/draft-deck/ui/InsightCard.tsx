@@ -116,6 +116,8 @@ export function InsightCard({ entry, selected, onOpen, onEdit, onPatch, onExclud
         {dataset.file && <span className={styles.insightFile}>{dataset.file}</span>}
       </header>
 
+      <div className={styles.insightMain}>
+        <div className={styles.insightText}>
       <h3 className={styles.insightTitle}>
         {onOpen ? (
           <button type="button" className={styles.insightOpen} onClick={onOpen} aria-label={`Открыть вывод: ${title}`}>
@@ -130,7 +132,9 @@ export function InsightCard({ entry, selected, onOpen, onEdit, onPatch, onExclud
 
       <MeaningRows meaningText={meaningText} implicationText={implicationText} decide={decide} />
 
-      <InsightVisual entry={entry} figure={figure} chartType={chartType} />
+        </div>
+        <InsightVisual entry={entry} figure={figure} chartType={chartType} />
+      </div>
 
       <footer className={styles.insightFooter}>
         {source && (
