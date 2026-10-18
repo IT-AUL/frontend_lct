@@ -9,7 +9,7 @@
 }
 
 .legend {
-  margin: 0 0 4px;
+  margin: 0 0 2px;
   padding: 0;
   color: var(--ink);
   font-size: 16px;
@@ -27,72 +27,174 @@
 .options {
   display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--line);
+  gap: 6px;
 }
 
-.option {
+.optionCard {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
-  padding: 12px 4px;
-  border-bottom: 1px solid var(--line);
+  gap: 4px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.optionCard:hover:not(:disabled) {
+  border-color: var(--line-2);
+  background: var(--surface);
+}
+
+.optionCard[data-checked] {
+  border-color: var(--ink);
+  background: var(--surface);
+}
+
+.optionCard:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.optionCard:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.customCard {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.customCard:hover {
+  border-color: var(--line-2);
+  background: var(--surface);
+}
+
+.customCard[data-checked] {
+  border-color: var(--ink);
+  background: var(--surface);
+}
+
+.customTrigger {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
   cursor: pointer;
 }
 
-.option input[type='radio'] {
-  flex: none;
-  width: 16px;
-  height: 16px;
-  margin: 2px 0 0;
-  accent-color: var(--ink);
+.customTrigger:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
 }
 
-.option:hover {
-  background: var(--surface-2);
+.customTrigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
-.optionText {
+.optionTop {
   display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
   min-width: 0;
 }
 
-.optionLabel {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  color: var(--ink);
-  font-size: 15px;
-  line-height: 1.4;
+.radioDot {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--inv);
 }
 
-.option[data-checked] .optionLabel {
+.radioDot[data-checked] {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+.optionLabel {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.optionCard[data-checked] .optionLabel,
+.customTrigger[data-checked] .optionLabel {
   font-weight: 600;
 }
 
-.recommended {
+.keyCap {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
   color: var(--ink-3);
-  font-size: 13px;
-  font-weight: 400;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.optionCard[data-checked] .keyCap,
+.customTrigger[data-checked] .keyCap {
+  border-color: var(--line-2);
+  color: var(--ink-2);
 }
 
 .optionNote {
-  color: var(--ink-3);
-  font-size: 13px;
-  line-height: 1.45;
+  padding-left: 26px;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.customFieldWrap {
+  padding: 0 12px 10px 38px;
 }
 
 .customInput {
   width: 100%;
-  padding: 8px 10px;
+  height: 36px;
+  padding: 0 10px;
   border: 1px solid var(--line-2);
   border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--ink);
   font: inherit;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .customInput:focus-visible {
@@ -104,23 +206,61 @@
 .notes {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+
+.notesHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notesTitle {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.notesHint {
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.noteFieldRow {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.noteSlotLabel {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
 }
 
 .link {
   align-self: flex-start;
-  padding: 0;
-  border: 0;
-  background: none;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
   color: var(--ink-2);
   font: inherit;
-  font-size: 14px;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  transition: border-color 0.14s ease, color 0.14s ease, background 0.14s ease;
 }
 
-.link:hover {
+.link:hover:not(:disabled) {
+  border-color: var(--line-2);
+  background: var(--surface-2);
   color: var(--ink);
 }
 
@@ -129,8 +269,235 @@
   outline-offset: 2px;
 }
 
+.link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .error {
   margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--error);
+  border-radius: var(--radius-md);
+  background: var(--error-bg);
   color: var(--error);
+  font-size: 13px;
+}
+
+.specBoard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 960px;
+}
+
+.specSheet {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-stage);
+}
+
+.specHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.specHeaderMain {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 240px;
+  flex: 1;
+}
+
+.specEyebrow {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.specTitle {
+  margin: 0;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.specHeaderBadges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.specGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.specCell {
+  display: flex;
+  min-width: 0;
+}
+
+.specCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--surface-2);
+  color: var(--ink);
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.specCard[data-changed] {
+  border-color: var(--ink);
+  background: var(--surface);
+}
+
+.specCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.specCardLabel {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.specCardValue {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.specCardNote {
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.outlineSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.outlineHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.outlineHeading {
+  margin: 0;
+  color: var(--ink);
   font-size: 14px;
+  font-weight: 600;
+}
+
+.outlineSub {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.outlineList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.outlineRow {
+  display: grid;
+  grid-template-columns: 156px minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.outlineRow:last-child {
+  border-bottom: 0;
+}
+
+.outlineSlotCol {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.outlineSlot {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.outlineRole {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.outlineContentCol {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.outlineTitle {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.outlineDetail {
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+@media (max-width: 1200px) {
+  .specGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .outlineRow {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
 }

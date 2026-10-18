@@ -1,16 +1,19 @@
-import type { Question, QuestionOption, QuestionsResult } from '@/entities/assistant'
+import type { Question, QuestionOption, QuestionsResult, Understanding } from '@/entities/assistant'
 import {
   MAX_QUESTIONS_PER_TURN,
   buildAnswersPayload,
+  buildDeckSpec,
   cleanThesisNotes,
   defaultOptionValue,
   formatSuggestedSummary,
+  humanizePurpose,
   initialSelections,
   isContentShortQuestion,
   mapShortChoiceToFillMode,
   normalizeAnsweredBrief,
   normalizeContentShortOptions,
   questionTitle,
+  resolveOptionNote,
   resolveQuestionsNote,
   sanitizeQuestionCopy,
   visibleQuestions,
@@ -233,5 +236,119 @@ describe('resolveQuestionsNote', () => {
   it('falls back to the session note then a default phrase', () => {
     expect(resolveQuestionsNote(result(), 'Заметка сессии', null, null)).toBe('Заметка сессии')
     expect(resolveQuestionsNote(result(), null, null, null)).toContain('уточнений')
+  })
+})
+
+describe('humanizePurpose and resolveOptionNote', () => {
+  it('translates raw English purpose codes into Russian labels', () => {
+    expect(humanizePurpose('presentation')).toBe('Презентация по материалам')
+    expect(humanizePurpose('product')).toBe('Продуктовая презентация')
+    expect(humanizePurpose('Итоги продаж за год')).toBe('Итоги продаж за год')
+  })
+
+  it('provides one-line explanations for options with or without backend notes', () => {
+    const audQ = question({ id: 'audience', kind: 'audience' })
+    expect(resolveOptionNote(audQ, option({ value: 'совет директоров', note: null }))).toContain('Финансовый эффект')
+    expect(resolveOptionNote(audQ, option({ value: 'руководство', note: 'Заметка с сервера' }))).toBe('Заметка с сервера')
+  })
+})
+
+describe('buildDeckSpec', () => {
+  const audienceQuestion: Question = {
+    id: 'audience',
+    kind: 'audience',
+    reason: 'Не знаю, для кого презентация: от этого зависят тон и подробность.',
+    options: [
+      { value: '', label: 'Пока не определено — нейтральный черновик', recommended: true, note: null },
+      { value: 'руководство', label: 'Руководство', recommended: false, note: null },
+      { value: 'совет директоров', label: 'Совет директоров', recommended: false, note: null },
+    ],
+    allow_custom: true,
+    optional: false,
+  }
+
+  const understanding: Understanding = {
+    content_pack_id: 'pack_1',
+    blocks: [],
+    summary: {
+      capacity_slides: 7,
+      main_points: ['Выручка: рост в 2,1 раза за 24 месяца'],
+      assistant_note: null,
+    },
+    datasets: [
+      {
+        id: 'ds-1',
+        title: 'Purchases',
+        file: 'purchases.csv',
+        profile_summary: null,
+        task: 'trend',
+        task_ru: 'динамика',
+        recommendations: [],
+        why: null,
+        insights: [],
+      },
+    ],
+    brief: { purpose: 'Итоги продаж за год' },
+    context: null,
+    interpretation: null,
+    assistant_note: null,
+  }
+
+  it('updates audience and focus dynamically when the user selects an option', () => {
+    const initial = buildDeckSpec({
+      questions: [audienceQuestion],
+      selections: initialSelections([audienceQuestion]),
+      skippedIds: new Set(),
+      suggestedBrief: { purpose: 'Итоги продаж за год', target_slide_count: 8 },
+      understanding,
+    })
+    expect(initial.items[0].value).toContain('Пока не определено')
+    expect(initial.items[0].changed).toBe(false)
+    expect(initial.items[1].value).toBe('8 слайдов')
+    expect(initial.items[2].value).toBe('Выручка: рост в 2,1 раза за 24 месяца')
+
+    const updated = buildDeckSpec({
+      questions: [audienceQuestion],
+      selections: {
+        audience: { mode: 'option', value: 'совет директоров', customText: '' },
+      },
+      skippedIds: new Set(),
+      suggestedBrief: { purpose: 'Итоги продаж за год', target_slide_count: 8 },
+      understanding,
+    })
+    expect(updated.items[0].value).toBe('Совет директоров')
+    expect(updated.items[0].changed).toBe(true)
+    expect(updated.items[2].value).toContain('Финансовый эффект')
+    expect(updated.items[2].changed).toBe(true)
+  })
+
+  it('reflects content_short choices and custom thesis notes in slide count and outline', () => {
+    const shortQ: Question = {
+      id: 'content_short',
+      kind: 'content_short',
+      reason: 'Материала хватает на 4 из 8 слайдов.',
+      options: normalizeContentShortOptions([]),
+      allow_custom: false,
+      optional: false,
+    }
+
+    const shrinkSpec = buildDeckSpec({
+      questions: [shortQ],
+      selections: { content_short: { mode: 'option', value: 'shrink', customText: '' } },
+      skippedIds: new Set(),
+      suggestedBrief: { purpose: 'presentation', target_slide_count: 8 },
+    })
+    expect(shrinkSpec.topic).toBe('Презентация по материалам')
+    expect(shrinkSpec.items[1].value).toContain('4 слайда · по материалу')
+
+    const notesSpec = buildDeckSpec({
+      questions: [shortQ],
+      selections: { content_short: { mode: 'option', value: 'notes', customText: '' } },
+      skippedIds: new Set(),
+      suggestedBrief: { purpose: 'presentation', target_slide_count: 8 },
+      thesisNotes: ['Рост корпоративного сегмента', 'Снижение оттока', ''],
+    })
+    expect(notesSpec.items[1].value).toContain('+2 тезиса')
+    expect(notesSpec.items[2].value).toBe('Рост корпоративного сегмента')
   })
 })

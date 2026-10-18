@@ -69,11 +69,15 @@ test('assistant steps 2–3: data insights, insight details, questions and plan'
   await test.step('step 3 asks with a recommended answer and leads to the plan', async () => {
     await page.getByRole('button', { name: 'Дальше', exact: true }).click()
     await expect(page).toHaveURL(new RegExp(`/projects/${projectId}/questions`))
+    const spec = page.getByRole('region', { name: 'Спецификация будущей колоды' })
+    await expect(spec).toBeVisible()
     const audience = page.getByRole('radio', { name: /Совет директоров/ })
     await expect(audience).toBeVisible()
     await expect(page.getByText('советую').first()).toBeVisible()
-    await audience.check()
+    await audience.click()
     await expect(audience).toBeChecked()
+    await expect(spec).toContainText('Совет директоров')
+    await expect(spec).toContainText('Финансовый эффект, стратегия и решения')
 
     await page.getByRole('button', { name: 'Составить план', exact: true }).click()
     await expect(page).toHaveURL(new RegExp(`/projects/${projectId}/plan`), { timeout: 30_000 })

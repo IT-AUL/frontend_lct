@@ -18,10 +18,10 @@ import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
 import { isAbortError, PlanBuildProgress, requestAndStorePlan, usePlanBuild } from '@/features/edit-deck-plan'
 import { routes } from '@/shared/config'
 import { Button, EmptyState, Skeleton } from '@/shared/ui'
-import { DraftDeck } from '@/widgets/draft-deck'
 import { StepShell } from '@/widgets/step-shell'
 import {
   buildAnswersPayload,
+  buildDeckSpec,
   cleanThesisNotes,
   initialSelections,
   questionTitle,
@@ -34,11 +34,18 @@ import {
   type QuestionSelection,
 } from '../lib/questions'
 import { Choices } from './Choices'
+import { DeckSpec } from './DeckSpec'
 import styles from './QuestionsPage.module.css'
 
 function errorMessage(error: unknown): string | null {
   if (!error || isAbortError(error)) return null
   return humanError(error)
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  const tag = target.tagName
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable
 }
 
 export function QuestionsPage() {
@@ -94,6 +101,7 @@ export function QuestionsPage() {
   const [feedbackNote, setFeedbackNote] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [buildingPlan, setBuildingPlan] = useState(false)
+  const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null)
   const autoSkippedRef = useRef(false)
 
   const suggestedBrief = questionsQuery.data?.suggested_brief
@@ -227,7 +235,7 @@ export function QuestionsPage() {
     runBuildPlan,
   ])
 
-  const handleSelectOption = (questionId: string, value: string) => {
+  const handleSelectOption = useCallback((questionId: string, value: string) => {
     setUserSelections((prev) => ({
       ...prev,
       [questionId]: { mode: 'option', value, customText: prev[questionId]?.customText ?? '' },
@@ -238,14 +246,14 @@ export function QuestionsPage() {
       next.delete(questionId)
       return next
     })
-  }
+  }, [])
 
-  const handleSelectCustom = (questionId: string) => {
+  const handleSelectCustom = useCallback((questionId: string) => {
     setUserSelections((prev) => ({
       ...prev,
       [questionId]: { mode: 'custom', value: prev[questionId]?.value ?? '', customText: prev[questionId]?.customText ?? '' },
     }))
-  }
+  }, [])
 
   const handleCustomTextChange = (questionId: string, customText: string) => {
     setUserSelections((prev) => ({
@@ -261,6 +269,49 @@ export function QuestionsPage() {
       return next
     })
   }
+
+  const loading = projectLoading || sessionLoading || questionsQuery.isLoading
+  const busy = buildingPlan || submitAnswers.isPending || addNotes.isPending || autopilot.isPending
+
+  useEffect(() => {
+    if (loading || busy || questions.length === 0) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (isEditableTarget(event.target)) return
+      if (event.key < '1' || event.key > '5') return
+      const targetQuestion =
+        questions.find((q) => q.id === activeQuestionId && !skippedIds.has(q.id)) ??
+        questions.find((q) => !skippedIds.has(q.id))
+      if (!targetQuestion) return
+      const idx = Number(event.key) - 1
+      if (idx < targetQuestion.options.length) {
+        const opt = targetQuestion.options[idx]
+        if (opt) {
+          event.preventDefault()
+          handleSelectOption(targetQuestion.id, opt.value)
+        }
+      } else if (idx === targetQuestion.options.length && targetQuestion.allow_custom) {
+        event.preventDefault()
+        handleSelectCustom(targetQuestion.id)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [activeQuestionId, busy, handleSelectCustom, handleSelectOption, loading, questions, skippedIds])
+
+  const deckSpec = useMemo(
+    () =>
+      buildDeckSpec({
+        questions,
+        selections,
+        skippedIds,
+        suggestedBrief,
+        understanding: understanding.data ?? null,
+        thesisNotes,
+        fallbackSlideCount: targetSlideCount,
+      }),
+    [questions, selections, skippedIds, suggestedBrief, understanding.data, thesisNotes, targetSlideCount],
+  )
 
   const handleSubmit = () => {
     const payload = buildAnswersPayload(questions, selections, skippedIds)
@@ -313,7 +364,6 @@ export function QuestionsPage() {
     return <EmptyState title="Не удалось открыть проект" description={projectError.message} />
   }
 
-  const loading = projectLoading || sessionLoading || questionsQuery.isLoading
   const single = questions.length === 1
   const first = questions[0]
   const title = buildingPlan ? 'Составляю план' : single && first ? questionTitle(first) : 'Пара уточнений'
@@ -323,14 +373,19 @@ export function QuestionsPage() {
     : single
       ? (questions[0]?.reason ?? resolveQuestionsNote(questionsQuery.data, session?.assistant_note, null, feedbackNote))
       : resolveQuestionsNote(questionsQuery.data, session?.assistant_note, shortSelected ? 'notes' : null, feedbackNote)
-  const busy = buildingPlan || submitAnswers.isPending || addNotes.isPending || autopilot.isPending
 
   return (
     <StepShell
       title={title}
       note={note}
-      canvasLabel="Черновик презентации"
-      canvas={understanding.data ? <DraftDeck understanding={understanding.data} selection={null} quiet /> : <Skeleton style={{ height: 320, borderRadius: 6 }} />}
+      canvasLabel="Спецификация колоды"
+      canvas={
+        loading ? (
+          <Skeleton style={{ height: 320, borderRadius: 6 }} />
+        ) : (
+          <DeckSpec spec={deckSpec} />
+        )
+      }
       actions={
         <>
           <Button variant="primary" size="lg" disabled={busy || loading} onClick={handleSubmit}>
@@ -354,7 +409,9 @@ export function QuestionsPage() {
             reason={single ? null : question.reason}
             selection={selections[question.id]}
             skipped={skippedIds.has(question.id)}
+            disabled={busy}
             notes={thesisNotes}
+            onActivate={() => setActiveQuestionId(question.id)}
             onOption={(value) => handleSelectOption(question.id, value)}
             onCustom={() => handleSelectCustom(question.id)}
             onCustomText={(text) => handleCustomTextChange(question.id, text)}
