@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
-import { useJobEvents } from '@/entities/assistant'
+import { useAssistantSession, useJobEvents } from '@/entities/assistant'
 import { isTrackingId, useGenerationTracker, useJob, type DeckPlan, type GenerationPhase, type GenerationTracker } from '@/entities/generation'
 import { markEvidence, projectRunId, rememberRun, useProject } from '@/entities/project'
 import { useTemplate } from '@/entities/template'
 import { CancelGenerationButton } from '@/features/cancel-generation'
-import { readPlanRequest } from '@/features/edit-deck-plan'
+import { fetchAndStorePlan, readPlanRequest, type StoredPlanRequest } from '@/features/edit-deck-plan'
 import { useRerunGeneration } from '@/features/rerun-generation'
 import {
   BuildSlideInspector,
@@ -182,15 +182,42 @@ export function GenerationPage() {
 
   const lost = !isJobRun && isTrackingLost(tracker.error)
   const { data: project } = useProject(projectId)
+  const { data: session } = useAssistantSession(projectId)
   const serverLatestRunId = project?.latest_run_id ?? null
   const { data: template } = useTemplate(tracker.generation?.template_id)
 
-  const storedPlan = useMemo(() => readPlanRequest(projectId), [projectId])
+  const initialStoredPlan = useMemo(() => readPlanRequest(projectId), [projectId])
+  const [fetchedStoredPlan, setFetchedStoredPlan] = useState<StoredPlanRequest | null>(null)
+  const storedPlan = initialStoredPlan ?? fetchedStoredPlan
   const deckPlan: DeckPlan | null =
     tracker.generation?.deck_plan ??
     routeState?.deckPlan ??
     storedPlan?.result.proposals[0]?.deckPlan ??
     null
+  const sessionPlanId = session?.artifacts.plan_id ?? tracker.generation?.deck_plan_id ?? null
+
+  useEffect(() => {
+    if (deckPlan || !projectId || !sessionPlanId) return
+    const controller = new AbortController()
+    const templateId = tracker.generation?.template_id ?? session?.artifacts.template_id ?? ''
+    const contentPackId = tracker.generation?.content_pack_id ?? session?.artifacts.content_pack_id ?? ''
+    void fetchAndStorePlan(
+      projectId,
+      sessionPlanId,
+      {
+        template_id: templateId,
+        content_pack_id: contentPackId,
+        brief: { purpose: 'Презентация', audience: '', language: 'ru', target_slide_count: 12 },
+      },
+      {},
+      { signal: controller.signal },
+    )
+      .then((loaded) => {
+        if (loaded) setFetchedStoredPlan(loaded)
+      })
+      .catch(() => undefined)
+    return () => controller.abort()
+  }, [deckPlan, projectId, sessionPlanId, tracker.generation?.template_id, tracker.generation?.content_pack_id, session?.artifacts.template_id, session?.artifacts.content_pack_id])
 
   const assistantNote = useMemo(
     () => latestAssistantNote(jobEvents.events, null, deckPlan?.slides.length),
