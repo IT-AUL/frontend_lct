@@ -128,9 +128,29 @@ export function updateSlide(plan: DeckPlan, slideId: string, patch: SlidePatch):
   })
 }
 
+function fallbackSlideChart(slide: SlidePlan): SlideChartInfo | null {
+  const unit = slide.content_units.find((item) => isRecord(item.chart_spec) || item.kind === 'chart' || Boolean(item.chart_ref))
+  const rawChartType = unit?.chart_spec?.chart_type
+  const specType =
+    (typeof rawChartType === 'string' && rawChartType.trim() ? rawChartType.trim() : null) ??
+    (slide.purpose === 'data' ? 'bar' : null)
+  if (!specType) return null
+  return {
+    type: specType,
+    reasons: ['по структуре данных'],
+    alternatives: [
+      { type: specType === 'line' ? 'bar' : 'line', reasons: ['альтернативное представление'] },
+      { type: 'table', reasons: ['точные цифры по строкам'] },
+    ],
+    viewId: null,
+    why: null,
+    previewArtifactId: null,
+  }
+}
+
 export function changeSlideChart(plan: DeckPlan, slideId: string, chartType: string): DeckPlan {
   return mapSlide(plan, slideId, (slide) => {
-    const current = parseSlideChart(slide.chart)
+    const current = parseSlideChart(slide.chart) ?? fallbackSlideChart(slide)
     if (!current || current.type === chartType) return slide
     const picked = current.alternatives.find((alt) => alt.type === chartType)
     const nextReasons = picked?.reasons.length ? picked.reasons : ['выбрано пользователем']

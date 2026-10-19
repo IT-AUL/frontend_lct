@@ -46,7 +46,8 @@
     },
     "brief": {
       "purpose": "Итоги продаж за год для совета директоров",
-      "language": "ru"
+      "language": "ru",
+      "target_slide_count": 12
     },
     "interpretation": {
       "status": "not_requested"

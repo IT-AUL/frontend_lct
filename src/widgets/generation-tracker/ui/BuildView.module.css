@@ -206,6 +206,43 @@
   outline-offset: 2px;
 }
 
+.contentFillSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.contentFillLine {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.contentFillSources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contentFillSourceItem {
+  font-size: 12px;
+}
+
+.contentFillSourceLink {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .empty {
   margin: 0;
   color: var(--ink-2);

@@ -36,7 +36,7 @@ describe('parseSlideChartView', () => {
     expect(view?.options[0]).toMatchObject({ active: true, label: 'Линия' })
   })
 
-  it('falls back to reasons when why is missing, normalizes Russian case grammar, and dedupes alternatives', () => {
+  it('falls back to reasons when why is missing, normalizes Russian case grammar, and guarantees 2-3 ranked alternatives', () => {
     const slide: SlidePlan = {
       ...charted,
       chart: {
@@ -51,7 +51,34 @@ describe('parseSlideChartView', () => {
     expect(view?.options[1]?.reasons).toEqual(['тренд', 'в задаче сказано про структуру'])
   })
 
-  it('returns null without a chart', () => {
+  it('infers a chart explanation with 2-3 ranked alternatives for a data slide when slide.chart is null', () => {
+    const unchartDataSlide: SlidePlan = {
+      ...charted,
+      purpose: 'data',
+      chart: null,
+      content_units: [
+        {
+          role: 'chart',
+          kind: 'chart',
+          text: 'Выручка по кварталам',
+          chart_spec: { chart_type: 'line', series_count: 1, has_axis_labels: true, has_units: true },
+        },
+        {
+          role: 'bullet',
+          kind: 'bullet',
+          text: 'Рост на 42% за 4 квартала',
+        },
+      ],
+    }
+    const view = parseSlideChartView(unchartDataSlide)
+    expect(view).not.toBeNull()
+    expect(view?.type).toBe('line')
+    expect(view?.why).toContain('Линия:')
+    expect(view?.options.map((option) => option.type)).toEqual(['line', 'bar', 'table'])
+    expect(view?.options[1]?.reasons.length).toBeGreaterThan(0)
+  })
+
+  it('returns null without a chart or data signals', () => {
     expect(parseSlideChartView({ chart: null })).toBeNull()
     expect(parseSlideChartView({ chart: { type: '' } })).toBeNull()
   })

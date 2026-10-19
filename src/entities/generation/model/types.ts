@@ -1,4 +1,4 @@
-import type { PlanResearch, PlanSufficiency } from '../lib/planExtras'
+import type { ContentFillSummary, PlanResearch, PlanSufficiency } from '../lib/planExtras'
 import type { Schemas } from '@/shared/api'
 
 export type GenerationDetail = Schemas['GenerationDetail']
@@ -53,6 +53,7 @@ export interface PlanDraftResult {
   proposals: PlanProposal[]
   sufficiency: PlanSufficiency | null
   research: PlanResearch | null
+  contentFill?: ContentFillSummary | null
 }
 
 export type PlanRequest = Omit<Schemas['PlanRequest'], 'run_async'> & { run_async?: boolean }

@@ -99,4 +99,19 @@ describe('SlideEditor research outcome', () => {
     renderEditor()
     expect(screen.getByRole('status')).toHaveTextContent('Нашёл и добавил: NPS вырос с 41 до 54 п.')
   })
+
+  it('renders ChartReasoningBox with ranked alternatives and reasons for a data slide and calls onChart', () => {
+    const onChart = vi.fn()
+    const dataSlide: SlidePlan = {
+      ...(deckPlan.slides.find((item) => item.id === 'slide-2') as SlidePlan),
+      chart: null,
+    }
+    renderEditor({ slide: dataSlide, onChart })
+
+    const box = screen.getByLabelText(/^Почему такой график/)
+    expect(box).toHaveTextContent('Почему такой график')
+    expect(box).toHaveTextContent('Столбцы: сравнение отдельных периодов по высоте столбцов')
+    fireEvent.click(screen.getByRole('radio', { name: 'Столбцы' }))
+    expect(onChart).toHaveBeenCalledWith('bar')
+  })
 })

@@ -1,6 +1,6 @@
 import { ApiError, requestJson } from '@/shared/api'
 import { API_BASE } from '@/shared/config'
-import { applyPlanEvent, EMPTY_PROGRESS, parseResearch, parseSse, parseSufficiency, type PlanProgress } from '../lib/planExtras'
+import { applyPlanEvent, EMPTY_PROGRESS, parseContentFill, parseResearch, parseSse, parseSufficiency, type PlanProgress } from '../lib/planExtras'
 import { isTerminalState } from '../model/state'
 import type { DeckPlan, Job, PlanDraftResult, PlanProposal, PlanRequest } from '../model/types'
 
@@ -27,7 +27,14 @@ export function parsePlanDraft(payload: unknown): PlanDraftResult {
   const planId = typeof record.plan_id === 'string' ? record.plan_id : null
   const list = Array.isArray(record.plans) ? record.plans : [payload]
   const proposals = list.map(toProposal).filter((proposal): proposal is PlanProposal => proposal !== null)
-  return { planId, proposals, sufficiency: parseSufficiency(record.sufficiency), research: parseResearch(record.research) }
+  const contentFill = parseContentFill(record.content_fill, record)
+  return {
+    planId,
+    proposals,
+    sufficiency: parseSufficiency(record.sufficiency, record.content_fill),
+    research: parseResearch(record.research, record.content_fill),
+    ...(contentFill ? { contentFill } : {}),
+  }
 }
 
 interface PlanAccepted {

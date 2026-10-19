@@ -396,7 +396,7 @@ export function PlanDraftPage() {
     }
   }
 
-  const { sufficiency, research, planId } = stored.result
+  const { sufficiency, research, contentFill, planId } = stored.result
   const canonicalBasePlan = withCanonicalBrief(proposal.deckPlan, sessionQuery.data?.brief)
   const resolvedKeyMessage = resolveDeckKeyMessage(canonicalBasePlan, stored.keyMessage, sessionQuery.data?.brief ?? null)
 
@@ -427,11 +427,15 @@ export function PlanDraftPage() {
       extra={
         <PlanExtras
           sufficiency={sufficiency}
+          contentFill={contentFill ?? null}
           sources={research?.sources ?? []}
           targetSlides={stored.request.brief.target_slide_count}
+          acceptedShortage={stored.contentFill === 'keep'}
           disabled={rebuilding}
           onAdjust={(adjustment) => void rebuild(adjustment)}
           onRemoveSource={(sourceId) => void rebuild({}, [...excludedSources(stored), sourceId])}
+          onAddFiles={() => navigate(routes.start(projectId))}
+          onAnswerQuestions={() => navigate(routes.questions(projectId))}
         />
       }
     />

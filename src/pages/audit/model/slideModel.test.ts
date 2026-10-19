@@ -5,6 +5,7 @@ import type { SlideInfo, VariantSummary } from '@/entities/variant'
 import {
   buildExplainView,
   buildReworkChips,
+  buildSlideChartViewFromExplain,
   buildSlideNotesView,
   chartTypeLabel,
   currentRevisionOf,
@@ -167,6 +168,32 @@ describe('polishModel', () => {
     expect(view.hasChart).toBe(true)
     expect(view.chosenLabel).toBe('Горизонтальные столбцы')
     expect(view.alternatives.map((alt) => alt.label)).toEqual(['Круговая'])
+
+    const chartView = buildSlideChartViewFromExplain(view, planSlide)
+    expect(chartView).not.toBeNull()
+    expect(chartView?.type).toBe('bar_horizontal')
+    expect(chartView?.options.map((opt) => opt.type)).toEqual(['bar_horizontal', 'pie', 'bar'])
+  })
+
+  it('infers chart explanation for a data slide when both explain endpoint and planSlide.chart are missing', () => {
+    const planSlide = {
+      id: 'slide-4',
+      index: 3,
+      purpose: 'data',
+      title_intent: 'География поставок',
+      key_message: 'Москва — 52%',
+      evidence_ids: ['pack:ds-1'],
+      content_units: [
+        { role: 'chart', kind: 'chart', text: 'Регионы', chart_spec: { chart_type: 'bar', series_count: 1 } },
+      ],
+      chart: null,
+    } as unknown as DeckPlan['slides'][number]
+
+    const view = buildExplainView(null, planSlide, undefined, null)
+    expect(view.hasChart).toBe(true)
+    expect(view.chosenType).toBe('bar')
+    expect(view.chosenLabel).toBe('Столбцы')
+    expect(view.alternatives.length).toBeGreaterThanOrEqual(2)
   })
 
   it('builds rework chips including chart alternatives and non-current styles', () => {

@@ -2,8 +2,20 @@ export { generationKeys, useCancelGeneration, useGeneration, useJob, useRetryGen
 export { fetchSlideDrafts } from './api/requests'
 export { parsePlanDraft, PLAN_POLL_INTERVAL_MS, requestPlans } from './api/plans'
 export type { PlanRequestOptions } from './api/plans'
-export { applyPlanEvent, EMPTY_PROGRESS, isUnitLocked, parseResearch, parseSse, parseSufficiency, unitOrigin, unitSourceId } from './lib/planExtras'
-export type { PlanProgress, PlanResearch, PlanSufficiency, ResearchSource, SufficiencyStatus, UnitOrigin } from './lib/planExtras'
+export {
+  applyPlanEvent,
+  EMPTY_PROGRESS,
+  formatFactsByOriginText,
+  formatShortageExplanationText,
+  isUnitLocked,
+  parseContentFill,
+  parseResearch,
+  parseSse,
+  parseSufficiency,
+  unitOrigin,
+  unitSourceId,
+} from './lib/planExtras'
+export type { ContentFillSummary, FactsByOrigin, PlanProgress, PlanResearch, PlanSufficiency, ResearchSource, SufficiencyStatus, UnitOrigin } from './lib/planExtras'
 export { budgetStatus, elapsedSeconds } from './lib/budget'
 export type { BudgetStatus, GenerationTiming } from './lib/budget'
 export { CONTENT_FILL_MODES, contentFillValue, isContentFillMode, suggestedContentFill } from './lib/contentFill'

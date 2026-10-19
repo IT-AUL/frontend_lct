@@ -1,4 +1,10 @@
-import type { ContentFillMode, PlanSufficiency, ResearchSource } from '@/entities/generation'
+import {
+  formatFactsByOriginText,
+  type ContentFillMode,
+  type ContentFillSummary,
+  type PlanSufficiency,
+  type ResearchSource,
+} from '@/entities/generation'
 import { pluralize } from '@/shared/lib/format'
 import { Button, Icon, X } from '@/shared/ui'
 import styles from './PlanPage.module.css'
@@ -10,32 +16,78 @@ export interface PlanAdjustment {
 
 interface PlanExtrasProps {
   sufficiency: PlanSufficiency | null
+  contentFill?: ContentFillSummary | null
   sources: readonly ResearchSource[]
   targetSlides: number
+  acceptedShortage?: boolean
   disabled: boolean
   onAdjust: (adjustment: PlanAdjustment) => void
   onRemoveSource: (sourceId: string) => void
+  onAddFiles?: () => void
+  onAnswerQuestions?: () => void
 }
 
-export function PlanExtras({ sufficiency, sources, targetSlides, disabled, onAdjust, onRemoveSource }: PlanExtrasProps) {
-  const content = sufficiency?.contentSlides ?? null
-  const isShort = content !== null && content < targetSlides && sufficiency?.status === 'short'
-  const isEnough = content !== null && content >= targetSlides && (sufficiency?.status === 'short' || sufficiency?.status === 'ok' || sufficiency?.status === 'excess')
+export function PlanExtras({
+  sufficiency,
+  contentFill = null,
+  sources,
+  targetSlides,
+  acceptedShortage = false,
+  disabled,
+  onAdjust,
+  onRemoveSource,
+  onAddFiles,
+  onAnswerQuestions,
+}: PlanExtrasProps) {
+  const hasEstimate = sufficiency !== null || Boolean(contentFill)
+  const content = contentFill?.capacity ?? sufficiency?.contentSlides ?? null
+  const rawRequested = contentFill?.requested ?? sufficiency?.targetSlides ?? targetSlides
+  const requested = acceptedShortage && content !== null && targetSlides <= content ? targetSlides : rawRequested
+  const isShort =
+    hasEstimate &&
+    content !== null &&
+    requested > 0 &&
+    content < requested &&
+    (sufficiency?.status === 'short' ||
+      (contentFill?.capacity !== null &&
+        contentFill?.capacity !== undefined &&
+        contentFill?.requested !== null &&
+        contentFill?.requested !== undefined &&
+        contentFill.capacity < contentFill.requested))
+  const isEnough =
+    hasEstimate &&
+    !isShort &&
+    content !== null &&
+    content >= targetSlides &&
+    (sufficiency?.status === 'short' || sufficiency?.status === 'ok' || sufficiency?.status === 'excess' || Boolean(contentFill))
   const reserve = content !== null && content > targetSlides ? `, запас — до ${content}` : ''
+  const factsLine = formatFactsByOriginText(contentFill)
+  const effectiveSources = sources.length > 0 ? sources : (contentFill?.webSources ?? [])
 
   return (
     <>
-      {isShort && (
-        <div className={styles.extra}>
+      {isShort && content !== null && (
+        <div className={styles.extra} role="status">
           <p className={styles.extraText}>
-            Материала хватает на {content} {pluralize(content, ['слайд', 'слайда', 'слайдов'])} из {targetSlides}.
+            Материалов хватит примерно на {content} {pluralize(content, ['слайд', 'слайда', 'слайдов'])} из {requested}.
           </p>
+          {contentFill?.shortageReason && <p className={styles.hint}>{contentFill.shortageReason}</p>}
           <div className={styles.inline}>
-            <Button variant="secondary" size="sm" disabled={disabled} onClick={() => onAdjust({ contentFill: 'expand' })}>
-              Дополнить
+            {onAddFiles && (
+              <Button variant="secondary" size="sm" disabled={disabled} onClick={onAddFiles}>
+                Добавить файлы
+              </Button>
+            )}
+            {onAnswerQuestions && (
+              <Button variant="secondary" size="sm" disabled={disabled} onClick={onAnswerQuestions}>
+                Ответить на вопросы
+              </Button>
+            )}
+            <Button variant="secondary" size="sm" disabled={disabled} onClick={() => onAdjust({ contentFill: 'keep', slideCount: content })}>
+              Собрать {content} {pluralize(content, ['слайд', 'слайда', 'слайдов'])}
             </Button>
-            <Button variant="ghost" size="sm" disabled={disabled} onClick={() => onAdjust({ contentFill: 'keep', slideCount: content })}>
-              Сделать {content} {pluralize(content, ['слайд', 'слайда', 'слайдов'])}
+            <Button variant="ghost" size="sm" disabled={disabled} onClick={() => onAdjust({ contentFill: 'expand' })}>
+              Дополнить
             </Button>
           </div>
         </div>
@@ -56,11 +108,16 @@ export function PlanExtras({ sufficiency, sources, targetSlides, disabled, onAdj
           </p>
         </div>
       )}
-      {sources.length > 0 && (
+      {factsLine && (
+        <div className={styles.extra}>
+          <p className={styles.hint}>{factsLine}</p>
+        </div>
+      )}
+      {effectiveSources.length > 0 && (
         <div className={styles.extra}>
           <p className={styles.extraText}>Часть фактов нашёл в интернете:</p>
           <ul className={styles.sources}>
-            {sources.map((source) => (
+            {effectiveSources.map((source) => (
               <li key={source.id} className={styles.source}>
                 {source.url ? (
                   <a href={source.url} target="_blank" rel="noreferrer noopener">
@@ -80,3 +137,4 @@ export function PlanExtras({ sufficiency, sources, targetSlides, disabled, onAdj
     </>
   )
 }
+

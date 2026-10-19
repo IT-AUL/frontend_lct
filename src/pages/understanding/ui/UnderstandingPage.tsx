@@ -16,6 +16,7 @@ import {
   type Understanding,
 } from '@/entities/assistant'
 import { useContentPack } from '@/entities/content-pack'
+import { parseContentFill } from '@/entities/generation'
 import { requestJson, humanError } from '@/shared/api'
 import { readJson, writeJson } from '@/shared/lib/storage'
 import { pluralize } from '@/shared/lib/format'
@@ -43,6 +44,15 @@ function errorMessage(error: unknown): string | null {
 
 function excludedKey(projectId: string): string {
   return `deckdna.understanding-excluded:${projectId}`
+}
+
+function readBriefSlideCount(brief: Record<string, unknown> | undefined | null): number | null {
+  if (!brief) return null
+  for (const key of ['target_slide_count', 'slide_count', 'requested_slides', 'requested']) {
+    const val = brief[key]
+    if (typeof val === 'number' && Number.isFinite(val) && val > 0) return val
+  }
+  return null
 }
 
 export function UnderstandingPage() {
@@ -296,20 +306,25 @@ export function UnderstandingPage() {
     }
   }
 
-  const handleContinue = async () => {
+  const handleContinue = async (overrideSlideCount?: number) => {
     setActionError(null)
-    if (unsupportedUnderstanding && !questionsQuery.data) {
+    if (unsupportedUnderstanding && !questionsQuery.data && overrideSlideCount === undefined) {
       navigate(routes.start(projectId))
       return
     }
     const qData = questionsQuery.data
-    if (qData && qData.questions.length === 0) {
+    const forceBuild = typeof overrideSlideCount === 'number' && Number.isFinite(overrideSlideCount)
+    if (forceBuild || (qData && qData.questions.length === 0)) {
       if (session) {
         queryClient.setQueryData(assistantKeys.session(projectId), {
           ...session,
           step: 4,
           completed_steps: [...new Set([...session.completed_steps, 1, 2])],
           skipped_steps: [...new Set([...session.skipped_steps, 3])],
+          brief: {
+            ...(session.brief ?? {}),
+            ...(forceBuild ? { target_slide_count: overrideSlideCount, content_fill: 'shrink' } : {}),
+          },
         })
       }
       if (templateId && activePackId) {
@@ -317,12 +332,15 @@ export function UnderstandingPage() {
         const options = planBuild.begin()
         planBuild.enterPhase('plan')
         try {
-          const answered = await submitAnswers.mutateAsync({ answers: {} })
+          const answered = await submitAnswers.mutateAsync({
+            answers: forceBuild ? { target_slide_count: overrideSlideCount, content_fill: 'shrink' } : {},
+          })
           const mergedBrief: Record<string, unknown> = {
             ...(session?.brief ?? {}),
             ...(currentUnderstanding?.brief ?? {}),
-            ...(qData.suggested_brief ?? {}),
+            ...(qData?.suggested_brief ?? {}),
             ...(answered?.brief ?? {}),
+            ...(forceBuild ? { target_slide_count: overrideSlideCount, content_fill: 'shrink' } : {}),
           }
           const pickMeaningful = (...values: unknown[]): string | null => {
             for (const val of values) {
@@ -335,13 +353,13 @@ export function UnderstandingPage() {
           const purpose =
             pickMeaningful(
               answered?.brief?.purpose,
-              qData.suggested_brief?.purpose,
+              qData?.suggested_brief?.purpose,
               currentUnderstanding?.brief?.purpose,
               session?.brief?.purpose,
             ) ?? 'presentation'
           const keyMessage = pickMeaningful(
             answered?.brief?.key_message,
-            qData.suggested_brief?.key_message,
+            qData?.suggested_brief?.key_message,
             currentUnderstanding?.brief?.key_message,
             session?.brief?.key_message,
             purpose !== 'presentation' ? purpose : null,
@@ -355,15 +373,19 @@ export function UnderstandingPage() {
                 purpose,
                 audience: String(mergedBrief.audience ?? ''),
                 language: String(mergedBrief.language || project?.default_language || 'ru'),
-                target_slide_count: Number(mergedBrief.target_slide_count || project?.target_slide_count || 8),
+                target_slide_count: forceBuild ? overrideSlideCount : Number(mergedBrief.target_slide_count || project?.target_slide_count || 8),
                 ...(keyMessage ? { key_message: keyMessage } : {}),
-                ...(mergedBrief.content_fill ? { content_fill: mergedBrief.content_fill as 'expand' | 'shrink' | 'ask' } : {}),
+                ...(forceBuild
+                  ? { content_fill: 'shrink' }
+                  : mergedBrief.content_fill
+                    ? { content_fill: mergedBrief.content_fill as 'expand' | 'shrink' | 'ask' }
+                    : {}),
               },
               strategies: ['balanced'],
               use_llm: llmAllowed,
               ...(llmAllowed && providerSession?.id ? { provider_session_id: providerSession.id } : {}),
             },
-            { keyMessage },
+            { keyMessage, ...(forceBuild ? { contentFill: 'keep' } : {}) },
             options,
           )
         } catch {
@@ -381,6 +403,31 @@ export function UnderstandingPage() {
 
   const isLoading = projectLoading || sessionLoading || (Boolean(activePackId) && understandingQuery.isLoading) || (unsupportedUnderstanding && legacyLoading)
   const title = 'Вот что я нашёл'
+
+  const understandingContentFill = useMemo(
+    () =>
+      !unsupportedUnderstanding && currentUnderstanding
+        ? parseContentFill((currentUnderstanding as unknown as Record<string, unknown>).content_fill, currentUnderstanding)
+        : null,
+    [unsupportedUnderstanding, currentUnderstanding],
+  )
+  const capacitySlides =
+    understandingContentFill?.capacity ??
+    (!unsupportedUnderstanding &&
+    typeof currentUnderstanding?.summary?.capacity_slides === 'number' &&
+    Number.isFinite(currentUnderstanding.summary.capacity_slides)
+      ? currentUnderstanding.summary.capacity_slides
+      : null)
+  const requestedSlides =
+    understandingContentFill?.requested ??
+    readBriefSlideCount(currentUnderstanding?.brief) ??
+    readBriefSlideCount(session?.brief) ??
+    null
+  const hasShortage =
+    capacitySlides !== null &&
+    requestedSlides !== null &&
+    capacitySlides > 0 &&
+    capacitySlides < requestedSlides
 
   if (projectError) {
     return <EmptyState title="Не удалось открыть проект" description={errorMessage(projectError) ?? 'Не удалось открыть проект.'} />
@@ -473,6 +520,27 @@ export function UnderstandingPage() {
       {buildingPlan && <PlanBuildProgress progress={planBuild.progress} phase={planBuild.phase} startedAt={planBuild.startedAt} onCancel={planBuild.cancel} />}
       {!buildingPlan && (
         <>
+          {hasShortage && capacitySlides !== null && requestedSlides !== null && (
+            <div className={styles.shortageBanner} role="status">
+              <p className={styles.shortageText}>
+                Материалов хватит примерно на {capacitySlides} {pluralize(capacitySlides, ['слайд', 'слайда', 'слайдов'])} из {requestedSlides}.
+              </p>
+              {understandingContentFill?.shortageReason && (
+                <p className={styles.shortageHint}>{understandingContentFill.shortageReason}</p>
+              )}
+              <div className={styles.shortageActions}>
+                <Button variant="secondary" size="sm" disabled={busy} onClick={() => navigate(routes.start(projectId))}>
+                  Добавить файлы
+                </Button>
+                <Button variant="secondary" size="sm" disabled={busy} onClick={() => navigate(routes.questions(projectId))}>
+                  Ответить на вопросы
+                </Button>
+                <Button variant="secondary" size="sm" disabled={busy} onClick={() => void handleContinue(capacitySlides)}>
+                  Собрать {capacitySlides} {pluralize(capacitySlides, ['слайд', 'слайда', 'слайдов'])}
+                </Button>
+              </div>
+            </div>
+          )}
           {noteOpen ? (
             <div className={styles.noteForm}>
               <label className={styles.noteLabel}>

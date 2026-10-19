@@ -1,5 +1,11 @@
 import type { JobEvent } from '@/entities/assistant'
-import type { DeckPlan, GenerationTracker } from '@/entities/generation'
+import {
+  formatFactsByOriginText,
+  formatShortageExplanationText,
+  type ContentFillSummary,
+  type DeckPlan,
+  type GenerationTracker,
+} from '@/entities/generation'
 import { useSlideChangeQueue } from '@/features/slide-change'
 import { formatIndex } from '@/shared/lib/format'
 import { Button, SlideGrid, SlideTile } from '@/shared/ui'
@@ -43,6 +49,8 @@ export function BuildVariants({
   stageSummary,
   autoPolishSecondsLeft,
   onCancelAutoPolish,
+  contentFill = null,
+  actualSlides = null,
 }: {
   cards: readonly VariantCard[]
   selectedKey: string | null
@@ -50,6 +58,8 @@ export function BuildVariants({
   stageSummary?: BuildStageSummary
   autoPolishSecondsLeft?: number | null
   onCancelAutoPolish?: () => void
+  contentFill?: ContentFillSummary | null
+  actualSlides?: number | null
 }) {
   if (cards.length === 0) return null
 
@@ -66,6 +76,9 @@ export function BuildVariants({
 
   const progressPercent = computeProgressPercent(summary)
   const isCompleted = summary.stages[2].state === 'done'
+  const shortageLine = formatShortageExplanationText(contentFill, actualSlides ?? (summary.totalSlides > 0 ? summary.totalSlides : null))
+  const factsLine = formatFactsByOriginText(contentFill)
+  const webSources = contentFill?.webSources ?? []
 
   return (
     <div className={styles.sidebar}>
@@ -116,6 +129,28 @@ export function BuildVariants({
             </li>
           ))}
         </ul>
+      )}
+
+      {(shortageLine || factsLine || webSources.length > 0) && (
+        <div className={styles.contentFillSummary} aria-label="Материалы и источники">
+          {shortageLine && <p className={styles.contentFillLine}>{shortageLine}</p>}
+          {factsLine && <p className={styles.contentFillLine}>{factsLine}</p>}
+          {webSources.length > 0 && (
+            <ul className={styles.contentFillSources} aria-label="Открытые источники">
+              {webSources.map((source) => (
+                <li key={source.id} className={styles.contentFillSourceItem}>
+                  {source.url ? (
+                    <a href={source.url} target="_blank" rel="noreferrer noopener" className={styles.contentFillSourceLink}>
+                      {source.title || source.site}
+                    </a>
+                  ) : (
+                    <span>{source.title || source.site}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
 
       {typeof autoPolishSecondsLeft === 'number' && autoPolishSecondsLeft > 0 && (

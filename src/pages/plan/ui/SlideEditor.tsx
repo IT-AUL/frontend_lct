@@ -7,6 +7,7 @@ import { useSlideResearchOutcome, type QuickSlideAction, type SlidePatch } from 
 import { Button, Icon, LinkButton, X } from '@/shared/ui'
 import {
   availableQuickActions,
+  ChartReasoningBox,
   contentPackSourceMap,
   EDITOR_VISUALS,
   parseEvidenceRef,
@@ -185,11 +186,19 @@ export function SlideEditor(props: SlideEditorProps) {
       {chart && (
         <div className={styles.field}>
           <span>График</span>
-          <p className={styles.hint}>{chart.why}</p>
+          <ChartReasoningBox slideId={slide.id} number={String(slide.index + 1).padStart(2, '0')} chart={chart} hideOptions={chart.options.length > 1} />
           {chart.options.length > 1 && (
             <div className={styles.chips} role="radiogroup" aria-label="Тип графика">
-              {chart.options.filter((option) => option.type !== 'table' || option.active).map((option) => (
-                <button key={option.type} type="button" role="radio" aria-checked={option.active} className={styles.chip} onClick={() => !option.active && onChart(option.type)}>
+              {chart.options.map((option) => (
+                <button
+                  key={option.type}
+                  type="button"
+                  role="radio"
+                  aria-checked={option.active}
+                  title={option.reasons.length > 0 ? option.reasons.join(', ') : undefined}
+                  className={styles.chip}
+                  onClick={() => !option.active && onChart(option.type)}
+                >
                   {option.label}
                 </button>
               ))}

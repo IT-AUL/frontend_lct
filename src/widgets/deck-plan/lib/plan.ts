@@ -1,4 +1,4 @@
-import { isEditableUnit, slidePurposeLabel, unitOrigin, type DeckPlan, type SlidePlan, type UnitOrigin } from '@/entities/generation'
+import { hasChartData, isEditableUnit, slidePurposeLabel, unitOrigin, type DeckPlan, type SlidePlan, type UnitOrigin } from '@/entities/generation'
 import { formatIndex, pluralize } from '@/shared/lib/format'
 
 export type QuickActionKind = 'shorten' | 'split' | 'merge_next' | 'to_chart' | 'to_diagram' | 'remove'
@@ -273,14 +273,133 @@ export function normalizeChartReasonText(text: string): string {
     .replace(/про структура(?!\p{L})/giu, 'про структуру')
 }
 
-export function parseSlideChartView(slide: Pick<SlidePlan, 'chart'>): SlideChartView | null {
-  const raw = slide.chart
-  if (!isRecord(raw) || typeof raw.type !== 'string' || !raw.type.trim()) return null
+export const DEFAULT_CHART_REASONS: Record<string, string[]> = {
+  line: ['временной ряд', 'показывает динамику и темп изменений'],
+  bar: ['прямое сравнение величин между категориями'],
+  bar_horizontal: ['удобно сравнивать категории с длинными подписями'],
+  bar_stacked: ['показывает общий объём и вклад частей по группам'],
+  bar_stacked_100: ['сравнивает доли категорий в 100% шкале'],
+  pie: ['наглядно показывает доли в общем объёме'],
+  doughnut: ['показывает структуру долей с акцентом на итог'],
+  donut: ['показывает структуру долей с акцентом на итог'],
+  scatter: ['показывает связь и разброс двух числовых показателей'],
+  histogram: ['показывает распределение значений по интервалам'],
+  kpi: ['выделяет ключевые цифры крупным планом'],
+  table: ['точные значения по всем строкам и столбцам'],
+}
+
+export const DEFAULT_CHART_ALTERNATIVES: Record<string, { type: string; reasons: string[] }[]> = {
+  line: [
+    { type: 'bar', reasons: ['сравнение отдельных периодов по высоте столбцов'] },
+    { type: 'table', reasons: ['точные цифры по каждому периоду без округления'] },
+  ],
+  bar: [
+    { type: 'bar_horizontal', reasons: ['длинные названия категорий читаются без наклона'] },
+    { type: 'table', reasons: ['точные значения и сравнение нескольких метрик'] },
+  ],
+  bar_horizontal: [
+    { type: 'bar', reasons: ['компактное сравнение категорий по вертикали'] },
+    { type: 'table', reasons: ['точные цифры по каждой позиции'] },
+  ],
+  bar_stacked: [
+    { type: 'bar', reasons: ['прямое сравнение итоговых значений по группам'] },
+    { type: 'bar_stacked_100', reasons: ['акцент на долях вместо абсолютных сумм'] },
+  ],
+  bar_stacked_100: [
+    { type: 'bar_stacked', reasons: ['сохраняет абсолютный масштаб по группам'] },
+    { type: 'table', reasons: ['точные проценты и абсолютные числа рядом'] },
+  ],
+  pie: [
+    { type: 'bar_horizontal', reasons: ['точнее сравнивает близкие по размеру доли'] },
+    { type: 'table', reasons: ['точные доли и абсолютные значения'] },
+  ],
+  doughnut: [
+    { type: 'bar_horizontal', reasons: ['точнее сравнивает близкие по размеру доли'] },
+    { type: 'table', reasons: ['точные доли и абсолютные значения'] },
+  ],
+  donut: [
+    { type: 'bar_horizontal', reasons: ['точнее сравнивает близкие по размеру доли'] },
+    { type: 'table', reasons: ['точные доли и абсолютные значения'] },
+  ],
+  scatter: [
+    { type: 'bar', reasons: ['сравнение объектов по главной метрике'] },
+    { type: 'table', reasons: ['точные пары координат по каждому объекту'] },
+  ],
+  histogram: [
+    { type: 'bar', reasons: ['сравнение отдельных групп значений'] },
+    { type: 'table', reasons: ['точные границы интервалов и частоты'] },
+  ],
+  kpi: [
+    { type: 'bar', reasons: ['наглядное сравнение показателей по масштабу'] },
+    { type: 'table', reasons: ['сводка всех показателей в одной сетке'] },
+  ],
+  table: [
+    { type: 'bar', reasons: ['быстрое визуальное сравнение лидеров'] },
+    { type: 'line', reasons: ['наглядная динамика по периодам'] },
+  ],
+}
+
+export type ChartSlideLike = Pick<SlidePlan, 'chart'> & {
+  purpose?: string | null
+  title_intent?: string | null
+  key_message?: string | null
+  content_units?: readonly {
+    kind?: string
+    text?: string | null
+    chart_ref?: string | null
+    chart_spec?: unknown
+  }[] | null
+}
+
+function inferChartRecordFromSlide(slide: ChartSlideLike): Record<string, unknown> | null {
+  const units = Array.isArray(slide.content_units) ? slide.content_units : []
+  const chartUnit = units.find(
+    (unit) => isRecord(unit.chart_spec) || unit.kind === 'chart' || (typeof unit.chart_ref === 'string' && unit.chart_ref.trim().length > 0),
+  )
+  if (chartUnit) {
+    const spec = isRecord(chartUnit.chart_spec) ? chartUnit.chart_spec : null
+    const rawType =
+      (spec && typeof spec.chart_type === 'string' && spec.chart_type.trim() ? spec.chart_type.trim() : null) ??
+      (spec && typeof spec.type === 'string' && spec.type.trim() ? spec.type.trim() : null) ??
+      'bar'
+    return {
+      type: rawType,
+      why: spec && typeof spec.why === 'string' ? spec.why : undefined,
+      reasons: spec && Array.isArray(spec.reasons) ? spec.reasons : (DEFAULT_CHART_REASONS[rawType] ?? ['по структуре числовых данных']),
+      alternatives: spec && Array.isArray(spec.alternatives) ? spec.alternatives : (DEFAULT_CHART_ALTERNATIVES[rawType] ?? DEFAULT_CHART_ALTERNATIVES.bar),
+    }
+  }
+
+  const isDataPurpose = slide.purpose === 'data' || slide.purpose === 'Данные'
+  if (isDataPurpose && units.length > 0 && hasChartData({ content_units: units as SlidePlan['content_units'] })) {
+    const combinedText = [slide.title_intent ?? '', slide.key_message ?? '', ...units.map((unit) => unit.text ?? '')].join(' ')
+    const inferredType = /динамик|месяц|квартал|год|тренд|темп/i.test(combinedText)
+      ? 'line'
+      : /дол[яией]|структур|распределен/i.test(combinedText)
+        ? 'pie'
+        : 'bar'
+    return {
+      type: inferredType,
+      reasons: DEFAULT_CHART_REASONS[inferredType] ?? ['по структуре числовых данных'],
+      alternatives: DEFAULT_CHART_ALTERNATIVES[inferredType] ?? DEFAULT_CHART_ALTERNATIVES.bar,
+    }
+  }
+
+  return null
+}
+
+export function parseSlideChartView(slide: ChartSlideLike): SlideChartView | null {
+  if (isRecord(slide.chart) && typeof slide.chart.type === 'string' && !slide.chart.type.trim()) {
+    return null
+  }
+  const raw = isRecord(slide.chart) && typeof slide.chart.type === 'string' && slide.chart.type.trim() ? slide.chart : inferChartRecordFromSlide(slide)
+  if (!raw || typeof raw.type !== 'string' || !raw.type.trim()) return null
   const type = raw.type.trim()
   const label = chartTypeLabel(type)
-  const reasons = stringArray(raw.reasons).map(normalizeChartReasonText)
+  const rawReasons = stringArray(raw.reasons).map(normalizeChartReasonText)
+  const reasons = rawReasons.length > 0 ? rawReasons : (DEFAULT_CHART_REASONS[type] ?? [])
   const rawWhy = typeof raw.why === 'string' && raw.why.trim() ? normalizeChartReasonText(raw.why.trim()) : null
-  const why = rawWhy ?? (reasons.length > 0 ? `${label}: ${reasons.join(', ')}.` : `Выбран тип «${label}» по структуре данных.`)
+  const why = rawWhy ?? (rawReasons.length > 0 ? `${label}: ${rawReasons.join(', ')}.` : `Выбран тип «${label}» по структуре данных.`)
   const seen = new Set<string>([type])
   const options: SlideChartOption[] = [{ type, label, active: true, reasons }]
   if (Array.isArray(raw.alternatives)) {
@@ -289,11 +408,25 @@ export function parseSlideChartView(slide: Pick<SlidePlan, 'chart'>): SlideChart
       const altType = item.type.trim()
       if (!altType || seen.has(altType)) continue
       seen.add(altType)
+      const altReasons = stringArray(item.reasons).map(normalizeChartReasonText)
       options.push({
         type: altType,
         label: chartTypeLabel(altType),
         active: false,
-        reasons: stringArray(item.reasons).map(normalizeChartReasonText),
+        reasons: altReasons.length > 0 ? altReasons : (DEFAULT_CHART_REASONS[altType] ?? []),
+      })
+    }
+  }
+  if (options.length < 2) {
+    const fallbacks = DEFAULT_CHART_ALTERNATIVES[type] ?? DEFAULT_CHART_ALTERNATIVES.bar ?? []
+    for (const alt of fallbacks) {
+      if (seen.has(alt.type)) continue
+      seen.add(alt.type)
+      options.push({
+        type: alt.type,
+        label: chartTypeLabel(alt.type),
+        active: false,
+        reasons: alt.reasons,
       })
     }
   }

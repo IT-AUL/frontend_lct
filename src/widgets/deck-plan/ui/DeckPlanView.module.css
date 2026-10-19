@@ -860,6 +860,27 @@ a.origin:hover {
   line-height: 1.35;
 }
 
+.chartAltReasons {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-2);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.chartAltReasonItem {
+  overflow-wrap: anywhere;
+}
+
+.chartAltReasonName {
+  color: var(--ink);
+  font-weight: 500;
+}
+
 .chartAlternatives {
   display: flex;
   flex-wrap: wrap;
