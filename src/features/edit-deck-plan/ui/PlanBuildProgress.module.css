@@ -1,44 +1,48 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 22px 24px;
+  gap: 22px;
+  padding: 28px 30px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
   background: var(--surface);
+  box-shadow: var(--shadow-stage);
   animation: global(dd-fade) 0.2s ease-out;
 }
 
 .head {
   display: flex;
-  gap: 16px;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
 }
 
 .head > div {
-  flex: 1;
+  flex: 1 1 260px;
   min-width: 0;
 }
 
 .title {
   margin: 0;
   color: var(--ink);
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 600;
+  letter-spacing: var(--tracking-card-title);
 }
 
 .note {
-  margin: 4px 0 0;
-  color: var(--ink-3);
-  font-size: 13px;
+  margin: 6px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .timer {
-  padding-top: 8px;
-  color: var(--ink-2);
-  font-family: var(--font-mono);
-  font-size: 13px;
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .steps {
@@ -98,10 +102,8 @@
 .blockTitle {
   margin: 0;
   color: var(--ink-3);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 
 .queries,

@@ -11,9 +11,10 @@ interface StepShellProps {
   canvas: ReactNode
   canvasLabel: string
   inspector?: { title: string; content: ReactNode; onClose: () => void; wide?: boolean } | null
+  footnote?: ReactNode
 }
 
-export function StepShell({ title, note, children, command, actions, canvas, canvasLabel, inspector }: StepShellProps) {
+export function StepShell({ title, note, children, command, actions, canvas, canvasLabel, inspector, footnote }: StepShellProps) {
   const closeRef = useRef<HTMLButtonElement>(null)
   const onCloseRef = useRef<(() => void) | null>(null)
   const inspectorKey = inspector ? inspector.title : null
@@ -47,7 +48,12 @@ export function StepShell({ title, note, children, command, actions, canvas, can
           {children && <div className={styles.controls}>{children}</div>}
         </div>
         {command && <div className={styles.command}>{command}</div>}
-        {actions && <div className={styles.actions}>{actions}</div>}
+        {actions && (
+          <div className={styles.actions}>
+            <div className={styles.actionRow}>{actions}</div>
+            {footnote && <p className={styles.footnote}>{footnote}</p>}
+          </div>
+        )}
       </section>
       <section
         className={styles.table}

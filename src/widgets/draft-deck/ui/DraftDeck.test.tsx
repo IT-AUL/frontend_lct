@@ -97,7 +97,8 @@ describe('DraftDeck', () => {
     expect(within(card).getByText('Рост ускорился во втором полугодии')).toBeInTheDocument()
     expect(within(card).getByText('Следует')).toBeInTheDocument()
     expect(within(card).getByText('Сделать ставку на электронику')).toBeInTheDocument()
-    expect(within(card).getByText(/purchases\.csv · Сумма, строки 2–8756/)).toBeInTheDocument()
+    expect(within(card).getByText('Сумма, строки 2–8756')).toBeInTheDocument()
+    expect(within(card).queryByText(/purchases\.csv/)).not.toBeInTheDocument()
     expect(within(card).getByRole('img', { name: 'График: Продажи' })).toBeInTheDocument()
   })
 
@@ -109,6 +110,20 @@ describe('DraftDeck', () => {
     const charts = screen.getAllByRole('img', { name: 'График: Продажи' })
     expect(charts).toHaveLength(1)
     expect(screen.getByRole('listitem', { name: 'Вывод: Первый' })).toContainElement(charts[0] as HTMLElement)
+  })
+
+  it('hides a fact line that only repeats the title', () => {
+    const data = understanding({
+      datasets: [
+        dataset({
+          insights: [insight({ headline: 'Москва — крупнейшая доля, 73,5%', fact: 'Москва: 73,5%, крупнейшая доля (50)' })],
+        }),
+      ],
+    })
+    render(<DraftDeck understanding={data} selection={null} />)
+    const card = screen.getByRole('listitem', { name: /Вывод: Москва/ })
+    expect(within(card).queryByText('Москва: 73,5%, крупнейшая доля (50)')).not.toBeInTheDocument()
+    expect(within(card).getByText('73,5%')).toBeInTheDocument()
   })
 
   it('fires card actions', async () => {
@@ -197,7 +212,7 @@ describe('DraftDeck', () => {
 
     const secondCard = screen.getByRole('listitem', { name: /Вывод: Расходы на рекламу: типичное значение 421 тыс\. ₽/ })
     expect(within(secondCard).getByText('421 тыс. ₽')).toBeInTheDocument()
-    expect(secondCard.querySelector('[data-visual="figure"]')).not.toBeNull()
+    expect(within(secondCard).queryByRole('img')).not.toBeInTheDocument()
   })
 
   it('shows dataset anchor chips and a confirm-all action', async () => {

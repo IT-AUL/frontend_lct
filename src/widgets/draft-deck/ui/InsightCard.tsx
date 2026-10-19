@@ -1,6 +1,6 @@
 import type { InsightPatch } from '@/entities/assistant'
-import { Badge, Button, Check, Icon, Mono } from '@/shared/ui'
-import { insightSource, insightTitle, needsDecision, type InsightEntry } from '../lib/table'
+import { Badge, Button, Check, Icon } from '@/shared/ui'
+import { compactSource, insightTitle, needsDecision, type InsightEntry } from '../lib/table'
 import { extractFigure, isInsightRecommendation, sanitizeAssistantCopy } from '../lib/understanding'
 import { SparkChart } from './SparkChart'
 import styles from './DraftDeck.module.css'
@@ -27,22 +27,6 @@ function resolveInsightChartType(entry: InsightEntry): string | null | undefined
     return preview.chart_type
   }
   return dataset.recommendations[0]?.chart_type ?? preview?.chart_type
-}
-
-function StatusBadge({ entry }: { entry: InsightEntry }) {
-  const { insight } = entry
-  if (isInsightRecommendation(insight)) {
-    return (
-      <Badge tone={insight.confirmed ? 'ok' : 'warn'} dot>
-        {insight.confirmed ? 'Предложение · согласовано' : 'Предложение · ждёт решения'}
-      </Badge>
-    )
-  }
-  return (
-    <Badge tone={insight.confirmed ? 'ok' : 'neutral'} dot={insight.confirmed}>
-      {insight.confirmed ? 'Факт · подтверждён' : 'Факт'}
-    </Badge>
-  )
 }
 
 function CardActions({ entry, decide, onEdit, onPatch, onExclude }: { entry: InsightEntry; decide: boolean } & Pick<InsightCardProps, 'onEdit' | 'onPatch' | 'onExclude'>) {
@@ -95,14 +79,29 @@ function MeaningRows({ meaningText, implicationText, decide }: { meaningText: st
   )
 }
 
-function InsightVisual({ entry, figure, chartType, showChart }: { entry: InsightEntry; figure: string | null; chartType: string | null | undefined; showChart: boolean }) {
-  const { dataset } = entry
-  const preview = showChart ? entry.preview : null
-  if (!preview && !figure) return null
+function comparable(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, '')
+}
+
+function words(text: string): string {
+  return [...new Set(text.toLowerCase().replace(/\([^)]*\)/g, '').match(/[\p{L}\p{N}]+/gu) ?? [])].sort().join(' ')
+}
+
+function nearDuplicate(a: string, b: string): boolean {
+  const left = comparable(a)
+  const right = comparable(b)
+  return left === right || left.includes(right) || right.includes(left) || words(a) === words(b)
+}
+
+function InsightChart({ entry, chartType }: { entry: InsightEntry; chartType: string | null | undefined }) {
+  const { dataset, preview } = entry
+  if (!preview) return null
   return (
-    <div className={styles.insightVisual} data-figure-only={!preview || undefined}>
-      {preview && <SparkChart preview={preview} chartType={chartType} label={`График: ${dataset.title ?? dataset.file ?? ''}`} />}
-      {figure && <span className={styles.figure}>{figure}</span>}
+    <div className={styles.insightChart}>
+      <SparkChart preview={preview} chartType={chartType} label={`График: ${dataset.title ?? dataset.file ?? ''}`} />
     </div>
   )
 }
@@ -111,15 +110,15 @@ export function InsightCard({ entry, selected, onOpen, onEdit, onPatch, onExclud
   const { insight, dataset, preview } = entry
   const title = sanitizeAssistantCopy(insightTitle(insight))
   const factText = sanitizeAssistantCopy(insight.fact)
-  const showFact = Boolean(insight.headline && insight.fact && insight.headline.trim() !== insight.fact.trim())
+  const showFact = Boolean(insight.headline && insight.fact && !nearDuplicate(insight.headline, insight.fact))
   const meaningText = insight.meaning ? sanitizeAssistantCopy(insight.meaning) : null
   const implicationText = insight.implication ? sanitizeAssistantCopy(insight.implication) : null
   const decide = needsDecision(insight)
-  const source = insightSource(insight, dataset)
+  const recommendation = isInsightRecommendation(insight)
+  const source = compactSource(insight, dataset)
   const figure = extractFigure(title) ?? extractFigure(factText)
   const chartType = resolveInsightChartType(entry)
   const hasChart = Boolean(showChart && preview && (preview.series?.[0]?.values?.length ?? 0) > 0)
-  const visualMode = hasChart ? 'chart' : figure ? 'figure' : 'none'
 
   return (
     <article
@@ -127,40 +126,44 @@ export function InsightCard({ entry, selected, onOpen, onEdit, onPatch, onExclud
       role="listitem"
       data-selected={selected || undefined}
       data-decision={decide || undefined}
+      data-confirmed={insight.confirmed || undefined}
       aria-label={`Вывод: ${title}`}
     >
-      <header className={styles.insightMeta}>
-        <StatusBadge entry={entry} />
-        {dataset.file && <span className={styles.insightFile}>{dataset.file}</span>}
-      </header>
-
-      <div className={styles.insightMain} data-visual={visualMode}>
-        <div className={styles.insightText}>
-          <h3 className={styles.insightTitle}>
-            {onOpen ? (
-              <button type="button" className={styles.insightOpen} onClick={onOpen} aria-label={`Открыть вывод: ${title}`}>
-                {title}
-              </button>
-            ) : (
-              title
-            )}
-          </h3>
-
-          {showFact && <p className={styles.insightFact}>{factText}</p>}
-
-          <MeaningRows meaningText={meaningText} implicationText={implicationText} decide={decide} />
-        </div>
-        <InsightVisual entry={entry} figure={figure} chartType={chartType} showChart={showChart} />
+      <div className={styles.insightLead} aria-hidden={!figure || undefined}>
+        {figure && <span className={styles.figure}>{figure}</span>}
       </div>
 
-      <footer className={styles.insightFooter}>
-        {source && (
-          <Mono className={styles.insightSource} title={insight.evidence?.join('\n') ?? source}>
-            {source}
-          </Mono>
+      <div className={styles.insightBody}>
+        {recommendation && (
+          <Badge tone={insight.confirmed ? 'ok' : 'warn'} dot>
+            {insight.confirmed ? 'Предложение согласовано' : 'Предложение ждёт решения'}
+          </Badge>
         )}
-        <CardActions entry={entry} decide={decide} onEdit={onEdit} onPatch={onPatch} onExclude={onExclude} />
-      </footer>
+        <h3 className={styles.insightTitle}>
+          {onOpen ? (
+            <button type="button" className={styles.insightOpen} onClick={onOpen} aria-label={`Открыть вывод: ${title}`}>
+              {title}
+            </button>
+          ) : (
+            title
+          )}
+        </h3>
+
+        {showFact && <p className={styles.insightFact}>{factText}</p>}
+
+        <MeaningRows meaningText={meaningText} implicationText={implicationText} decide={decide} />
+
+        {hasChart && <InsightChart entry={entry} chartType={chartType} />}
+
+        <footer className={styles.insightFooter}>
+          {source && (
+            <span className={styles.insightSource} title={insight.evidence?.join('\n') ?? source}>
+              {source}
+            </span>
+          )}
+          <CardActions entry={entry} decide={decide} onEdit={onEdit} onPatch={onPatch} onExclude={onExclude} />
+        </footer>
+      </div>
     </article>
   )
 }

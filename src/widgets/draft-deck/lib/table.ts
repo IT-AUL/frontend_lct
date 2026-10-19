@@ -78,6 +78,47 @@ export function insightSource(insight: Insight, dataset: UnderstandingDataset): 
   return dataset.file ?? null
 }
 
+export function compactSource(insight: Insight, dataset: UnderstandingDataset): string | null {
+  const known = new Set([dataset.file, dataset.title].filter((item): item is string => Boolean(item)).map((item) => item.trim().toLowerCase()))
+  const parts: string[] = []
+  for (const row of insight.evidence ?? []) {
+    for (const piece of row.split(' · ')) {
+      const clean = piece.trim()
+      if (!clean || known.has(clean.toLowerCase()) || parts.includes(clean)) continue
+      parts.push(clean)
+    }
+  }
+  return parts.length > 0 ? parts.slice(0, 2).join('; ') : null
+}
+
+const PROFILE_BASICS = /^(\d[\d\s]*\s+(строк|колон|запис)|период)/iu
+
+export interface ProfileSplit {
+  basics: string[]
+  details: string[]
+}
+
+export function splitProfile(profile: string | null | undefined): ProfileSplit {
+  const facts = profileFacts(profile)
+  return {
+    basics: facts.filter((fact) => PROFILE_BASICS.test(fact)),
+    details: facts.filter((fact) => !PROFILE_BASICS.test(fact)),
+  }
+}
+
+export interface DecisionProgress {
+  total: number
+  confirmed: number
+  pending: number
+}
+
+export function decisionProgress(understanding: Understanding, excludedIds: readonly string[] = []): DecisionProgress {
+  const excluded = new Set(excludedIds)
+  const active = insightEntries(understanding).filter((entry) => !excluded.has(entry.insight.id))
+  const confirmed = active.filter((entry) => entry.insight.confirmed).length
+  return { total: active.length, confirmed, pending: active.length - confirmed }
+}
+
 export function textBlocks(understanding: Understanding): UnderstandingBlock[] {
   return deduplicateTextBlocks(understanding.blocks.filter((block) => !block.dataset_id && (block.title || block.text)))
 }

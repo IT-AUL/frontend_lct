@@ -378,8 +378,43 @@ export function QuestionsPage() {
     <StepShell
       title={title}
       note={note}
-      canvasLabel="Спецификация колоды"
-      canvas={loading ? <DeckSpecSkeleton /> : <DeckSpec spec={deckSpec} />}
+      canvasLabel={buildingPlan ? 'Построение плана' : 'Вопросы и спецификация колоды'}
+      canvas={
+        buildingPlan ? (
+          <div className={styles.progressStage}>
+            <PlanBuildProgress progress={planBuild.progress} phase={planBuild.phase} startedAt={planBuild.startedAt} onCancel={planBuild.cancel} />
+          </div>
+        ) : (
+          <div className={styles.board}>
+            <div className={styles.questionsCol}>
+              {loading && <ChoiceListSkeleton count={4} />}
+              {!loading &&
+                questions.map((question) => (
+                  <section className={styles.questionPanel} key={question.id}>
+                    <Choices
+                      question={question}
+                      heading={single ? null : questionTitle(question)}
+                      reason={single ? null : question.reason}
+                      selection={selections[question.id]}
+                      skipped={skippedIds.has(question.id)}
+                      disabled={busy}
+                      notes={thesisNotes}
+                      onActivate={() => setActiveQuestionId(question.id)}
+                      onOption={(value) => handleSelectOption(question.id, value)}
+                      onCustom={() => handleSelectCustom(question.id)}
+                      onCustomText={(text) => handleCustomTextChange(question.id, text)}
+                      onNote={handleThesisNoteChange}
+                    />
+                  </section>
+                ))}
+            </div>
+            <aside className={styles.specCol} aria-label="Как будет выглядеть колода">
+              {loading ? <DeckSpecSkeleton /> : <DeckSpec spec={deckSpec} />}
+            </aside>
+          </div>
+        )
+      }
+      footnote={buildingPlan ? undefined : 'Ответы сразу видны в спецификации справа. Цифры 1–5 на клавиатуре выбирают вариант.'}
       actions={
         <>
           <Button variant="primary" size="lg" pending={buildingPlan} disabled={busy || loading} onClick={handleSubmit}>
@@ -397,27 +432,6 @@ export function QuestionsPage() {
         </>
       }
     >
-      {loading && <ChoiceListSkeleton count={4} />}
-      {buildingPlan && <PlanBuildProgress progress={planBuild.progress} phase={planBuild.phase} startedAt={planBuild.startedAt} onCancel={planBuild.cancel} />}
-      {!loading &&
-        !buildingPlan &&
-        questions.map((question) => (
-          <Choices
-            key={question.id}
-            question={question}
-            heading={single ? null : questionTitle(question)}
-            reason={single ? null : question.reason}
-            selection={selections[question.id]}
-            skipped={skippedIds.has(question.id)}
-            disabled={busy}
-            notes={thesisNotes}
-            onActivate={() => setActiveQuestionId(question.id)}
-            onOption={(value) => handleSelectOption(question.id, value)}
-            onCustom={() => handleSelectCustom(question.id)}
-            onCustomText={(text) => handleCustomTextChange(question.id, text)}
-            onNote={handleThesisNoteChange}
-          />
-        ))}
       {!loading && !buildingPlan && questions.length > 0 && (
         <LinkButton onClick={handleSkipAll} disabled={busy}>
           Пропустить и составить план

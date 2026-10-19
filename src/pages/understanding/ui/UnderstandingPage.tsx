@@ -27,7 +27,7 @@ import { AssistantCommandBar } from '@/features/assistant-command'
 import { routes } from '@/shared/config'
 import { Button, EmptyState, InsightBoardSkeleton, LinkButton } from '@/shared/ui'
 import { StepShell } from '@/widgets/step-shell'
-import { applyOptimisticBlockOps, applyOptimisticInsightPatch, applyOptimisticNotes, DraftDeck, fallbackUnderstandingFromContentPack, stepNote, type Selection } from '@/widgets/draft-deck'
+import { applyOptimisticBlockOps, applyOptimisticInsightPatch, applyOptimisticNotes, DecisionPanel, DraftDeck, fallbackUnderstandingFromContentPack, type Selection } from '@/widgets/draft-deck'
 import { SelectionDetails } from './SelectionDetails'
 import styles from './UnderstandingPage.module.css'
 
@@ -404,12 +404,13 @@ export function UnderstandingPage() {
 
   const understanding = currentUnderstanding
   const busy = buildingPlan || autopilot.isPending
-  const excludedCount = understanding
-    ? excludedInsightIds.filter((id) => understanding.datasets.some((dataset) => dataset.insights.some((item) => item.id === id))).length
-    : 0
+  const capacity = understanding?.summary.capacity_slides ?? 0
   const note = buildingPlan
     ? 'Составляю план презентации…'
-    : (feedbackNote ?? (understanding ? stepNote(understanding, excludedCount) : 'Разбираю материалы…'))
+    : (feedbackNote ??
+      (understanding
+        ? `${capacity > 0 ? `Хватит примерно на ${capacity} ${pluralize(capacity, ['слайд', 'слайда', 'слайдов'])}. ` : ''}Отметьте выводы, которые пойдут в презентацию, лишние уберите.`
+        : 'Разбираю материалы…'))
 
   return (
     <StepShell
@@ -417,7 +418,11 @@ export function UnderstandingPage() {
       note={note}
       canvasLabel="Черновик презентации"
       canvas={
-        isLoading || !understanding ? (
+        buildingPlan ? (
+          <div className={styles.progressStage}>
+            <PlanBuildProgress progress={planBuild.progress} phase={planBuild.phase} startedAt={planBuild.startedAt} onCancel={planBuild.cancel} />
+          </div>
+        ) : isLoading || !understanding ? (
           <InsightBoardSkeleton />
         ) : (
           <DraftDeck
@@ -428,8 +433,6 @@ export function UnderstandingPage() {
             onExcludeInsight={handleExcludeInsight}
             onIncludeInsight={handleIncludeInsight}
             onRemoveBlock={handleRemoveBlock}
-            onConfirmAllInsights={() => void handleConfirmAllInsights()}
-            confirmAllPending={confirmingAll}
             excludedInsightIds={excludedInsightIds}
           />
         )
@@ -458,7 +461,8 @@ export function UnderstandingPage() {
             }
           : null
       }
-      command={<AssistantCommandBar projectId={projectId} />}
+      command={<AssistantCommandBar projectId={projectId} label="Попросить словами" placeholder="Например: убери выводы про возраст" />}
+      footnote={buildingPlan ? undefined : "Дальше — составлю план, вы его проверите. Сделай сам — соберу презентацию без остановок."}
       actions={
         <>
           <Button variant="primary" size="lg" pending={buildingPlan} disabled={busy || !understanding} onClick={() => void handleContinue()}>
@@ -470,13 +474,25 @@ export function UnderstandingPage() {
         </>
       }
     >
-      {buildingPlan && <PlanBuildProgress progress={planBuild.progress} phase={planBuild.phase} startedAt={planBuild.startedAt} onCancel={planBuild.cancel} />}
       {!buildingPlan && (
         <>
+          {understanding && (
+            <DecisionPanel
+              understanding={understanding}
+              excludedInsightIds={excludedInsightIds}
+              onConfirmAll={() => void handleConfirmAllInsights()}
+              confirmAllPending={confirmingAll}
+            />
+          )}
+          <section className={styles.thesis} aria-labelledby="own-thesis-title">
+            <h2 id="own-thesis-title" className={styles.thesisTitle}>
+              Свой тезис
+            </h2>
+            {!noteOpen && <p className={styles.thesisHint}>Если важного факта нет в файлах, добавьте его — он попадёт в презентацию.</p>}
           {noteOpen ? (
             <div className={styles.noteForm}>
               <label className={styles.noteLabel}>
-                <span>Свой тезис</span>
+                <span className={styles.visuallyHidden}>Текст тезиса</span>
                 <textarea
                   className={styles.noteInput}
                   rows={3}
@@ -500,6 +516,7 @@ export function UnderstandingPage() {
               Добавить свой тезис
             </LinkButton>
           )}
+          </section>
           {undoStack.length > 0 && (
             <LinkButton onClick={handleUndo}>
               Отменить последнее изменение

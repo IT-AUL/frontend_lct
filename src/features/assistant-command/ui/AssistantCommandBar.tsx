@@ -32,6 +32,8 @@ export interface AssistantCommandBarProps {
   expectedContextRevision?: number | null
   slides?: readonly CommandSlideTarget[] | null
   onApplied?: (result: AssistantCommandResult) => void
+  label?: string
+  placeholder?: string
 }
 
 interface ClarificationState {
@@ -48,6 +50,8 @@ export function AssistantCommandBar({
   expectedContextRevision,
   slides,
   onApplied,
+  label = 'Скажи, что поменять',
+  placeholder = 'Например: короче на слайде 3',
 }: AssistantCommandBarProps) {
   const inputId = useId()
   const seqRef = useRef(0)
@@ -145,7 +149,7 @@ export function AssistantCommandBar({
         }}
       >
         <label htmlFor={inputId} className={styles.label}>
-          Скажи, что поменять
+          {label}
         </label>
         <div className={styles.row}>
           <input
@@ -154,7 +158,7 @@ export function AssistantCommandBar({
             className={styles.input}
             value={text}
             disabled={command.isPending}
-            placeholder="Например: короче на слайде 3"
+            placeholder={placeholder}
             onChange={(event) => setText(event.target.value)}
           />
           <Button

@@ -21,13 +21,13 @@ export function ThoughtCard({ block, datasets, selected, onOpen, onEdit, onRemov
   const title = block.title?.trim() ? sanitizeAssistantCopy(block.title.trim()) : cardTitle
   const bodyText = block.text ? sanitizeAssistantCopy(block.text) : null
   const figure = extractFigure(bodyText ?? title)
-  const originText = origin.detail && origin.kind === 'user' && origin.detail !== block.title ? `${origin.label} · ${origin.detail}` : origin.label
+  const originText = origin.kind === 'user' ? null : origin.label
 
   return (
     <article className={styles.thought} role="listitem" data-selected={selected || undefined} aria-label={`Блок: ${cardTitle}`}>
       <header className={styles.thoughtMeta}>
         {kindKey !== 'number' && <Badge tone={BLOCK_KIND_TONE[kindKey]}>{kindLabel}</Badge>}
-        <span className={styles.thoughtOrigin}>{originText}</span>
+        {originText && <span className={styles.thoughtOrigin}>{originText}</span>}
       </header>
       <div className={styles.thoughtMain} data-visual={figure ? 'figure' : 'none'}>
         <div className={styles.thoughtBody}>
@@ -43,9 +43,7 @@ export function ThoughtCard({ block, datasets, selected, onOpen, onEdit, onRemov
           {bodyText && bodyText !== title && <p className={styles.thoughtText}>{bodyText}</p>}
         </div>
         {figure && (
-          <div className={styles.insightVisual} data-figure-only>
-            <span className={styles.figure}>{figure}</span>
-          </div>
+          <span className={`${styles.figure} ${styles.thoughtFigure}`}>{figure}</span>
         )}
       </div>
       {(onEdit || onRemove) && (

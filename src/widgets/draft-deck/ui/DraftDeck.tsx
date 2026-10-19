@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { InsightPatch, Understanding } from '@/entities/assistant'
-import { datasetChartWhy, datasetGroups, insightTitle, profileFacts, textBlocks } from '../lib/table'
+import { datasetChartWhy, datasetGroups, insightTitle, splitProfile, textBlocks } from '../lib/table'
 import { InsightCard } from './InsightCard'
 import { ThoughtCard } from './ThoughtCard'
 import styles from './DraftDeck.module.css'
@@ -83,18 +83,19 @@ export function DraftDeck({
               const active = entries.filter((entry) => !excluded.has(entry.insight.id))
               const hidden = entries.filter((entry) => excluded.has(entry.insight.id))
               const shown = showAllInsights ? active : active.slice(0, VISIBLE_INSIGHTS)
-              const facts = [...profileFacts(dataset.profile_summary), ...(dataset.task_ru ? [dataset.task_ru] : [])]
+              const profile = splitProfile(dataset.profile_summary)
+              const details = [...profile.details, ...(dataset.task_ru ? [dataset.task_ru] : [])]
               const chartWhy = datasetChartWhy(dataset)
               return (
                 <div className={styles.dataset} id={`dataset-${index}`} role="group" aria-label={dataset.title ?? dataset.file ?? 'Таблица'} key={dataset.id}>
                   <header className={styles.datasetHead}>
                     <div className={styles.datasetName}>
-                      <span className={styles.datasetTitle}>{dataset.title ?? dataset.file ?? 'Таблица'}</span>
+                      <h3 className={styles.datasetTitle}>{dataset.title ?? dataset.file ?? 'Таблица'}</h3>
                       {dataset.file && dataset.title !== dataset.file && <span className={styles.datasetFile}>{dataset.file}</span>}
                     </div>
-                    {facts.length > 0 && (
+                    {profile.basics.length > 0 && (
                       <ul className={styles.datasetProfile} aria-label="Профиль таблицы">
-                        {facts.map((fact) => (
+                        {profile.basics.map((fact) => (
                           <li className={styles.datasetFact} key={fact}>
                             {fact}
                           </li>
@@ -102,6 +103,16 @@ export function DraftDeck({
                       </ul>
                     )}
                     {chartWhy && <p className={styles.datasetWhy}>{chartWhy}</p>}
+                    {details.length > 0 && (
+                      <details className={styles.datasetMore}>
+                        <summary className={styles.datasetMoreToggle}>Что в таблице</summary>
+                        <ul className={styles.datasetDetails}>
+                          {details.map((fact) => (
+                            <li key={fact}>{fact}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
                   </header>
 
                   {shown.map((entry, index) => {

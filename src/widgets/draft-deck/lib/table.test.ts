@@ -1,5 +1,5 @@
 import type { Insight, Understanding, UnderstandingBlock, UnderstandingDataset } from '@/entities/assistant'
-import { datasetChartWhy, datasetGroups, insightSource, profileFacts, stepNote } from './table'
+import { compactSource, datasetChartWhy, datasetGroups, decisionProgress, insightSource, profileFacts, splitProfile, stepNote } from './table'
 
 function block(patch: Partial<UnderstandingBlock> = {}): UnderstandingBlock {
   return {
@@ -116,6 +116,37 @@ describe('insightSource', () => {
     const withEvidence = insight({ evidence: ['purchases.csv · Сумма, ₽, строки 2–8756', 'purchases.csv · Дата, строки 2–8756', 'лишнее'] })
     expect(insightSource(withEvidence, dataset())).toBe('purchases.csv · Сумма, ₽, строки 2–8756 · purchases.csv · Дата, строки 2–8756')
     expect(insightSource(insight(), dataset())).toBe('purchases.csv')
+  })
+})
+
+describe('compactSource', () => {
+  it('drops repeated file and table names and keeps two distinct parts', () => {
+    const withEvidence = insight({
+      evidence: ['purchases.csv · Продажи · Сумма, строки 2–8756', 'purchases.csv · Продажи · Дата, строки 2–8756', 'purchases.csv · Регион'],
+    })
+    expect(compactSource(withEvidence, dataset())).toBe('Сумма, строки 2–8756; Дата, строки 2–8756')
+  })
+
+  it('returns null when evidence only names the file', () => {
+    expect(compactSource(insight({ evidence: ['purchases.csv'] }), dataset())).toBeNull()
+    expect(compactSource(insight(), dataset())).toBeNull()
+  })
+})
+
+describe('splitProfile', () => {
+  it('keeps size and period as basics and moves column lists to details', () => {
+    const split = splitProfile('34 строки; 32 колонки; период 01.10.2024 – 30.09.2026; метрики: Возраст, Доход; пропуски: Регион')
+    expect(split.basics).toEqual(['34 строки', '32 колонки', 'период 01.10.2024 – 30.09.2026'])
+    expect(split.details).toEqual(['метрики: Возраст, Доход', 'пропуски: Регион'])
+  })
+})
+
+describe('decisionProgress', () => {
+  it('counts confirmed findings and ignores excluded ones', () => {
+    const state = understanding({
+      datasets: [dataset({ insights: [insight({ id: 'a', confirmed: true }), insight({ id: 'b' }), insight({ id: 'c' })] })],
+    })
+    expect(decisionProgress(state, ['c'])).toEqual({ total: 2, confirmed: 1, pending: 1 })
   })
 })
 
