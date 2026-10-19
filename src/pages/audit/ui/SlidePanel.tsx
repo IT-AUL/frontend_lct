@@ -1,12 +1,27 @@
 import { useState } from 'react'
 import { useSlideExplain } from '@/entities/assistant'
 import { useContentPack } from '@/entities/content-pack'
-import { parseResearch, useGeneration } from '@/entities/generation'
+import {
+  formatFactsByOriginText,
+  formatShortageExplanationText,
+  parseContentFill,
+  parseResearch,
+  useGeneration,
+} from '@/entities/generation'
 import { useVariantSlides } from '@/entities/variant'
 import { useSlideChangeQueue } from '@/features/slide-change'
 import { Button } from '@/shared/ui'
-import { contentPackSourceMap } from '@/widgets/deck-plan'
-import { buildExplainView, buildReworkChips, buildSlideNotesView, findPlanSlide, findSlideAt, type ReworkChip } from '../model/slideModel'
+import { ChartReasoningBox, contentPackSourceMap } from '@/widgets/deck-plan'
+import {
+  buildExplainView,
+  buildReworkChips,
+  buildSlideChartViewFromExplain,
+  buildSlideNotesView,
+  chartTypeLabel,
+  findPlanSlide,
+  findSlideAt,
+  type ReworkChip,
+} from '../model/slideModel'
 import styles from './SlidePanel.module.css'
 
 interface SlidePanelProps {
@@ -24,6 +39,7 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
   const planSlide = findPlanSlide(generation.data?.deck_plan, slide, slideNumber)
   const explain = useSlideExplain(slide?.id)
   const view = buildExplainView(explain.data, planSlide, slide)
+  const chartBoxView = buildSlideChartViewFromExplain(view, planSlide)
   const chips = buildReworkChips(strategy, view.alternatives, view.hasChart)
   const contentPack = useContentPack(generation.data?.content_pack_id)
   const headings = contentPackSourceMap(contentPack.data, generation.data?.deck_plan)
@@ -32,8 +48,22 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
     if (explain.data?.dataset?.id) headings.set(explain.data.dataset.id, explainDatasetLabel)
     if (!headings.has('ds:*')) headings.set('ds:*', explainDatasetLabel)
   }
-  const research = parseResearch((generation.data?.deck_plan as unknown as Record<string, unknown> | undefined)?.research)?.sources ?? []
+  const contentFill = parseContentFill(
+    (generation.data as unknown as Record<string, unknown> | undefined)?.content_fill,
+    generation.data,
+  )
+  const research =
+    parseResearch(
+      (generation.data?.deck_plan as unknown as Record<string, unknown> | undefined)?.research,
+      (generation.data as unknown as Record<string, unknown> | undefined)?.content_fill,
+    )?.sources ?? []
   const notes = buildSlideNotesView(planSlide, view, headings, research)
+  const factsLine = formatFactsByOriginText(contentFill)
+  const shortageLine = formatShortageExplanationText(
+    contentFill,
+    generation.data?.deck_plan?.slides.length ?? slides.data?.length ?? null,
+  )
+  const webSources = contentFill && contentFill.webSources.length > 0 ? contentFill.webSources : []
   const [pendingKey, setPendingKey] = useState<string | null>(null)
 
   const planSlideId = planSlide?.id ?? slide?.slide_plan_id ?? slide?.id ?? null
@@ -144,7 +174,25 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
           Почему так
         </h3>
         {view.exemplarLabel && <p className={styles.badge}>{view.exemplarLabel}</p>}
-        <p className={styles.text}>{why}</p>
+        {chartBoxView ? (
+          <ChartReasoningBox
+            slideId={planSlideId ?? String(slideNumber)}
+            number={String(slideNumber).padStart(2, '0')}
+            chart={chartBoxView}
+            disabled={isBusy}
+            onSelectChart={(_, chartType) =>
+              void rework({
+                key: `other_chart:${chartType}`,
+                action: 'other_chart',
+                chartType,
+                label: `График: ${chartTypeLabel(chartType)}`,
+                title: `Поменять график на «${chartTypeLabel(chartType)}»`,
+              })
+            }
+          />
+        ) : (
+          <p className={styles.text}>{why}</p>
+        )}
         {view.hasChart && view.chosenLabel && (
           <p className={styles.muted}>
             Вид визуализации: {view.chosenLabel}
@@ -194,6 +242,27 @@ export function SlidePanel({ runId, variantId, strategy, slideNumber }: SlidePan
         </p>
         {notes.sources.length > 0 && (
           <p className={styles.muted}>Опирается на: {notes.sources.map((source) => source.label).join(', ')}</p>
+        )}
+        {(shortageLine || factsLine || webSources.length > 0) && (
+          <div className={styles.contentFillBox} aria-label="Материалы и источники">
+            {shortageLine && <p className={styles.muted}>{shortageLine}</p>}
+            {factsLine && <p className={styles.muted}>{factsLine}</p>}
+            {webSources.length > 0 && (
+              <ul className={styles.sourceLinks} aria-label="Открытые источники">
+                {webSources.map((source) => (
+                  <li key={source.id}>
+                    {source.url ? (
+                      <a href={source.url} target="_blank" rel="noreferrer noopener" className={styles.sourceLink}>
+                        {source.site ?? source.title}
+                      </a>
+                    ) : (
+                      <span>{source.site ?? source.title}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
       </section>
     </div>

@@ -188,3 +188,33 @@
 .progressStage > * {
   width: min(100%, 720px);
 }
+
+.shortageBanner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+}
+
+.shortageText {
+  margin: 0;
+  color: var(--ink);
+  font: var(--type-body);
+  line-height: 1.5;
+}
+
+.shortageHint {
+  margin: 0;
+  color: var(--ink-2);
+  font: var(--type-caption);
+  line-height: 1.45;
+}
+
+.shortageActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

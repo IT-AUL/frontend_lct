@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { useAssistantSession, useJobEvents } from '@/entities/assistant'
-import { isTrackingId, useGenerationTracker, useJob, type DeckPlan, type GenerationPhase, type GenerationTracker } from '@/entities/generation'
+import { isTrackingId, parseContentFill, useGenerationTracker, useJob, type DeckPlan, type GenerationPhase, type GenerationTracker } from '@/entities/generation'
 import { markEvidence, projectRunId, rememberRun, useProject } from '@/entities/project'
 import { useTemplate } from '@/entities/template'
 import { hasPendingVariantChanges, useVariantChanges } from '@/entities/variant'
@@ -251,6 +251,13 @@ export function GenerationPage() {
     selectedKey,
   })
   const totalDeckSlides = deckPlan?.slides.length || slots.length || undefined
+  const contentFill = useMemo(
+    () =>
+      parseContentFill((tracker.generation as unknown as Record<string, unknown> | undefined)?.content_fill, tracker.generation) ??
+      storedPlan?.result.contentFill ??
+      null,
+    [tracker.generation, storedPlan],
+  )
   const assistantNote = useMemo(
     () =>
       latestAssistantNote(jobEvents.events, activeVariantId, totalDeckSlides) ??
@@ -377,6 +384,8 @@ export function GenerationPage() {
         autoPolishSecondsLeft={autoPolishSecondsLeft}
         onCancelAutoPolish={() => setAutoPolishCanceled(true)}
         currentSlide={buildingSlot ? { number: buildingSlot.slideNumber, title: buildingSlot.title } : null}
+        contentFill={contentFill}
+        actualSlides={totalDeckSlides ?? null}
       />
       <RecoveryNotice projectId={projectId} runId={runId} tracker={effectiveTracker} />
     </StepShell>

@@ -44,7 +44,7 @@ function parseBrief(value: unknown): Brief {
   if (!isRecord(value)) throw validationError('brief', "Field 'brief' is required")
   return {
     purpose: requiredString(value, 'purpose'),
-    audience: requiredString(value, 'audience'),
+    audience: optionalString(value, 'audience') ?? '',
     language: requiredString(value, 'language', 16),
     target_slide_count: optionalInteger(value, 'target_slide_count', { min: 3, max: 40, fallback: 12 }),
     tone: optionalString(value, 'tone'),

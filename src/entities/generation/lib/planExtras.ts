@@ -23,6 +23,21 @@ export interface PlanResearch {
   seconds: number | null
 }
 
+export interface FactsByOrigin {
+  user: number
+  web: number
+  model: number
+}
+
+export interface ContentFillSummary {
+  capacity: number | null
+  requested: number | null
+  targetSlides: number | null
+  factsByOrigin: FactsByOrigin | null
+  webSources: ResearchSource[]
+  shortageReason: string | null
+}
+
 export type UnitOrigin = 'user' | 'web' | 'model'
 
 export interface PlanProgress {
@@ -49,6 +64,28 @@ const ORIGIN_ALIASES: Record<string, UnitOrigin> = {
   generated: 'model',
 }
 
+const SHORTAGE_REASON_KEYS = [
+  'shortage_reason',
+  'short_reason',
+  'slide_count_reason',
+  'slides_reason',
+  'capacity_reason',
+  'why_shorter',
+  'why_fewer_slides',
+  'fewer_slides_reason',
+  'shrink_reason',
+  'shortage_note',
+  'shortage_message',
+] as const
+
+const CONTENT_FILL_REASON_KEYS = [
+  ...SHORTAGE_REASON_KEYS,
+  'reason',
+  'explanation',
+  'note',
+  'message',
+] as const
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -69,6 +106,12 @@ function firstString(record: Record<string, unknown>, keys: readonly string[]): 
   return null
 }
 
+function isHumanSentence(value: string | null): value is string {
+  if (!value) return false
+  if (/^[a-z0-9_.:-]+$/i.test(value)) return false
+  return true
+}
+
 function siteOf(url: string | null): string | null {
   if (!url) return null
   try {
@@ -78,14 +121,49 @@ function siteOf(url: string | null): string | null {
   }
 }
 
-export function parseSufficiency(value: unknown): PlanSufficiency | null {
-  if (!isRecord(value)) return null
-  const status = value.status
-  if (status !== 'short' && status !== 'ok' && status !== 'excess') return null
+function isSufficiencyStatus(value: unknown): value is SufficiencyStatus {
+  return value === 'short' || value === 'ok' || value === 'excess'
+}
+
+export function parseSufficiency(value: unknown, contentFill?: unknown): PlanSufficiency | null {
+  const suff = isRecord(value) ? value : null
+  const cf = isRecord(contentFill) ? contentFill : null
+  const before = cf && isRecord(cf.before) ? cf.before : null
+  const after = cf && isRecord(cf.after) ? cf.after : null
+
+  const rawStatus = suff && isSufficiencyStatus(suff.status) ? suff.status : null
+  const cfStatus =
+    (after && isSufficiencyStatus(after.status) ? after.status : null) ??
+    (before && isSufficiencyStatus(before.status) ? before.status : null) ??
+    (cf && isSufficiencyStatus(cf.status) ? cf.status : null)
+
+  const rawContent = suff ? firstNumber(suff, ['content_slides', 'supported_slides', 'enough_for', 'capacity']) : null
+  const cfCapacity =
+    (after ? firstNumber(after, ['capacity', 'content_slides']) : null) ??
+    (before ? firstNumber(before, ['capacity', 'content_slides']) : null) ??
+    (cf ? firstNumber(cf, ['capacity', 'content_slides']) : null)
+
+  const rawTarget = suff ? firstNumber(suff, ['target_slides', 'target_slide_count', 'target', 'requested', 'requested_slides']) : null
+  const cfRequested =
+    (before ? firstNumber(before, ['requested', 'target_slides']) : null) ??
+    (cf ? firstNumber(cf, ['requested_slides', 'requested']) : null) ??
+    (after ? firstNumber(after, ['requested', 'target_slides']) : null) ??
+    (cf ? firstNumber(cf, ['target_slides']) : null)
+
+  const contentSlides = rawContent ?? cfCapacity
+  const targetSlides = cfRequested ?? rawTarget
+
+  if (contentSlides !== null && targetSlides !== null && contentSlides < targetSlides) {
+    return { status: 'short', contentSlides, targetSlides }
+  }
+
+  const status = rawStatus ?? cfStatus
+  if (!status) return null
+
   return {
     status,
-    contentSlides: firstNumber(value, ['content_slides', 'supported_slides', 'enough_for']),
-    targetSlides: firstNumber(value, ['target_slides', 'target_slide_count', 'target']),
+    contentSlides,
+    targetSlides: rawTarget ?? cfRequested,
   }
 }
 
@@ -116,14 +194,119 @@ function parseQueries(value: unknown): string[] {
     .filter((item): item is string => Boolean(item && item.trim()))
 }
 
-export function parseResearch(value: unknown): PlanResearch | null {
+export function parseResearch(value: unknown, contentFill?: unknown): PlanResearch | null {
+  const primary = isRecord(value) ? value : null
+  const web = isRecord(contentFill) && isRecord(contentFill.web) ? contentFill.web : null
+  if (!primary && !web) return null
+  const queries = parseQueries(primary?.queries ?? web?.queries)
+  const sources = parseSources(primary?.sources ?? web?.sources)
+  const seconds =
+    (primary ? firstNumber(primary, ['duration_s', 'seconds', 'elapsed_s']) : null) ??
+    (web ? firstNumber(web, ['duration_s', 'seconds', 'elapsed_s']) : null)
+  return queries.length > 0 || sources.length > 0 || seconds !== null ? { queries, sources, seconds } : null
+}
+
+function parseFactsByOrigin(value: unknown): FactsByOrigin | null {
   if (!isRecord(value)) return null
-  const research: PlanResearch = {
-    queries: parseQueries(value.queries),
-    sources: parseSources(value.sources),
-    seconds: firstNumber(value, ['duration_s', 'seconds', 'elapsed_s']),
+  const user = firstNumber(value, ['user', 'content', 'pack', 'source'])
+  const web = firstNumber(value, ['web', 'internet', 'research', 'search'])
+  const model = firstNumber(value, ['model', 'llm', 'knowledge', 'generated'])
+  if (user === null && web === null && model === null) return null
+  return {
+    user: Math.max(0, user ?? 0),
+    web: Math.max(0, web ?? 0),
+    model: Math.max(0, model ?? 0),
   }
-  return research.queries.length > 0 || research.sources.length > 0 || research.seconds !== null ? research : null
+}
+
+function resolveShortageReason(cf: Record<string, unknown> | null, root: Record<string, unknown> | null): string | null {
+  const before = cf && isRecord(cf.before) ? cf.before : null
+  const after = cf && isRecord(cf.after) ? cf.after : null
+  const candidates = [
+    cf ? firstString(cf, CONTENT_FILL_REASON_KEYS) : null,
+    after ? firstString(after, CONTENT_FILL_REASON_KEYS) : null,
+    before ? firstString(before, CONTENT_FILL_REASON_KEYS) : null,
+    root ? firstString(root, SHORTAGE_REASON_KEYS) : null,
+  ]
+  for (const candidate of candidates) {
+    if (isHumanSentence(candidate)) return candidate
+  }
+  return null
+}
+
+export function parseContentFill(value: unknown, rootPayload?: unknown): ContentFillSummary | null {
+  const cf = isRecord(value) ? value : null
+  const root = isRecord(rootPayload) ? rootPayload : null
+  if (!cf && !root) return null
+
+  const before = cf && isRecord(cf.before) ? cf.before : null
+  const after = cf && isRecord(cf.after) ? cf.after : null
+  const web = cf && isRecord(cf.web) ? cf.web : null
+  const rootResearch = root && isRecord(root.research) ? root.research : null
+
+  const capacity =
+    (before ? firstNumber(before, ['capacity', 'content_slides']) : null) ??
+    (after ? firstNumber(after, ['capacity', 'content_slides']) : null) ??
+    (cf ? firstNumber(cf, ['capacity', 'content_slides']) : null)
+
+  const requested =
+    (before ? firstNumber(before, ['requested', 'target_slides']) : null) ??
+    (cf ? firstNumber(cf, ['requested_slides', 'requested']) : null) ??
+    (after ? firstNumber(after, ['requested', 'target_slides']) : null)
+
+  const targetSlides =
+    (cf ? firstNumber(cf, ['target_slides']) : null) ??
+    (after ? firstNumber(after, ['requested', 'target_slides']) : null)
+
+  const factsByOrigin = parseFactsByOrigin(cf?.facts_by_origin ?? root?.facts_by_origin)
+  const webSources = parseSources(web?.sources ?? cf?.sources ?? rootResearch?.sources)
+  const shortageReason = resolveShortageReason(cf, root)
+
+  if (
+    capacity === null &&
+    requested === null &&
+    targetSlides === null &&
+    factsByOrigin === null &&
+    webSources.length === 0 &&
+    shortageReason === null
+  ) {
+    return null
+  }
+
+  return {
+    capacity,
+    requested,
+    targetSlides,
+    factsByOrigin,
+    webSources,
+    shortageReason,
+  }
+}
+
+export function formatFactsByOriginText(contentFill: ContentFillSummary | null | undefined): string | null {
+  if (!contentFill?.factsByOrigin) return null
+  const { user, web } = contentFill.factsByOrigin
+  const parts: string[] = []
+  if (user > 0) parts.push(`из ваших материалов — ${user}`)
+  if (web > 0) parts.push(`из открытых источников — ${web}`)
+  if (parts.length === 0) return null
+  return `Факты: ${parts.join(', ')}.`
+}
+
+export function formatShortageExplanationText(
+  contentFill: ContentFillSummary | null | undefined,
+  actualSlides?: number | null,
+): string | null {
+  if (!contentFill) return null
+  if (contentFill.shortageReason) return contentFill.shortageReason
+  if (contentFill.capacity !== null && contentFill.requested !== null && contentFill.capacity < contentFill.requested) {
+    const built =
+      typeof actualSlides === 'number' && actualSlides > 0 && actualSlides < contentFill.requested
+        ? actualSlides
+        : contentFill.capacity
+    return `Собрал ${built} из ${contentFill.requested} запрошенных слайдов — по числу подтверждённых фактов в материалах.`
+  }
+  return null
 }
 
 export function unitOrigin(unit: object): UnitOrigin | null {

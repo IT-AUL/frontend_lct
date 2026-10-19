@@ -612,5 +612,53 @@ describe('GenerationPage', () => {
     expect(screen.getByText('Бриф и файлы сохранены.')).toBeInTheDocument()
     expect(screen.queryByText(/Собираю/)).not.toBeInTheDocument()
   })
+
+  it('shows facts_by_origin, clickable web.sources links, and shortage explanation when content_fill is returned', () => {
+    const completedWithContentFill = {
+      ...completed,
+      deck_plan: completed.deck_plan
+        ? {
+            ...completed.deck_plan,
+            slides: completed.deck_plan.slides.slice(0, 3),
+          }
+        : null,
+      content_fill: {
+        status: 'short',
+        mode: 'shrink',
+        before: { requested: 12, capacity: 3, status: 'short', total_facts: 2 },
+        after: { requested: 3, capacity: 3, status: 'ok', total_facts: 6 },
+        shortage_reason: 'Собрал 3 слайда вместо 12: в исходном запросе не было таблиц и документов.',
+        facts_by_origin: { user: 2, web: 4, llm: 0 },
+        web: {
+          queries: ['DNS аналитика'],
+          sources: [
+            {
+              id: 'src-dns-1',
+              title: 'DNS: итоги 2025 года и сеть магазинов',
+              url: 'https://www.dns-shop.ru/about/',
+              facts: 3,
+            },
+          ],
+        },
+      },
+    }
+    const startedAt = Date.parse(completed.created_at)
+    useTracker(
+      makeTracker({
+        generationId: RUN,
+        generation: completedWithContentFill as unknown as typeof completed,
+        phase: 'completed',
+        startedAt,
+        finishedAt: startedAt + 5_000,
+      }),
+    )
+    renderPage(RUN, { fromStepBar: true })
+
+    const summary = screen.getByLabelText('Материалы и источники')
+    expect(summary).toHaveTextContent('Собрал 3 слайда вместо 12: в исходном запросе не было таблиц и документов.')
+    expect(summary).toHaveTextContent('Факты: из ваших материалов — 2, из открытых источников — 4.')
+    const link = within(summary).getByRole('link', { name: 'DNS: итоги 2025 года и сеть магазинов' })
+    expect(link).toHaveAttribute('href', 'https://www.dns-shop.ru/about/')
+  })
 })
 

@@ -8,6 +8,7 @@ interface ChartReasoningBoxProps {
   chart: SlideChartView
   onSelectChart?: (slideId: string, chartType: string) => void
   disabled?: boolean
+  hideOptions?: boolean
 }
 
 export function ChartMiniSvg({ type }: { type: string }) {
@@ -84,7 +85,9 @@ export function ChartMiniSvg({ type }: { type: string }) {
   }
 }
 
-export function ChartReasoningBox({ slideId, number, chart, onSelectChart, disabled = false }: ChartReasoningBoxProps) {
+export function ChartReasoningBox({ slideId, number, chart, onSelectChart, disabled = false, hideOptions = false }: ChartReasoningBoxProps) {
+  const alternativesWithReasons = chart.options.filter((option) => !option.active && option.reasons.length > 0)
+
   return (
     <div className={styles.chartBox} data-chart-type={chart.type} aria-label={`Почему такой график на слайде ${number}`}>
       <div className={styles.chartBoxMain}>
@@ -98,9 +101,18 @@ export function ChartReasoningBox({ slideId, number, chart, onSelectChart, disab
         <div className={styles.chartWhyBlock}>
           <div className={styles.chartWhyLabel}>Почему такой график</div>
           <div className={styles.chartWhyText}>{chart.why}</div>
+          {alternativesWithReasons.length > 0 && (
+            <ul className={styles.chartAltReasons} aria-label={`Почему подходят альтернативы на слайде ${number}`}>
+              {alternativesWithReasons.slice(0, 3).map((option) => (
+                <li key={option.type} className={styles.chartAltReasonItem}>
+                  <span className={styles.chartAltReasonName}>{option.label}:</span> {option.reasons.join(', ')}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
-      {chart.options.length > 0 && (
+      {!hideOptions && chart.options.length > 0 && (
         <div className={styles.chartAlternatives} role="group" aria-label={`Альтернативы графика слайда ${number}`}>
           {chart.options.map((option) =>
             onSelectChart ? (

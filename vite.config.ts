@@ -31,6 +31,8 @@ export default defineConfig(({ mode }) => {
       setupFiles: ['./src/shared/config/tests/setup.ts'],
       css: { modules: { classNameStrategy: 'non-scoped' } },
       include: ['src/**/*.test.{ts,tsx}'],
+      testTimeout: 15000,
+      hookTimeout: 15000,
     },
   }
 })

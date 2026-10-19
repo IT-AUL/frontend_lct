@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw'
 import type { RequestHandler } from 'msw'
 import { API_BASE } from '@/shared/config'
 import type { MockContext } from '../context'
-import { designDnaFixture, templateDetailFixture } from '../fixtures'
+import { designDnaFixture, templateDetailFixture, variantFixtures } from '../fixtures'
 import { json, notFound, stateConflict, validationError } from '../http'
 import { nowIso, prefixedId, rebrand } from '../ids'
 import type { MockVariantChangeItem } from '../store'
@@ -424,14 +424,35 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
     http.post(`*${API_BASE}/projects/:projectId/plans`, async ({ request, params }) => {
       const projectId = String(params.projectId)
       const current = states.get(projectId)
-      if (!current || !current.intake.content_pack_id) return undefined
-      const body = object(await request.json())
-      const result = fixture(current.scenario, 'plan')
+      const body = object(await request.clone().json().catch(() => ({})))
+      const packEntry = typeof body.content_pack_id === 'string' ? packs.get(body.content_pack_id) : undefined
+      if ((!current || !current.intake.content_pack_id) && !packEntry) return undefined
+      const active = current ?? state(projectId)
+      const scenario =
+        current?.scenario ??
+        (body.content_pack_id === fixture('data', 'understanding').content_pack_id ? 'data' : 'idea')
+      const result = fixture(scenario, 'plan')
       result.project_id = projectId
       result.content_pack_id = body.content_pack_id
       result.template_id = body.template_id
+      const requestedSlides = Number(object(body.brief).target_slide_count)
+      if (Number.isFinite(requestedSlides) && requestedSlides > 0) {
+        const cf = object(result.content_fill)
+        const before = object(cf.before)
+        const capacity = Number(before.capacity) || requestedSlides
+        if (requestedSlides <= capacity) {
+          result.content_fill = {
+            ...cf,
+            requested_slides: requestedSlides,
+            target_slides: requestedSlides,
+            shortage_reason: null,
+            before: { ...before, capacity, requested: requestedSlides, status: 'ok', missing_slides: 0 },
+          }
+          result.sufficiency = { status: 'ok', content_slides: capacity, target_slides: requestedSlides }
+        }
+      }
       plans.set(String(result.plan_id), result)
-      current.session.artifacts = { ...object(current.session.artifacts), plan_id: result.plan_id }
+      active.session.artifacts = { ...object(active.session.artifacts), plan_id: result.plan_id }
       mark(projectId, 5, [1, 2, 3, 4])
       return json(result)
     }),
@@ -558,6 +579,16 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
       const found = variants.find((variant) => variant.id === params.variantId)
       return found ? json(found) : undefined
     }),
+    http.post(`*${API_BASE}/variants/:variantId/audits`, ({ params }) => {
+      const variantId = String(params.variantId)
+      const scenario = (['idea', 'data'] as const).find((item) =>
+        objects(fixture(item, 'variants').items).some((variant) => variant.id === variantId),
+      )
+      if (!scenario) return undefined
+      const auditId = variantFixtures.balanced.audit.id
+      const job = store.createJob('audit', String(fixture(scenario, 'project').id), { resultIds: { audit_id: auditId } })
+      return json({ audit_id: auditId, job_id: job.id }, 202)
+    }),
     http.get(`*${API_BASE}/variants/:variantId/slides`, ({ params }) => {
       const scenario = (['idea', 'data'] as const).find((scenario) => objects(fixture(scenario, 'variants').items).some((variant) => variant.id === params.variantId))
       return scenario ? json(fixture(scenario, 'slides')) : undefined
@@ -585,7 +616,36 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
       const found = (['idea', 'data'] as const).map((scenario) => fixture(scenario, 'generation-detail')).find((item) => item.id === params.runId)
       return found ? json(found) : undefined
     }),
-    route('get', '/slides/:slideId/explain', ({ param }) => json({ ...fixture('data', param('slideId') === fixture('data', 'chart-slide').id ? 'chart-explain' : 'slide-explain'), slide_id: param('slideId') })),
+    route('get', '/slides/:slideId/explain', ({ param }) => {
+      const slideId = param('slideId')
+      const allSlides = [
+        ...(['idea', 'data'] as const).flatMap((scenario) => objects(fixture(scenario, 'slides').items)),
+        ...[...store.slides.values()].map((item) => item as unknown as Object),
+      ]
+      const slideRecord = allSlides.find((item) => item.id === slideId)
+      const planSlideId = typeof slideRecord?.slide_plan_id === 'string' ? slideRecord.slide_plan_id : null
+      const dataPlanSlides = objects(object(fixture('data', 'generation-detail').deck_plan).slides)
+      const planSlide = planSlideId ? dataPlanSlides.find((item) => item.id === planSlideId) : null
+      const planChart = planSlide && isRecord(planSlide.chart) && typeof planSlide.chart.type === 'string' ? planSlide.chart : null
+      if (slideId === fixture('data', 'chart-slide').id || planChart) {
+        const base = fixture('data', 'chart-explain')
+        if (!planChart) return json({ ...base, slide_id: slideId })
+        const chosenType = String(planChart.type)
+        const reasons = Array.isArray(planChart.reasons) ? planChart.reasons : base.chosen
+        return json({
+          ...base,
+          slide_id: slideId,
+          slide_plan_id: planSlideId ?? base.slide_plan_id,
+          title: typeof planSlide?.title_intent === 'string' ? planSlide.title_intent : base.title,
+          view_id: typeof planChart.view_id === 'string' ? planChart.view_id : base.view_id,
+          chosen: { type: chosenType, reasons },
+          recommended: { type: chosenType, reasons },
+          alternatives: Array.isArray(planChart.alternatives) ? planChart.alternatives : base.alternatives,
+          assistant_note: typeof planChart.why === 'string' ? planChart.why : base.assistant_note,
+        })
+      }
+      return json({ ...fixture('data', 'slide-explain'), slide_id: slideId })
+    }),
     http.get(`*${API_BASE}/slides/:slideId`, ({ params }) => {
       const found = (['idea', 'data'] as const).flatMap((scenario) => objects(fixture(scenario, 'slides').items)).find((item) => item.id === params.slideId)
       return found ? json(found) : undefined

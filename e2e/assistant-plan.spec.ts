@@ -98,6 +98,9 @@ test.describe('plan step', () => {
     const editor = page.getByRole('complementary', { name: 'Слайд 3' })
     await expect(editor.getByRole('textbox', { name: 'Заголовок — вывод слайда' })).toBeVisible()
     await expect(editor).toContainText('24 точки по месяцам')
+    const reasoningBox = editor.getByLabel(/^Почему такой график/)
+    await expect(reasoningBox).toContainText('Почему такой график')
+    await expect(reasoningBox).toContainText('Столбцы:')
     const chart = editor.getByRole('radiogroup', { name: 'Тип графика' })
     await expect(chart.getByRole('radio', { name: 'Линия' })).toHaveAttribute('aria-checked', 'true')
 
@@ -108,6 +111,57 @@ test.describe('plan step', () => {
 
     await page.keyboard.press('Escape')
     await expect(editor).toBeHidden()
+  })
+
+  test('shows calm shortage banner when capacity < requested and offers actions', async ({ page }) => {
+    const base = seedPlanRequest()
+    const thinSeed = JSON.stringify({
+      ...base,
+      request: {
+        ...base.request,
+        brief: { ...base.request.brief, target_slide_count: 12 },
+      },
+      result: {
+        ...base.result,
+        sufficiency: { status: 'short', contentSlides: 3, targetSlides: 12 },
+        contentFill: {
+          capacity: 3,
+          requested: 12,
+          targetSlides: 12,
+          factsByOrigin: { user: 2, web: 4, model: 0 },
+          webSources: [
+            {
+              id: 'src-dns-1',
+              title: 'DNS: итоги 2025 года и сеть магазинов',
+              url: 'https://www.dns-shop.ru/about/',
+              site: 'dns-shop.ru',
+              accessedAt: null,
+              facts: 3,
+            },
+          ],
+          shortageReason: null,
+        },
+      },
+    })
+    await page.addInitScript(
+      ([key, value]) => window.localStorage.setItem(key as string, value as string),
+      [`deckdna.plan-request.v1:${PROJECT_ID}`, thinSeed],
+    )
+    await openApp(page, `/projects/${PROJECT_ID}/plan`)
+    await expect(page.getByRole('heading', { level: 1, name: 'План презентации' })).toBeVisible({ timeout: 30_000 })
+
+    await expect(page.getByText('Материалов хватит примерно на 3 слайда из 12.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Добавить файлы' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Ответить на вопросы' })).toBeVisible()
+    const buildThreeBtn = page.getByRole('button', { name: 'Собрать 3 слайда' })
+    await expect(buildThreeBtn).toBeVisible()
+
+    const replanned = page.waitForResponse(
+      (response) => response.url().includes(`/projects/${PROJECT_ID}/plans`) && response.request().method() === 'POST',
+    )
+    await buildThreeBtn.click()
+    const res = await replanned
+    expect(res.status()).toBe(200)
   })
 
   test('splits a slide from the editor', async ({ page }) => {

@@ -4,7 +4,15 @@ import { isUnitLocked, slidePurposeLabel, unitOrigin, unitSourceId, type DeckPla
 import type { ExportFormat, QualityPassport } from '@/entities/passport'
 import { isCapabilityAvailable, type Capabilities } from '@/entities/system'
 import { DEFAULT_STRATEGY, orderVariants, type DeckFile, type SlideInfo, type VariantSummary } from '@/entities/variant'
-import { slideSources, type SlideSource } from '@/widgets/deck-plan'
+import {
+  DEFAULT_CHART_ALTERNATIVES,
+  DEFAULT_CHART_REASONS,
+  parseSlideChartView,
+  slideSources,
+  type SlideChartOption,
+  type SlideChartView,
+  type SlideSource,
+} from '@/widgets/deck-plan'
 import { formatNumber, pluralize } from '@/shared/lib/format'
 
 const HTML_CAPABILITY_PATHS = [
@@ -204,7 +212,8 @@ export function buildExplainView(
   exemplar?: string | null,
 ): ExplainView {
   const planChart = isRecord(planSlide?.chart) ? planSlide.chart : null
-  const chosenType = explain?.chosen?.type ?? asText(planChart?.type) ?? null
+  const fallbackChart = !planChart && planSlide ? parseSlideChartView(planSlide) : null
+  const chosenType = explain?.chosen?.type ?? asText(planChart?.type) ?? fallbackChart?.type ?? null
   const hasDataset = Boolean(explain?.dataset && (explain.dataset.file || explain.dataset.title || explain.dataset.id))
   const hasChart = hasDataset || Boolean(chosenType)
 
@@ -214,24 +223,39 @@ export function buildExplainView(
 
   const profileSummary = explain?.profile_summary ?? null
   const rawTaskRu = isRecord(explain) ? asText(explain.task_ru) : null
-  const taskText = taskLabel(explain?.task ?? null, rawTaskRu)
+  const taskText = taskLabel(explain?.task ?? null, rawTaskRu) || null
   const aggregationText = isRecord(explain) ? asText(explain.aggregation) : null
   const chosenLabel = chosenType ? chartTypeLabel(chosenType) : null
 
   const explainReasons = (explain?.chosen?.reasons ?? []).map(normalizeReasonText)
-  const planReasons = planChart ? asStrings(planChart.reasons).map(normalizeReasonText) : []
+  const planReasons = planChart ? asStrings(planChart.reasons).map(normalizeReasonText) : (fallbackChart?.reasons ?? [])
   const reasons = explainReasons.length > 0 ? explainReasons : planReasons
-  const rawPlanWhy = planChart ? asText(planChart.why) : null
+  const rawPlanWhy = planChart ? asText(planChart.why) : (fallbackChart?.why ?? null)
   const planWhy = rawPlanWhy ? normalizeReasonText(rawPlanWhy) : null
   const whySummary =
     reasons.length > 0
       ? `${chosenLabel ?? 'График'}: ${reasons.join(', ')}.`
       : planWhy ?? (explain?.assistant_note && hasChart ? normalizeReasonText(explain.assistant_note) : null)
 
-  const alternatives = [
+  const explicitAlternatives = [
     ...parseOptionList(explain?.alternatives),
     ...parseOptionList(planChart?.alternatives),
   ].filter((option, index, list) => option.type !== chosenType && list.findIndex((candidate) => candidate.type === option.type) === index)
+
+  const alternatives: ExplainOption[] =
+    explicitAlternatives.length > 0
+      ? explicitAlternatives
+      : hasChart
+        ? fallbackChart
+          ? fallbackChart.options
+              .filter((opt) => !opt.active)
+              .map((opt) => ({ type: opt.type, label: opt.label, reason: opt.reasons.join(', ') || null }))
+          : (DEFAULT_CHART_ALTERNATIVES[chosenType ?? 'bar'] ?? DEFAULT_CHART_ALTERNATIVES.bar ?? []).map((alt) => ({
+              type: alt.type,
+              label: chartTypeLabel(alt.type),
+              reason: alt.reasons.join(', '),
+            }))
+        : []
 
   const rejected = parseOptionList(explain?.rejected)
 
@@ -264,6 +288,50 @@ export function buildExplainView(
     purposeLabel,
     exemplarLabel,
     fallbackNote,
+  }
+}
+
+export function buildSlideChartViewFromExplain(view: ExplainView, planSlide?: SlidePlan): SlideChartView | null {
+  if (!view.hasChart) return null
+  const type = view.chosenType ?? 'bar'
+  const label = view.chosenLabel ?? chartTypeLabel(type)
+  const reasons = view.reasons.length > 0 ? view.reasons : (DEFAULT_CHART_REASONS[type] ?? [])
+  const why = view.whySummary ?? `Выбран тип «${label}» по структуре данных.`
+  const seen = new Set<string>([type])
+  const options: SlideChartOption[] = [{ type, label, active: true, reasons }]
+  for (const alt of view.alternatives) {
+    if (!alt.type || seen.has(alt.type)) continue
+    seen.add(alt.type)
+    options.push({
+      type: alt.type,
+      label: alt.label,
+      active: false,
+      reasons: alt.reason ? [alt.reason] : (DEFAULT_CHART_REASONS[alt.type] ?? []),
+    })
+  }
+  if (options.length < 3) {
+    const fallbacks = DEFAULT_CHART_ALTERNATIVES[type] ?? DEFAULT_CHART_ALTERNATIVES.bar ?? []
+    for (const alt of fallbacks) {
+      if (seen.has(alt.type)) continue
+      seen.add(alt.type)
+      options.push({
+        type: alt.type,
+        label: chartTypeLabel(alt.type),
+        active: false,
+        reasons: alt.reasons,
+      })
+      if (options.length >= 3) break
+    }
+  }
+  const rawChart = isRecord(planSlide?.chart) ? planSlide.chart : null
+  return {
+    type,
+    label,
+    why,
+    reasons,
+    options,
+    viewId: rawChart && typeof rawChart.view_id === 'string' ? rawChart.view_id : null,
+    previewArtifactId: rawChart && typeof rawChart.preview_artifact_id === 'string' ? rawChart.preview_artifact_id : null,
   }
 }
 

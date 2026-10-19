@@ -5,6 +5,8 @@ export {
   chartTypeLabel,
   contentPackSourceMap,
   deckPurposeLabel,
+  DEFAULT_CHART_ALTERNATIVES,
+  DEFAULT_CHART_REASONS,
   EDITOR_VISUALS,
   formatSlideRange,
   normalizeChartReasonText,

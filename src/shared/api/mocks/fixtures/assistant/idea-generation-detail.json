@@ -254,13 +254,14 @@
       "mode": "shrink",
       "resolved": "none",
       "needs_decision": false,
-      "requested_slides": 3,
+      "requested_slides": 12,
       "target_slides": 3,
+      "shortage_reason": "Собрал 3 слайда вместо 12: в материалах хватило подтверждённых фактов на 3 слайда.",
       "before": {
-        "requested": 3,
+        "requested": 12,
         "capacity": 3,
-        "status": "ok",
-        "missing_slides": 0,
+        "status": "short",
+        "missing_slides": 9,
         "covered_topics": [
           "Тезисы автора"
         ]
@@ -276,10 +277,21 @@
       },
       "facts_by_origin": {
         "user": 2,
-        "web": 0,
+        "web": 1,
         "model": 0
       },
-      "web": null,
+      "web": {
+        "sources": [
+          {
+            "id": "src_rbc_1",
+            "title": "Обзор розничного рынка электроники",
+            "site": "rbc.ru",
+            "url": "https://www.rbc.ru",
+            "accessed_at": "2026-10-17T13:51:06Z",
+            "facts_count": 1
+          }
+        ]
+      },
       "model_sections": 0,
       "diagrams_detected": 0,
       "interpretation": null,
