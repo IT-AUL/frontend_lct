@@ -1,7 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { useState, type FormEvent } from 'react'
 import { useCreateProject, type Project } from '@/entities/project'
-import { isApiError } from '@/shared/api'
+import { humanError } from '@/shared/api'
 import { Button, Field, TextInput } from '@/shared/ui'
 import { defaultProjectName, normalizeProjectName, PROJECT_NAME_MAX } from '../lib/projectName'
 import styles from './CreateProjectDialog.module.css'
@@ -23,7 +23,7 @@ function CreateProjectForm({ onCreated, onCancel }: { onCreated: (project: Proje
     create.mutate(normalized, { onSuccess: onCreated })
   }
 
-  const error = create.error ? (isApiError(create.error) ? create.error.message : 'Не удалось создать проект.') : null
+  const error = create.error ? humanError(create.error, 'Не удалось создать проект.') : null
 
   return (
     <form className={styles.form} onSubmit={submit}>

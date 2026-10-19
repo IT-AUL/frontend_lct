@@ -3,12 +3,13 @@ import { useId, useRef, useState, type DragEvent, type FormEvent, type KeyboardE
 import { useNavigate } from 'react-router'
 import { defaultProjectName } from '@/features/create-project'
 import { useCreateProject } from '@/entities/project'
-import { isApiError } from '@/shared/api'
+import { humanError } from '@/shared/api'
 import { routes } from '@/shared/config'
 import { intakeHandoffState } from '@/shared/lib/intake-handoff'
 import { Button, FILE_KIND_LABEL, Icon, Paperclip, X } from '@/shared/ui'
 import {
   buildPresetFiles,
+  buildPresetTemplateFile,
   detectActivePresetId,
   getStage2Preset,
   guessKind,
@@ -49,13 +50,18 @@ export function Composer() {
     })
   }
 
-  const applyPreset = (presetId: Stage2PresetId) => {
+  const applyPreset = async (presetId: Stage2PresetId) => {
     const preset = getStage2Preset(presetId)
     if (!preset) return
     setTopic(preset.topic)
     setRejected([])
     const presetFiles = buildPresetFiles(preset.id)
-    setFiles((current) => [...current.filter((file) => !isPresetFileName(file.name)), ...presetFiles])
+    const templateFile = hasTemplate ? null : await buildPresetTemplateFile()
+    setFiles((current) => {
+      const kept = current.filter((file) => !isPresetFileName(file.name))
+      const templateMissing = !kept.some((file) => guessKind(file.name) === 'template')
+      return [...(templateFile && templateMissing ? [templateFile] : []), ...kept, ...presetFiles]
+    })
   }
 
   const removeFile = (file: File) => setFiles((current) => current.filter((item) => item !== file))
@@ -85,7 +91,7 @@ export function Composer() {
     addFiles(Array.from(event.dataTransfer.files))
   }
 
-  const error = create.error ? (isApiError(create.error) ? create.error.message : 'Не удалось создать проект.') : null
+  const error = create.error ? humanError(create.error, 'Не удалось создать проект.') : null
 
   return (
     <section className={styles.composer} aria-labelledby={`${inputId}-title`}>

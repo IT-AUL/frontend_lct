@@ -146,7 +146,7 @@ describe('DownloadButton', () => {
 
     await user.click(screen.getByRole('button', { name: 'PDF' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Рендер PDF упал')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Сервер не справился. Попробуйте ещё раз через минуту.')
     expect(root()).toHaveAttribute('data-status', 'error')
 
     await user.click(screen.getByRole('button', { name: 'PDF' }))

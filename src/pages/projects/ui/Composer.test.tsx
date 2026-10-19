@@ -44,6 +44,10 @@ describe('Composer', () => {
     vi.mocked(useCreateProject).mockReturnValue({ mutate, isPending: false, error: null } as unknown as ReturnType<typeof useCreateProject>)
   })
 
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it('keeps the start button disabled until there is a topic or a file', async () => {
     renderComposer()
     const start = screen.getByRole('button', { name: 'Начать' })
@@ -72,6 +76,28 @@ describe('Composer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Убрать sales.csv' }))
     expect(screen.queryByRole('list', { name: 'Прикреплённые файлы' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Начать' })).toBeDisabled()
+  })
+
+  it('attaches the bundled neutral template on preset click when no template is attached', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, blob: async () => new Blob([new Uint8Array([1, 2, 3])]) })))
+    renderComposer()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Выручка и каналы' }))
+
+    const fileList = await screen.findByRole('list', { name: 'Прикреплённые файлы' })
+    await waitFor(() => expect(fileList).toHaveTextContent('neutral-template.pptxШаблон'))
+    expect(fileList).toHaveTextContent('sales_monthly.csvДанные')
+  })
+
+  it('keeps working when the bundled template cannot be fetched', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false })))
+    renderComposer()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Выручка и каналы' }))
+
+    const fileList = await screen.findByRole('list', { name: 'Прикреплённые файлы' })
+    expect(fileList).not.toHaveTextContent('neutral-template.pptx')
+    expect(fileList).toHaveTextContent('sales_monthly.csvДанные')
   })
 
   it('populates topic and sample dataset files when clicking a preset chip without removing an attached template', async () => {

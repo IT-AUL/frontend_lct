@@ -6,6 +6,7 @@ import { useVariant, useVariants } from '@/entities/variant'
 import { AssistantCommandBar } from '@/features/assistant-command'
 import { AuditWorkspace } from '@/widgets/audit-workspace'
 import { SlideInspector } from '@/widgets/slide-inspector'
+import { humanError } from '@/shared/api'
 import { routes } from '@/shared/config'
 import { EmptyState, Skeleton } from '@/shared/ui'
 import { defaultAuditVariant, parseSlideParam } from '../model/defaultVariant'
@@ -31,7 +32,7 @@ function DefaultVariantRedirect({ projectId, runId }: { projectId: string; runId
       <div className={styles.center}>
         <EmptyState
           title={variants.isError ? 'Не удалось загрузить презентацию' : 'Презентация ещё не собрана'}
-          description={variants.error?.message ?? 'Доводка откроется, когда будет готов хотя бы один стиль.'}
+          description={variants.error ? humanError(variants.error) : 'Доводка откроется, когда будет готов хотя бы один стиль.'}
         />
       </div>
     )

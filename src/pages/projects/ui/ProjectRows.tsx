@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { useDeleteProject, type Project } from '@/entities/project'
-import { isApiError } from '@/shared/api'
+import { humanError } from '@/shared/api'
 import { pluralize } from '@/shared/lib/format'
 import { Icon, Trash2, useToast } from '@/shared/ui'
 import { groupByDay, projectView, type ProjectGroup } from '../model/projectView'
@@ -50,7 +50,7 @@ function DeleteControl({ project, confirming, onConfirming }: { project: Project
           remove.mutate(project.id, {
             onError: (error) => {
               setConfirming(false)
-              toast.show(isApiError(error) ? error.message : 'Не удалось удалить проект')
+              toast.show(humanError(error, 'Не удалось удалить проект'))
             },
           })
         }
