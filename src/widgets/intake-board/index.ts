@@ -1,7 +1,9 @@
 export { INTAKE_ACCEPT, INTAKE_FORMATS, fileExtension, guessKind, isContentFile, isImageFile, isIntakeFile, mergeIntakeFiles, roleLabel } from './lib/kinds'
 export {
   STAGE2_PRESETS,
+  PRESET_TEMPLATE_NAME,
   buildPresetFiles,
+  buildPresetTemplateFile,
   detectActivePresetId,
   getStage2Preset,
   isPresetFileName,

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { CreateProjectDialog } from '@/features/create-project'
 import { useProjects } from '@/entities/project'
-import { isApiError } from '@/shared/api'
+import { humanError } from '@/shared/api'
 import { routes } from '@/shared/config'
 import { Button, EmptyState, Icon, Plus, Search, Segmented, X } from '@/shared/ui'
 import { ProjectListSkeleton, sortProjects } from '@/widgets/project-list'
@@ -77,7 +77,7 @@ export function ProjectsPage() {
         ) : projects.isError ? (
           <EmptyState
             title="Не удалось загрузить проекты"
-            description={isApiError(projects.error) ? projects.error.message : 'Сервис не ответил.'}
+            description={humanError(projects.error, 'Сервис не ответил.')}
             actions={
               <Button size="lg" onClick={() => projects.refetch()}>
                 Повторить

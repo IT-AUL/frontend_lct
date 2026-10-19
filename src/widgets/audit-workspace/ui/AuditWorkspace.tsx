@@ -547,7 +547,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
                 onSelectAll={selection.selectAll}
                 onClear={selection.clear}
                 onRepair={() => void runRepair(selectedIssues)}
-                onPreview={dryRunAvailable ? () => repairPreview.mutate(selectedIssues, { onError: (error) => toast.show(error.message) }) : undefined}
+                onPreview={dryRunAvailable ? () => repairPreview.mutate(selectedIssues, { onError: (error) => toast.show(errorText(error)) }) : undefined}
                 previewPending={repairPreview.isPending}
                 preview={repairPreview.data && repairPreview.data.key === selectionKey(selectedIssues) ? repairPreview.data : null}
                 onClosePreview={repairPreview.reset}

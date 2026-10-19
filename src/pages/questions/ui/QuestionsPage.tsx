@@ -361,7 +361,7 @@ export function QuestionsPage() {
   }
 
   if (projectError) {
-    return <EmptyState title="Не удалось открыть проект" description={projectError.message} />
+    return <EmptyState title="Не удалось открыть проект" description={errorMessage(projectError) ?? 'Не удалось открыть проект.'} />
   }
 
   const single = questions.length === 1

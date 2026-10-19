@@ -6,6 +6,7 @@ import { strategyInfo, variantMetrics, type DeckFile, type DeckFiles, type Varia
 import { DownloadButton, FORMAT_LABEL, isStaleFile } from '@/features/export-deck'
 import { ReproduceCommand } from '@/features/reproduce-run'
 import { buildPassportView, EditabilityProof, QualityPassport as PassportPanel } from '@/widgets/quality-passport'
+import { humanError } from '@/shared/api'
 import { GENERATION_BUDGET_SECONDS } from '@/shared/config'
 import { formatBytes } from '@/shared/lib/format'
 import { Drawer, EmptyState, Skeleton } from '@/shared/ui'
@@ -159,7 +160,7 @@ export function PassportDrawer(props: PassportDrawerProps) {
         ) : (
           <EmptyState
             title={passportQuery.error ? 'Паспорт качества не удалось прочитать' : 'Паспорт качества ещё не собран'}
-            description={passportQuery.error ? passportQuery.error.message : 'Соберите паспорт, чтобы проверить редактируемость и метрики колоды.'}
+            description={passportQuery.error ? humanError(passportQuery.error) : 'Соберите паспорт, чтобы проверить редактируемость и метрики колоды.'}
             actions={
               !passportQuery.error ? (
                 <DownloadButton

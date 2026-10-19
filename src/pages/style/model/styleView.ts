@@ -3,7 +3,7 @@ import { slidePurposeLabel, type DeckPlan, type GenerationBrief, type Generation
 import type { Project } from '@/entities/project'
 import { DEFAULT_STRATEGY, STRATEGY_ORDER, strategyInfo, type CatalogStrategy } from '@/entities/variant'
 import { prepareForBuild, type StoredPlanRequest } from '@/features/edit-deck-plan'
-import { artifactUrl } from '@/shared/api'
+import { artifactUrl, humanError } from '@/shared/api'
 import { formatIndex } from '@/shared/lib/format'
 
 export type StyleSlotState = 'loading' | 'ready' | 'draft' | 'error'
@@ -256,7 +256,7 @@ function resolveSlideOrder(
 function errorMessage(error: unknown): string | null {
   if (!error) return null
   if (typeof error === 'string') return error
-  if (error instanceof Error) return error.message
+  if (error instanceof Error) return humanError(error, 'Не удалось отрисовать превью этого стиля')
   return 'Не удалось отрисовать превью этого стиля'
 }
 

@@ -61,6 +61,7 @@ describe('IntakePage presets', () => {
   const intakeMutate = vi.fn()
 
   beforeEach(() => {
+    window.localStorage.clear()
     intakeMutate.mockReset()
     vi.mocked(useProject).mockReturnValue({
       data: { id: 'prj_1', name: 'Тест', template_id: 'tpl_1', content_pack_id: null },
@@ -86,6 +87,10 @@ describe('IntakePage presets', () => {
     vi.mocked(useTemplate).mockReturnValue({ data: null, isPending: false } as unknown as ReturnType<typeof useTemplate>)
     vi.mocked(useDesignDna).mockReturnValue({ data: null, isPending: false } as unknown as ReturnType<typeof useDesignDna>)
     vi.mocked(useJobEvents).mockReturnValue({ events: [], lastEvent: null, done: false, error: null })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('uploads the selected sample dataset preset and populates the topic in one click', async () => {
@@ -129,6 +134,48 @@ describe('IntakePage presets', () => {
     })
     expect(screen.getByText('products_reference.csv')).toBeInTheDocument()
     expect(presetBtn).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('uploads the bundled neutral template together with preset data when the project has no template', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, blob: async () => new Blob([new Uint8Array([7, 7])]) })))
+    vi.mocked(useProject).mockReturnValue({
+      data: { id: 'prj_1', name: 'Тест', template_id: null, content_pack_id: null },
+      isPending: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useProject>)
+    vi.mocked(useAssistantSession).mockReturnValue({
+      data: { project_id: 'prj_1', step: 1, completed_steps: [], artifacts: { template_id: null, content_pack_id: null }, brief: {} },
+    } as unknown as ReturnType<typeof useAssistantSession>)
+    intakeMutate.mockImplementation(
+      (
+        payload: { files: File[]; idea?: string },
+        options: { onSuccess: (data: Record<string, unknown>) => void },
+      ) => {
+        options.onSuccess({
+          project_id: 'prj_1',
+          template_id: 'tpl_new',
+          content_pack_id: 'pack_1',
+          brandbook_id: null,
+          assistant_note: 'Принял шаблон и набор данных.',
+          files: payload.files.map((file) => ({
+            name: file.name,
+            kind: 'data',
+            detected_kind: 'data',
+            accepted: true,
+            reason: null,
+            size_bytes: file.size,
+          })),
+        })
+      },
+    )
+
+    renderIntakePage()
+    await userEvent.click(screen.getByRole('button', { name: 'Выручка и каналы' }))
+
+    await waitFor(() => expect(intakeMutate).toHaveBeenCalledTimes(1))
+    const callArg = intakeMutate.mock.calls[0]?.[0] as { files: File[]; idea?: string }
+    expect(callArg.files.map((file) => file.name)).toEqual(['neutral-template.pptx', 'sales_monthly.csv', 'regions_comparison.csv', 'channels_share.json'])
   })
 
   it('explains why next is disabled when the project has no template and no files', () => {

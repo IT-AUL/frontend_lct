@@ -6,13 +6,14 @@ import { uploadContentPack, useContentPack } from '@/entities/content-pack'
 import { useInvalidateProject, useProject } from '@/entities/project'
 import { buildDesignSystem, uploadTemplate, useDesignDna, useTemplate } from '@/entities/template'
 import { clearPlanRequest } from '@/features/edit-deck-plan'
-import { isApiError } from '@/shared/api'
+import { humanError } from '@/shared/api'
 import { routes } from '@/shared/config'
 import { readIntakeHandoff } from '@/shared/lib/intake-handoff'
 import { Button, ChoiceListSkeleton, EmptyState, PassportSkeleton, Segmented, useToast } from '@/shared/ui'
 import { DesignDnaSkeleton } from '@/widgets/design-dna'
 import {
   buildPresetFiles,
+  buildPresetTemplateFile,
   detectActivePresetId,
   getStage2Preset,
   guessKind,
@@ -60,7 +61,7 @@ function writeStoredIntakeFiles(projectId: string, files: IntakeFile[]): void {
 }
 
 function errorText(error: unknown, fallback: string): string {
-  return isApiError(error) && error.message ? error.message : fallback
+  return humanError(error, fallback)
 }
 
 function legacyFile(file: File): IntakeFile {
@@ -187,14 +188,17 @@ export function IntakePage() {
     )
   }
 
-  const applyPreset = (presetId: Stage2PresetId) => {
+  const applyPreset = async (presetId: Stage2PresetId) => {
     const preset = getStage2Preset(presetId)
     if (!preset || upload.isPending || pendingFiles.length > 0 || advancing) return
     const currentIdea = ideaText.trim()
     const nextIdea = !currentIdea || isPresetTopic(currentIdea) ? preset.topic : currentIdea
     setIdea(nextIdea)
     setFiles((current) => current.filter((file) => !isPresetFileName(file.name)))
-    sendFiles(buildPresetFiles(preset.id), nextIdea)
+    const presetFiles = buildPresetFiles(preset.id)
+    const hasTemplate = Boolean(templateId) || files.some((file) => guessKind(file.name) === 'template')
+    const templateFile = hasTemplate ? null : await buildPresetTemplateFile()
+    sendFiles(templateFile ? [templateFile, ...presetFiles] : presetFiles, nextIdea)
   }
 
   const consumeHandoff = useEffectEvent(() => {

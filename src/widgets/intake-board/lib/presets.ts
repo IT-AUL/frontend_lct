@@ -1,3 +1,5 @@
+import neutralTemplateUrl from './neutral-template.pptx?url'
+
 export type Stage2PresetId = 'revenue-channels' | 'analytics-gaps' | 'reference-240'
 
 export interface Stage2PresetFileSpec {
@@ -5,6 +7,10 @@ export interface Stage2PresetFileSpec {
   mimeType: string
   content: string
 }
+
+export const PRESET_TEMPLATE_NAME = 'neutral-template.pptx'
+
+const PPTX_MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
 
 export interface Stage2Preset {
   id: Stage2PresetId
@@ -211,4 +217,16 @@ export function detectActivePresetId(fileNames: readonly string[]): Stage2Preset
     }
   }
   return null
+}
+
+export async function buildPresetTemplateFile(): Promise<File | null> {
+  try {
+    const response = await fetch(neutralTemplateUrl)
+    if (!response.ok) return null
+    const blob = await response.blob()
+    if (!blob.size) return null
+    return new File([blob], PRESET_TEMPLATE_NAME, { type: PPTX_MIME, lastModified: PRESET_LAST_MODIFIED })
+  } catch {
+    return null
+  }
 }
