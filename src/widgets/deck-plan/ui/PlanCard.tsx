@@ -127,7 +127,13 @@ export function PlanCard({ slide, number, selected, researching, offTopic, onOpe
       )}
 
       {chart && (
-        <div className={styles.chart} data-chart-type={chart.type}>
+        <button
+          type="button"
+          className={styles.chart}
+          data-chart-type={chart.type}
+          aria-label={`Подробнее о слайде ${number}: ${chart.label}`}
+          onClick={onOpen}
+        >
           <span className={styles.spark} aria-hidden="true">
             <ChartMiniSvg type={chart.type} />
           </span>
@@ -137,7 +143,7 @@ export function PlanCard({ slide, number, selected, researching, offTopic, onOpe
             </span>
             <span className={styles.chartWhy}>{chart.why}</span>
           </span>
-        </div>
+        </button>
       )}
 
       {chart && onChartPick && chart.options.length > 1 && (

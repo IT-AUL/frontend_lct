@@ -349,16 +349,25 @@ export interface ResolveStyleNoteOptions {
   preview: StylePreview | null | undefined
   events: readonly JobEvent[]
   sessionNote?: string | null
+  sessionStep?: number | null
   isStreaming: boolean
   unsupported?: boolean
   hasPlan: boolean
   plan?: DeckPlan | null
 }
 
+const INTAKE_NOTE_PATTERN = /добавьт[её]\s+(корпоративн\w*\s+)?(шаблон|материалы|файлы)|принял:\s*шаблон|материалы принял/i
+
+function staleSessionNote(note: string, sessionStep: number | null | undefined): boolean {
+  if (typeof sessionStep === 'number' && sessionStep < 5) return true
+  return INTAKE_NOTE_PATTERN.test(note)
+}
+
 export function resolveStyleAssistantNote({
   preview,
   events,
   sessionNote,
+  sessionStep,
   isStreaming,
   unsupported = false,
   hasPlan,
@@ -382,7 +391,8 @@ export function resolveStyleAssistantNote({
   if (unsupported) {
     return 'Выберите подходящий стиль вёрстки: в одном стиле соберём быстрее, во всех трёх — сравните полные колоды.'
   }
-  if (sessionNote?.trim()) return sessionNote.trim()
+  const sessionText = sessionNote?.trim()
+  if (sessionText && !staleSessionNote(sessionText, sessionStep)) return sessionText
   return 'Примерил три стиля вёрстки на ваших ключевых слайдах — сравните плотность текста и подачу графиков.'
 }
 

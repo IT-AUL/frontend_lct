@@ -322,6 +322,39 @@ describe('buildDeckSpec', () => {
     expect(updated.items[2].changed).toBe(true)
   })
 
+  it('prefers materials capacity over a smaller suggested count until the length answer exists', () => {
+    const spec = buildDeckSpec({
+      questions: [audienceQuestion],
+      selections: initialSelections([audienceQuestion]),
+      skippedIds: new Set(),
+      suggestedBrief: { purpose: 'Итоги продаж за год', target_slide_count: 3 },
+      understanding,
+    })
+    expect(spec.items[1].value).toBe('7 слайдов')
+  })
+
+  it('keeps the user-chosen slide count even when capacity is bigger', () => {
+    const lengthQuestion: Question = {
+      id: 'length',
+      kind: 'length',
+      reason: null,
+      options: [
+        { value: '4', label: '4 слайда', recommended: false, note: null },
+        { value: '9', label: '9 слайдов', recommended: true, note: null },
+      ],
+      allow_custom: true,
+      optional: false,
+    }
+    const spec = buildDeckSpec({
+      questions: [lengthQuestion],
+      selections: { length: { mode: 'option', value: '4', customText: '' } },
+      skippedIds: new Set(),
+      suggestedBrief: { purpose: 'Итоги продаж за год', target_slide_count: 3 },
+      understanding,
+    })
+    expect(spec.items[1].value).toBe('4 слайда')
+  })
+
   it('reflects content_short choices and custom thesis notes in slide count and outline', () => {
     const shortQ: Question = {
       id: 'content_short',

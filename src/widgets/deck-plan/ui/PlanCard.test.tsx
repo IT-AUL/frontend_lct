@@ -26,7 +26,7 @@ describe('PlanCard', () => {
     expect(within(card).getByRole('textbox', { name: 'Заголовок слайда 3' })).toHaveValue(byId('slide-2').title_intent)
     expect(within(card).getAllByRole('textbox', { name: /^Пункт \d слайда 3$/ }).length).toBeGreaterThan(0)
     expect(within(card).getByText('График · Линия')).toBeInTheDocument()
-    expect(within(card).getByText('Таблица')).toBeInTheDocument()
+    expect(within(card).getByText('Из таблицы')).toBeInTheDocument()
   })
 
   it('edits the title and a point right on the card', async () => {
@@ -46,6 +46,16 @@ describe('PlanCard', () => {
     expect(handlers.onUnitRemove).toHaveBeenCalledTimes(1)
     await userEvent.click(screen.getByRole('button', { name: 'Подробнее о слайде 3' }))
     expect(handlers.onOpen).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens the slide details from the chart preview, by click and by keyboard', async () => {
+    const handlers = setup('slide-2')
+    const chartPreview = screen.getByRole('button', { name: 'Подробнее о слайде 3: Линия' })
+    await userEvent.click(chartPreview)
+    expect(handlers.onOpen).toHaveBeenCalledTimes(1)
+    chartPreview.focus()
+    await userEvent.keyboard('{Enter}')
+    expect(handlers.onOpen).toHaveBeenCalledTimes(2)
   })
 
   it('collapses long point lists behind a link to the details', async () => {

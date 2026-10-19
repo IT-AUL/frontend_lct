@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { useGeneration, type GenerationDetail } from '@/entities/generation'
 import type { Project } from '@/entities/project'
 import { slidePreviewUrl, useVariantSlides } from '@/entities/variant'
+import { pluralize } from '@/shared/lib/format'
 import { formatRelativeDate } from '@/widgets/project-list'
 import { projectView } from '../model/projectView'
 import styles from './ContinueStrip.module.css'
@@ -15,17 +16,17 @@ function coverVariantId(generation: GenerationDetail | undefined): string | null
   return ranked[0]?.id ?? null
 }
 
-function useProjectCover(project: Project): string | null {
+function useProjectCover(project: Project): { cover: string | null; slideCount: number | null } {
   const view = projectView(project)
   const generation = useGeneration(view.filter === 'ready' ? view.runId : null)
   const slides = useVariantSlides(coverVariantId(generation.data))
   const first = slides.data?.find((slide) => slide.preview_artifact_id)
-  return slidePreviewUrl(first)
+  return { cover: slidePreviewUrl(first), slideCount: generation.data?.deck_plan?.slides.length ?? null }
 }
 
 function ContinueCard({ project }: { project: Project }) {
   const view = projectView(project)
-  const cover = useProjectCover(project)
+  const { cover, slideCount } = useProjectCover(project)
   const [broken, setBroken] = useState(false)
   return (
     <li className={styles.item}>
@@ -47,6 +48,7 @@ function ContinueCard({ project }: { project: Project }) {
           <span className={styles.status}>
             <span className={styles.dot} data-tone={view.tone} aria-hidden />
             {view.label}
+            {slideCount !== null && <span className={styles.count}>{`${slideCount} ${pluralize(slideCount, ['слайд', 'слайда', 'слайдов'])}`}</span>}
             <span className={styles.time}>{formatRelativeDate(project.updated_at)}</span>
           </span>
         </span>

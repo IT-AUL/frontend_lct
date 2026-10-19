@@ -405,6 +405,37 @@ describe('deduplicateTextBlocks', () => {
     expect(deduped[0]?.id).toBe('b:sec-1:0')
     expect(deduped[1]?.id).toBe('b:sec-2:0')
   })
+
+  it('merges same-heading blocks whose summaries overlap, keeping the fuller text', () => {
+    const blocks = [
+      block({ id: 'b:1', kind: 'fact', title: 'Проблема', text: 'Продажи падают' }),
+      block({ id: 'b:2', kind: 'fact', title: 'Проблема', text: 'Продажи падают второй квартал подряд: -18% к прошлому году' }),
+      block({ id: 'b:3', kind: 'fact', title: 'Проблема', text: 'Продажи падают' }),
+      block({ id: 'b:4', kind: 'fact', title: 'Решение', text: 'Запустить программу удержания в Q1' }),
+    ]
+    const deduped = deduplicateTextBlocks(blocks)
+    expect(deduped).toHaveLength(2)
+    expect(deduped[0]?.id).toBe('b:2')
+    expect(deduped[1]?.id).toBe('b:4')
+  })
+
+  it('keeps a section summary card next to its detail cards', () => {
+    const blocks = [
+      block({ id: 's:sec-1', kind: 'topic', title: 'Итоги', text: 'Рост на 20% Пункт без цифр' }),
+      block({ id: 'b:sec-1:0', kind: 'number', title: 'Итоги', text: 'Рост на 20%' }),
+    ]
+    const deduped = deduplicateTextBlocks(blocks)
+    expect(deduped).toHaveLength(2)
+    expect(deduped[0]?.id).toBe('s:sec-1')
+  })
+
+  it('keeps same-heading blocks with unrelated summaries', () => {
+    const blocks = [
+      block({ id: 'b:1', title: 'Выводы', text: 'Выручка выросла вдвое за год' }),
+      block({ id: 'b:2', title: 'Выводы', text: 'Отток клиентов снизился на треть' }),
+    ]
+    expect(deduplicateTextBlocks(blocks)).toHaveLength(2)
+  })
 })
 
 describe('fallbackUnderstandingFromContentPack', () => {

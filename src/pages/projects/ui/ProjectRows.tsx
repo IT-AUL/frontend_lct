@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { useGeneration } from '@/entities/generation'
 import { useDeleteProject, type Project } from '@/entities/project'
 import { humanError } from '@/shared/api'
 import { pluralize } from '@/shared/lib/format'
@@ -20,9 +21,9 @@ function rowTime(iso: string, group: ProjectGroup['id']): string {
   return date.getFullYear() === new Date().getFullYear() ? dayFormat.format(date) : yearFormat.format(date)
 }
 
-function slidesLabel(project: Project): string {
+function slidesLabel(project: Project, builtSlides: number | null): string {
   if (projectView(project).filter === 'draft') return ''
-  const count = project.target_slide_count
+  const count = builtSlides ?? project.target_slide_count
   return count > 0 ? `${count} ${pluralize(count, ['слайд', 'слайда', 'слайдов'])}` : ''
 }
 
@@ -66,6 +67,8 @@ function DeleteControl({ project, confirming, onConfirming }: { project: Project
 
 function ProjectRow({ project, group }: { project: Project; group: ProjectGroup['id'] }) {
   const view = projectView(project)
+  const generation = useGeneration(view.filter === 'ready' ? view.runId : null)
+  const builtSlides = generation.data?.deck_plan?.slides.length ?? null
   const [confirming, setConfirming] = useState(false)
   return (
     <li className={styles.row} data-confirming={confirming || undefined}>
@@ -78,7 +81,7 @@ function ProjectRow({ project, group }: { project: Project; group: ProjectGroup[
           <span className={styles.dot} data-tone={view.tone} aria-hidden />
           {view.label}
         </span>
-        <span className={styles.slides}>{slidesLabel(project)}</span>
+        <span className={styles.slides}>{slidesLabel(project, builtSlides)}</span>
         <time className={styles.time} dateTime={project.updated_at}>
           {rowTime(project.updated_at, group)}
         </time>
