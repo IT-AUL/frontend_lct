@@ -186,6 +186,7 @@ export function StylePage() {
     preview: stylePreview,
     events: jobEvents.events,
     sessionNote: session?.assistant_note,
+    sessionStep: session?.step,
     isStreaming: isStreaming || startPreviews.isPending || autoPlanning,
     unsupported,
     hasPlan,

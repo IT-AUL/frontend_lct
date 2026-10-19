@@ -139,6 +139,40 @@ describe('styleView model', () => {
     ).toContain('Примерил 1 из 9 пробных слайдов')
   })
 
+  it('ignores a stale intake session note on the style step', () => {
+    const fallback = 'Примерил три стиля вёрстки на ваших ключевых слайдах — сравните плотность текста и подачу графиков.'
+    expect(
+      resolveStyleAssistantNote({
+        preview: null,
+        events: [],
+        sessionNote: 'Добавьте шаблон и материалы, начну с них',
+        sessionStep: 1,
+        isStreaming: false,
+        hasPlan: true,
+      }),
+    ).toBe(fallback)
+    expect(
+      resolveStyleAssistantNote({
+        preview: null,
+        events: [],
+        sessionNote: 'Материалы принял — добавьте корпоративный шаблон .pptx или .potx, чтобы я знал правила оформления.',
+        sessionStep: 5,
+        isStreaming: false,
+        hasPlan: true,
+      }),
+    ).toBe(fallback)
+    expect(
+      resolveStyleAssistantNote({
+        preview: null,
+        events: [],
+        sessionNote: 'План готов — выберите стиль вёрстки.',
+        sessionStep: 5,
+        isStreaming: false,
+        hasPlan: true,
+      }),
+    ).toBe('План готов — выберите стиль вёрстки.')
+  })
+
   it('keeps the project brief as the source of truth so the service accepts the inline plan', () => {
     const plan = { ...deckPlan, brief: { ...deckPlan.brief, purpose: 'presentation', key_message: null, call_to_action: null } }
     const payload = buildGenerationPayload({

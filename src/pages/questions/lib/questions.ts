@@ -414,12 +414,22 @@ export function buildDeckSpec({
       : reasonCapacity
 
   const briefSlideCount = Number(suggestedBrief?.target_slide_count)
+  const lengthAnswered = Boolean(lengthQ && !skippedIds.has(lengthQ.id) && selections[lengthQ.id])
+  const preferCapacity =
+    !lengthAnswered &&
+    typeof rawCapacity === 'number' &&
+    rawCapacity >= 3 &&
+    rawCapacity <= 40 &&
+    Number.isFinite(briefSlideCount) &&
+    rawCapacity > Math.round(briefSlideCount)
   let baseSlideCount =
-    Number.isFinite(briefSlideCount) && briefSlideCount >= 3 && briefSlideCount <= 40
-      ? Math.round(briefSlideCount)
-      : capacity && capacity >= 3
-        ? capacity
-        : Math.max(3, Math.min(40, fallbackSlideCount))
+    preferCapacity && rawCapacity
+      ? Math.round(rawCapacity)
+      : Number.isFinite(briefSlideCount) && briefSlideCount >= 3 && briefSlideCount <= 40
+        ? Math.round(briefSlideCount)
+        : capacity && capacity >= 3
+          ? capacity
+          : Math.max(3, Math.min(40, fallbackSlideCount))
 
   if (lengthQ && !skippedIds.has(lengthQ.id)) {
     const lenSel = selections[lengthQ.id]

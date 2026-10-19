@@ -141,9 +141,9 @@ export const ORIGIN_LABEL: Record<UnitOrigin, string> = {
 export type SourceKind = 'table' | 'text' | 'web'
 
 export const SOURCE_KIND_LABEL: Record<SourceKind, string> = {
-  table: 'Таблица',
-  text: 'Текст',
-  web: 'Интернет',
+  table: 'Из таблицы',
+  text: 'Из текста',
+  web: 'Из интернета',
 }
 
 const SOURCE_KIND_ORDER: readonly SourceKind[] = ['table', 'text', 'web']

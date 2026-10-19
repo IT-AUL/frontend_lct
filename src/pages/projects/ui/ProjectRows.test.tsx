@@ -1,14 +1,21 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
+import { useGeneration } from '@/entities/generation'
 import { useDeleteProject, type Project } from '@/entities/project'
 import { ToastProvider } from '@/shared/ui'
 import { ProjectRows } from './ProjectRows'
+import type * as GenerationModule from '@/entities/generation'
 import type * as ProjectModule from '@/entities/project'
 
 vi.mock('@/entities/project', async (importOriginal) => ({
   ...(await importOriginal<typeof ProjectModule>()),
   useDeleteProject: vi.fn(),
+}))
+
+vi.mock('@/entities/generation', async (importOriginal) => ({
+  ...(await importOriginal<typeof GenerationModule>()),
+  useGeneration: vi.fn(() => ({ data: undefined })),
 }))
 
 const now = new Date().toISOString()
@@ -47,6 +54,7 @@ describe('ProjectRows', () => {
   beforeEach(() => {
     mutate.mockReset()
     vi.mocked(useDeleteProject).mockReturnValue({ mutate, isPending: false } as unknown as ReturnType<typeof useDeleteProject>)
+    vi.mocked(useGeneration).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof useGeneration>)
   })
 
   it('groups rows by day and links each project to its step', () => {
@@ -65,6 +73,22 @@ describe('ProjectRows', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Удалить проект «Старый прогон»' }))
     await userEvent.click(screen.getByRole('button', { name: 'Да' }))
     expect(mutate).toHaveBeenCalledWith('prj_a', expect.any(Object))
+  })
+
+  it('shows the built slide count for a ready deck instead of the requested one', () => {
+    vi.mocked(useGeneration).mockReturnValue({
+      data: { deck_plan: { slides: Array.from({ length: 9 }, (_, index) => ({ id: `slide-${index}` })) } },
+    } as unknown as ReturnType<typeof useGeneration>)
+    renderRows([project('prj_a', 'Демо · VK Tech', { target_slide_count: 12 })])
+    const link = screen.getByRole('link', { name: /Демо · VK Tech/ })
+    expect(link).toHaveTextContent('9 слайдов')
+    expect(link).not.toHaveTextContent('12 слайдов')
+  })
+
+  it('keeps the requested slide count while the build result is not loaded', () => {
+    vi.mocked(useGeneration).mockReturnValue({ data: undefined } as unknown as ReturnType<typeof useGeneration>)
+    renderRows([project('prj_a', 'Собранная колода')])
+    expect(screen.getByRole('link', { name: /Собранная колода/ })).toHaveTextContent('12 слайдов')
   })
 
   it('shows more rows on demand', async () => {

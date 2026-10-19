@@ -59,7 +59,7 @@ async function openPlan(page: Page) {
 }
 
 function slideTile(page: Page, number: number) {
-  return page.getByRole('list', { name: 'Слайды' }).getByRole('button', { name: `Подробнее о слайде ${number}` })
+  return page.getByRole('list', { name: 'Слайды' }).getByRole('button', { name: `Подробнее о слайде ${number}`, exact: true })
 }
 
 test.describe('plan step', () => {
@@ -79,7 +79,7 @@ test.describe('plan step', () => {
     const card = page.getByRole('article', { name: 'Слайд 3' })
     await expect(card).toContainText('Данные')
     await expect(card).toContainText('График · Линия')
-    await expect(card).toContainText('Таблица')
+    await expect(card).toContainText('Из таблицы')
     await expect(card.getByRole('textbox', { name: /^Пункт 1 слайда 3$/ })).toBeVisible()
 
     const title = card.getByRole('textbox', { name: 'Заголовок слайда 3' })

@@ -125,12 +125,14 @@
   font: var(--type-caption);
 }
 
-.time {
+.time,
+.count {
   color: var(--ink-3);
   font-weight: 400;
 }
 
-.time::before {
+.time::before,
+.count::before {
   content: '·';
   margin-right: 6px;
 }

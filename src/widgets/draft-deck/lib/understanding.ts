@@ -243,6 +243,16 @@ export function extractFigure(text: string): string | null {
   return null
 }
 
+const SUMMARY_PREFIX_LEN = 60
+const SUMMARY_MIN_OVERLAP = 16
+
+function summaryOverlap(a: string, b: string): boolean {
+  if (!a || !b) return false
+  const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a]
+  if (shorter.length < SUMMARY_MIN_OVERLAP) return longer.startsWith(shorter)
+  return longer.includes(shorter) || longer.startsWith(shorter.slice(0, SUMMARY_PREFIX_LEN))
+}
+
 export function deduplicateTextBlocks<
   T extends {
     title?: string | null
@@ -254,6 +264,7 @@ export function deduplicateTextBlocks<
   },
 >(blocks: readonly T[]): T[] {
   const seen = new Map<string, number>()
+  const byHeading = new Map<string, number[]>()
   const result: T[] = []
   for (const block of blocks) {
     if (block.dataset_id) {
@@ -272,7 +283,23 @@ export function deduplicateTextBlocks<
       }
       continue
     }
+    if (heading && block.kind !== 'topic') {
+      const dupIndex = (byHeading.get(heading) ?? []).find((index) => {
+        const other = result[index]
+        return other ? other.kind !== 'topic' && summaryOverlap(summary, normalizeTextKey(other.summary ?? other.text)) : false
+      })
+      if (dupIndex !== undefined) {
+        const existing = result[dupIndex]
+        const existingSummary = normalizeTextKey(existing?.summary ?? existing?.text)
+        if (summary.length > existingSummary.length) {
+          result[dupIndex] = block
+        }
+        seen.set(key, dupIndex)
+        continue
+      }
+    }
     seen.set(key, result.length)
+    if (heading) byHeading.set(heading, [...(byHeading.get(heading) ?? []), result.length])
     result.push(block)
   }
   return result
