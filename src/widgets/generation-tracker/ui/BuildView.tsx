@@ -17,6 +17,12 @@ const STATE_LABEL: Record<VariantCardState, string> = {
   canceled: 'остановлено',
 }
 
+const STAGE_HINT: Record<'plan' | 'slides' | 'audit', string> = {
+  plan: 'Раскладываю материал по слайдам',
+  slides: 'Верстаю слайды в вашем шаблоне по одному',
+  audit: 'Проверяю цифры, переполнение и читаемость',
+}
+
 interface BuildViewProps {
   tracker: GenerationTracker
   events: readonly JobEvent[]
@@ -43,6 +49,7 @@ export function BuildVariants({
   stageSummary,
   autoPolishSecondsLeft,
   onCancelAutoPolish,
+  currentSlide = null,
 }: {
   cards: readonly VariantCard[]
   selectedKey: string | null
@@ -50,6 +57,7 @@ export function BuildVariants({
   stageSummary?: BuildStageSummary
   autoPolishSecondsLeft?: number | null
   onCancelAutoPolish?: () => void
+  currentSlide?: { number: number; title: string } | null
 }) {
   if (cards.length === 0) return null
 
@@ -70,16 +78,32 @@ export function BuildVariants({
   return (
     <div className={styles.sidebar}>
       <div className={styles.stagesBlock}>
+        {summary.totalSlides > 0 && (
+          <div className={styles.counter} data-done={isCompleted || undefined}>
+            <span className={styles.counterValue}>{isCompleted ? summary.totalSlides : summary.readySlides}</span>
+            <span className={styles.counterTotal}>из {summary.totalSlides} слайдов готово</span>
+            <span className={styles.counterPercent}>{progressPercent}%</span>
+          </div>
+        )}
         <ol className={styles.stages} aria-label="Этапы сборки">
           {summary.stages.map((stage) => (
             <li key={stage.id} className={styles.stageRow} data-state={stage.state}>
-              <span className={styles.stageMain}>
-                <span className={styles.stageMark} aria-hidden="true">
-                  {stage.state === 'done' ? '✓' : stage.state === 'active' ? '●' : '○'}
-                </span>
-                <span className={styles.stageLabel}>{stage.label}</span>
+              <span className={styles.stageMark} aria-hidden="true">
+                {stage.state === 'done' ? '✓' : ''}
               </span>
-              <span className={styles.stageStatus}>{stage.statusLabel}</span>
+              <span className={styles.stageBody}>
+                <span className={styles.stageHead}>
+                  <span className={styles.stageLabel}>{stage.label}</span>
+                  <span className={styles.stageStatus}>{stage.statusLabel}</span>
+                </span>
+                {stage.state === 'active' && <span className={styles.stageHint}>{STAGE_HINT[stage.id]}</span>}
+                {stage.state === 'active' && stage.id === 'slides' && currentSlide && (
+                  <span className={styles.stageCurrent}>
+                    <span className={styles.stageCurrentNum}>{formatIndex(currentSlide.number)}</span>
+                    {currentSlide.title}
+                  </span>
+                )}
+              </span>
             </li>
           ))}
         </ol>
@@ -177,7 +201,14 @@ export function BuildTable({
         const showActions = Boolean(variantId && (isReady || changeState || isSubmitting || slideError))
 
         return (
-          <div role="listitem" key={slot.key} data-slide-key={slot.slideKey} data-preview-revision={slot.previewRevision ?? undefined}>
+          <div
+            role="listitem"
+            key={slot.key}
+            className={styles.slot}
+            data-state={slot.imageUrl ? 'ready' : slot.state}
+            data-slide-key={slot.slideKey}
+            data-preview-revision={slot.previewRevision ?? undefined}
+          >
             <SlideTile
               title={slot.title}
               image={slot.imageUrl}
@@ -272,11 +303,12 @@ export function BuildTable({
                     <span className={styles.draftLineLong} />
                   </span>
                 )}
-                <span className={styles.draftFooter}>
-                  <span className={styles.draftPurpose}>
-                    {slot.state === 'building' ? 'Верстаю слайд по макету…' : 'Ожидает очереди рендера'}
+                {slot.state === 'building' && (
+                  <span className={styles.draftFooter}>
+                    <span className={styles.buildingDot} aria-hidden="true" />
+                    <span className={styles.draftPurpose}>Верстаю этот слайд…</span>
                   </span>
-                </span>
+                )}
               </span>
             </SlideTile>
           </div>

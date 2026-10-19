@@ -169,6 +169,10 @@ describe('GenerationPage', () => {
     expect(screen.getByRole('progressbar', { name: 'Прогресс сборки' })).toBeInTheDocument()
     expect(screen.getByLabelText('Стиль сборки')).toHaveTextContent('Сбалансированный')
     expect(screen.queryByRole('list', { name: 'Стили сборки' })).not.toBeInTheDocument()
+    expect(screen.getByText('из 12 слайдов готово')).toBeInTheDocument()
+    expect(stages.getByText('Верстаю слайды в вашем шаблоне по одному')).toBeInTheDocument()
+    expect(screen.queryByText('Ожидает очереди рендера')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Верстаю этот слайд…')).toHaveLength(1)
   })
 
   it('replaces cards with live PNG previews, shows draft/superseded badges, and opens slide inspector on click', async () => {

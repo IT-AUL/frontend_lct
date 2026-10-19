@@ -265,6 +265,7 @@ export function GenerationPage() {
   const [autoPolishTicks, setAutoPolishTicks] = useState(0)
 
   const inspectedSlot = inspectedSlideIndex !== null ? (slots[inspectedSlideIndex] ?? null) : null
+  const buildingSlot = slots.find((slot) => slot.state === 'building' && !slot.imageUrl) ?? null
   const done = phase === 'completed' && Boolean(generationId)
   const deckShownOnTable = done && slots.length > 0 && slots.some((slot) => slot.state === 'ready')
 
@@ -375,6 +376,7 @@ export function GenerationPage() {
         stageSummary={stageSummary}
         autoPolishSecondsLeft={autoPolishSecondsLeft}
         onCancelAutoPolish={() => setAutoPolishCanceled(true)}
+        currentSlide={buildingSlot ? { number: buildingSlot.slideNumber, title: buildingSlot.title } : null}
       />
       <RecoveryNotice projectId={projectId} runId={runId} tracker={effectiveTracker} />
     </StepShell>

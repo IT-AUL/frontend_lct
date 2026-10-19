@@ -37,7 +37,7 @@ export function useBuildSlots({
     selected?.state === 'running' ||
     selected?.state === 'pending' ||
     selected?.state === 'queued'
-  const { data: variantSlides } = useVariantSlides(variantId)
+  const { data: variantSlides } = useVariantSlides(variantId, isRunning)
   const { data: slideDraftsResponse } = useSlideDrafts(variantId, isRunning)
   const effectivePlan = deckPlan ?? tracker.generation?.deck_plan ?? null
 

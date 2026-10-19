@@ -7,56 +7,133 @@
 .stagesBlock {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+}
+
+.counter {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: end;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 12px);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+}
+
+.counterValue {
+  grid-row: 1 / span 2;
+  color: var(--ink);
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.counter[data-done] .counterValue {
+  color: var(--ok);
+}
+
+.counterTotal {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.counterPercent {
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .stages {
+  position: relative;
   display: flex;
   flex-direction: column;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
-  border-top: 1px solid var(--line);
 }
 
 .stageRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px 1fr;
   gap: 12px;
-  padding: 10px 4px;
-  border-bottom: 1px solid var(--line);
+  padding: 8px 0;
   font-size: 14px;
   line-height: 1.35;
 }
 
-.stageMain {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
+.stageRow:not(:last-child)::after {
+  position: absolute;
+  top: 30px;
+  bottom: -6px;
+  left: 9px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--line);
+  content: '';
+}
+
+.stageRow[data-state='done']:not(:last-child)::after {
+  background: var(--ok);
+  opacity: 0.5;
 }
 
 .stageMark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  color: var(--ink-3);
-  font-family: var(--font-mono);
-  font-size: 12px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--line-strong, var(--line));
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--surface);
+  font-size: 11px;
+  font-weight: 700;
+  box-sizing: border-box;
 }
 
 .stageRow[data-state='done'] .stageMark {
-  color: var(--ok);
+  border-color: var(--ok);
+  background: var(--ok);
 }
 
 .stageRow[data-state='active'] .stageMark {
-  color: var(--focus);
+  border-color: var(--focus);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--focus) 18%, transparent);
+  animation: stagePulse 1.6s ease-in-out infinite;
+}
+
+@keyframes stagePulse {
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--focus) 6%, transparent);
+  }
+}
+
+.stageBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.stageHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .stageLabel {
-  color: var(--ink-2);
+  color: var(--ink-3);
   font-variant-numeric: tabular-nums;
 }
 
@@ -80,7 +157,47 @@
 }
 
 .stageRow[data-state='active'] .stageStatus {
+  color: var(--focus);
+}
+
+.stageHint {
   color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.slot {
+  transition: opacity 0.3s ease;
+}
+
+.slot[data-state='draft'] {
+  opacity: 0.55;
+}
+
+.slot[data-state='building'] {
+  opacity: 1;
+}
+
+.buildingDot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--focus);
+  animation: dotBlink 1.2s ease-in-out infinite;
+}
+
+@keyframes dotBlink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stageRow[data-state='active'] .stageMark,
+  .buildingDot {
+    animation: none;
+  }
 }
 
 .progressTrack {
@@ -297,7 +414,7 @@
 .draftFooter {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
   padding-top: 6px;
   border-top: 1px solid var(--line);
@@ -313,7 +430,7 @@
 
 .draftPurpose {
   overflow: hidden;
-  color: var(--ink-3);
+  color: var(--ink-2);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -581,4 +698,24 @@
   font-family: var(--font-mono);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+}
+
+.stageCurrent {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--focus) 7%, var(--surface));
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.stageCurrentNum {
+  flex: none;
+  color: var(--focus);
+  font-family: var(--font-mono);
+  font-size: 12px;
 }

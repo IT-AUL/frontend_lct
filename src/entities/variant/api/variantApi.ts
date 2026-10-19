@@ -38,7 +38,7 @@ export function useVariant(variantId: string | null | undefined) {
   })
 }
 
-export function useVariantSlides(variantId: string | null | undefined) {
+export function useVariantSlides(variantId: string | null | undefined, isRunning = false) {
   return useQuery({
     queryKey: variantKeys.slides(variantId ?? ''),
     queryFn: async (): Promise<SlideInfo[]> => {
@@ -50,5 +50,6 @@ export function useVariantSlides(variantId: string | null | undefined) {
       return [...page.items].sort((a, b) => a.index - b.index)
     },
     enabled: Boolean(variantId),
+    refetchInterval: isRunning ? 2500 : false,
   })
 }
