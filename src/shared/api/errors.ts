@@ -42,6 +42,7 @@ export function isApiError(error: unknown): error is ApiError {
 
 const NETWORK_FAILURE = /failed to fetch|networkerror|load failed|network request failed/i
 const LATIN_ONLY = /^[\x20-\x7e]+$/
+const QUOTED_PART = /"[^"]*"|'[^']*'|«[^»]*»|`[^`]*`/g
 
 export function humanError(error: unknown, fallback = 'Что-то пошло не так. Попробуйте ещё раз.'): string {
   if (!(error instanceof Error)) return fallback
@@ -49,6 +50,7 @@ export function humanError(error: unknown, fallback = 'Что-то пошло н
   if (!message || NETWORK_FAILURE.test(message)) return 'Нет связи с сервером. Проверьте соединение и попробуйте ещё раз.'
   if (isApiError(error) && error.status === 404) return 'Не нашёл эти данные. Обновите страницу или вернитесь на шаг назад.'
   if (isApiError(error) && error.status >= 500) return 'Сервер не справился. Попробуйте ещё раз через минуту.'
-  if (/^HTTP \d+$/.test(message) || LATIN_ONLY.test(message)) return fallback
+  const unquoted = message.replace(QUOTED_PART, '').trim()
+  if (/^HTTP \d+$/.test(message) || LATIN_ONLY.test(message) || !unquoted || LATIN_ONLY.test(unquoted)) return fallback
   return message
 }

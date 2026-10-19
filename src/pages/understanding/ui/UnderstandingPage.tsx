@@ -18,6 +18,7 @@ import {
 import { useContentPack } from '@/entities/content-pack'
 import { requestJson, humanError } from '@/shared/api'
 import { readJson, writeJson } from '@/shared/lib/storage'
+import { pluralize } from '@/shared/lib/format'
 import { rememberRun, useProject } from '@/entities/project'
 import { useActiveProviderSession } from '@/entities/provider-session'
 import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
@@ -54,7 +55,8 @@ export function UnderstandingPage() {
   const { data: session, isLoading: sessionLoading } = useAssistantSession(projectId)
   const providerSession = useActiveProviderSession()
   const modelAuto = useCapabilityFlag(FEATURE_PATHS.modelAuto)
-  const useLlm = Boolean(providerSession) || modelAuto
+  const llmAllowed = Boolean(providerSession) || modelAuto
+  const useLlm = false
 
   const initialPackId = session?.artifacts.content_pack_id ?? project?.content_pack_id ?? searchParams.get('pack') ?? null
   const [overridePackId, setOverridePackId] = useState<string | null>(null)
@@ -73,6 +75,7 @@ export function UnderstandingPage() {
   const [noteInput, setNoteInput] = useState('')
   const [buildingPlan, setBuildingPlan] = useState(false)
   const [selection, setSelection] = useState<Selection | null>(null)
+  const [confirmingAll, setConfirmingAll] = useState(false)
   const [excludedSession, setExcludedSession] = useState<{ packId: string; ids: readonly string[] } | null>(null)
 
   const editBlocks = useEditBlocks(activePackId ?? '')
@@ -185,6 +188,39 @@ export function UnderstandingPage() {
     }
   }
 
+  const handleConfirmAllInsights = async () => {
+    if (!currentUnderstanding || !activePackId || confirmingAll) return
+    const pendingIds = currentUnderstanding.datasets
+      .flatMap((dataset) => dataset.insights)
+      .filter((insight) => !insight.confirmed && !excludedInsightIds.includes(insight.id))
+      .map((insight) => insight.id)
+    if (pendingIds.length === 0) return
+    const prevSnapshot = currentUnderstanding
+    let nextOptimistic = prevSnapshot
+    for (const id of pendingIds) nextOptimistic = applyOptimisticInsightPatch(nextOptimistic, id, { confirmed: true })
+    setConfirmingAll(true)
+    setOptimistic(nextOptimistic)
+    queryClient.setQueryData([...assistantKeys.understanding(activePackId), { useLlm }], nextOptimistic)
+    setFeedbackNote(`Отметил ${pendingIds.length} ${pluralize(pendingIds.length, ['вывод', 'вывода', 'выводов'])} — они пойдут в ключевые слайды.`)
+    setActionError(null)
+
+    if (unsupportedUnderstanding) {
+      setConfirmingAll(false)
+      return
+    }
+
+    try {
+      for (const id of pendingIds) {
+        await editInsight.mutateAsync({ insightId: id, confirmed: true })
+      }
+    } catch (error) {
+      setOptimistic(prevSnapshot)
+      setActionError(errorMessage(error))
+    } finally {
+      setConfirmingAll(false)
+    }
+  }
+
   const handleExcludeInsight = (insightId: string) => {
     if (!activePackId) return
     setExcludedIds(excludedInsightIds.includes(insightId) ? excludedInsightIds : [...excludedInsightIds, insightId])
@@ -233,8 +269,8 @@ export function UnderstandingPage() {
     try {
       const accepted = await autopilot.mutateAsync({
         from_step: 2,
-        use_llm: useLlm,
-        ...(useLlm && providerSession?.id ? { provider_session_id: providerSession.id } : {}),
+        use_llm: llmAllowed,
+        ...(llmAllowed && providerSession?.id ? { provider_session_id: providerSession.id } : {}),
       })
       if (!accepted) {
         navigate(routes.start(projectId))
@@ -324,8 +360,8 @@ export function UnderstandingPage() {
                 ...(mergedBrief.content_fill ? { content_fill: mergedBrief.content_fill as 'expand' | 'shrink' | 'ask' } : {}),
               },
               strategies: ['balanced'],
-              use_llm: useLlm,
-              ...(useLlm && providerSession?.id ? { provider_session_id: providerSession.id } : {}),
+              use_llm: llmAllowed,
+              ...(llmAllowed && providerSession?.id ? { provider_session_id: providerSession.id } : {}),
             },
             { keyMessage },
             options,
@@ -392,6 +428,8 @@ export function UnderstandingPage() {
             onExcludeInsight={handleExcludeInsight}
             onIncludeInsight={handleIncludeInsight}
             onRemoveBlock={handleRemoveBlock}
+            onConfirmAllInsights={() => void handleConfirmAllInsights()}
+            confirmAllPending={confirmingAll}
             excludedInsightIds={excludedInsightIds}
           />
         )

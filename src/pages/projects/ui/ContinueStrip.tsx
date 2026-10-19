@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router'
 import { useGeneration, type GenerationDetail } from '@/entities/generation'
 import type { Project } from '@/entities/project'
@@ -25,12 +26,13 @@ function useProjectCover(project: Project): string | null {
 function ContinueCard({ project }: { project: Project }) {
   const view = projectView(project)
   const cover = useProjectCover(project)
+  const [broken, setBroken] = useState(false)
   return (
     <li className={styles.item}>
       <Link to={view.href} className={styles.card}>
         <span className={styles.frame}>
-          {cover ? (
-            <img className={styles.image} src={cover} alt="" loading="lazy" />
+          {cover && !broken ? (
+            <img className={styles.image} src={cover} alt="" loading="lazy" onError={() => setBroken(true)} />
           ) : (
             <span className={styles.placeholder} aria-hidden>
               <span className={styles.placeholderLines}>

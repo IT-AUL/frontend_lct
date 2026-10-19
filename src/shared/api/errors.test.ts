@@ -14,6 +14,12 @@ describe('humanError', () => {
     expect(humanError(new ApiError({ code: 'x', message: 'Validation error', status: 422 }), 'Не получилось.')).toBe('Не получилось.')
   })
 
+  it('hides English detail even when it quotes a Russian filename', () => {
+    expect(humanError(new ApiError({ code: 'x', message: 'File "Инструкция к запуску.pptx" not found in project', status: 400 }), 'Не получилось.')).toBe(
+      'Не получилось.',
+    )
+  })
+
   it('keeps an explanation the service wrote in Russian', () => {
     expect(humanError(new ApiError({ code: 'x', message: 'Бриф не прошёл проверку', status: 422 }))).toBe('Бриф не прошёл проверку')
   })

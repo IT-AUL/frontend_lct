@@ -62,4 +62,19 @@ describe('PlanCard', () => {
     setup('slide-6', { offTopic: true })
     expect(screen.getByText('Уводит от главной мысли')).toBeInTheDocument()
   })
+
+  it('switches the chart type straight from the card', async () => {
+    const onChartPick = vi.fn()
+    setup('slide-2', { onChartPick })
+    const group = screen.getByRole('group', { name: 'Тип визуала слайда 3' })
+    const active = within(group).getByRole('button', { name: 'Линия' })
+    expect(active).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(within(group).getByRole('button', { name: 'Столбцы' }))
+    expect(onChartPick).toHaveBeenCalledWith('bar')
+  })
+
+  it('hides quick chart chips without a pick handler', () => {
+    setup('slide-2')
+    expect(screen.queryByRole('group', { name: 'Тип визуала слайда 3' })).not.toBeInTheDocument()
+  })
 })

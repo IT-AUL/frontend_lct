@@ -200,6 +200,38 @@ describe('DraftDeck', () => {
     expect(secondCard.querySelector('[data-visual="figure"]')).not.toBeNull()
   })
 
+  it('shows dataset anchor chips and a confirm-all action', async () => {
+    const user = userEvent.setup()
+    const onConfirmAll = vi.fn()
+    const scrollSpy = vi.fn()
+    window.HTMLElement.prototype.scrollIntoView = scrollSpy
+    const data = understanding({
+      datasets: [
+        dataset({ id: 'ds-1', title: 'Продажи', insights: [insight({ id: 'i-1' })] }),
+        dataset({ id: 'ds-2', title: 'Расходы', file: 'costs.csv', insights: [insight({ id: 'i-2', dataset_id: 'ds-2', confirmed: true })] }),
+      ],
+    })
+    render(<DraftDeck understanding={data} selection={null} onConfirmAllInsights={onConfirmAll} />)
+
+    const nav = screen.getByRole('navigation', { name: 'Таблицы данных' })
+    const chip = within(nav).getByRole('link', { name: /Продажи/ })
+    expect(within(nav).getByRole('link', { name: /Расходы/ })).toBeInTheDocument()
+    await user.click(chip)
+    expect(scrollSpy).toHaveBeenCalled()
+
+    const confirm = screen.getByRole('button', { name: 'Отметить все выводы (1)' })
+    await user.click(confirm)
+    expect(onConfirmAll).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides the confirm-all action when every insight is decided', () => {
+    const data = understanding({
+      datasets: [dataset({ insights: [insight({ id: 'i-1', confirmed: true })] })],
+    })
+    render(<DraftDeck understanding={data} selection={null} onConfirmAllInsights={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: /Отметить все выводы/ })).not.toBeInTheDocument()
+  })
+
   it('deduplicates twin text blocks and omits duplicate Цифра badge on numeric text cards', () => {
     const data = understanding({
       blocks: [

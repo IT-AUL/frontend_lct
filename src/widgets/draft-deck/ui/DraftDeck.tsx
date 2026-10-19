@@ -18,6 +18,8 @@ interface DraftDeckProps {
   onExcludeInsight?: (insightId: string) => void
   onIncludeInsight?: (insightId: string) => void
   onRemoveBlock?: (blockId: string) => void
+  onConfirmAllInsights?: () => void
+  confirmAllPending?: boolean
   excludedInsightIds?: readonly string[]
   quiet?: boolean
 }
@@ -30,6 +32,8 @@ export function DraftDeck({
   onExcludeInsight,
   onIncludeInsight,
   onRemoveBlock,
+  onConfirmAllInsights,
+  confirmAllPending,
   excludedInsightIds,
   quiet,
 }: DraftDeckProps) {
@@ -40,21 +44,49 @@ export function DraftDeck({
   const excluded = new Set(excludedInsightIds ?? [])
   const visibleBlocks = showAllBlocks ? blocks : blocks.slice(0, VISIBLE_BLOCKS)
   const both = groups.length > 0 && blocks.length > 0
+  const pendingInsights = groups.flatMap(({ entries }) => entries).filter((entry) => !entry.insight.confirmed && !excluded.has(entry.insight.id)).length
 
   return (
     <div className={styles.table}>
       {groups.length > 0 && (
         <section className={styles.group}>
           {both && <h2 className={styles.groupTitle}>Из ваших данных</h2>}
+          {(groups.length > 1 || (onConfirmAllInsights && pendingInsights > 0)) && (
+            <div className={styles.insightBar}>
+              {groups.length > 1 && (
+                <nav className={styles.datasetNav} aria-label="Таблицы данных">
+                  {groups.map(({ dataset, entries }, index) => (
+                    <a
+                      key={dataset.id}
+                      className={styles.datasetChip}
+                      href={`#dataset-${index}`}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        document.getElementById(`dataset-${index}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }}
+                    >
+                      {dataset.title ?? dataset.file ?? `Таблица ${index + 1}`}
+                      <span className={styles.datasetCount}>{entries.length}</span>
+                    </a>
+                  ))}
+                </nav>
+              )}
+              {onConfirmAllInsights && pendingInsights > 0 && (
+                <button type="button" className={styles.link} disabled={confirmAllPending} onClick={onConfirmAllInsights}>
+                  Отметить все выводы ({pendingInsights})
+                </button>
+              )}
+            </div>
+          )}
           <div className={styles.insightList} role="list" aria-label="Выводы из данных" data-muted={quiet || undefined}>
-            {groups.map(({ dataset, entries }) => {
+            {groups.map(({ dataset, entries }, index) => {
               const active = entries.filter((entry) => !excluded.has(entry.insight.id))
               const hidden = entries.filter((entry) => excluded.has(entry.insight.id))
               const shown = showAllInsights ? active : active.slice(0, VISIBLE_INSIGHTS)
               const facts = [...profileFacts(dataset.profile_summary), ...(dataset.task_ru ? [dataset.task_ru] : [])]
               const chartWhy = datasetChartWhy(dataset)
               return (
-                <div className={styles.dataset} role="group" aria-label={dataset.title ?? dataset.file ?? 'Таблица'} key={dataset.id}>
+                <div className={styles.dataset} id={`dataset-${index}`} role="group" aria-label={dataset.title ?? dataset.file ?? 'Таблица'} key={dataset.id}>
                   <header className={styles.datasetHead}>
                     <div className={styles.datasetName}>
                       <span className={styles.datasetTitle}>{dataset.title ?? dataset.file ?? 'Таблица'}</span>

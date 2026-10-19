@@ -232,6 +232,38 @@ describe('polishModel', () => {
     expect(notes.sources.map((item) => item.label)).toContain('Финансовый обзор')
   })
 
+  it('drops technical dump sentences from speaker notes and hides artifact ids in sources', () => {
+    const planSlide = {
+      id: 'slide-2',
+      index: 1,
+      purpose: 'data',
+      title_intent: 'Выручка',
+      key_message: 'Рост в 2,1 раза',
+      speaker_note: 'Данные: sales.csv (24 строки; 3 колонки). Задача: динамика продаж. Почему линия: тренд по месяцам. Альтернативы: bar. Скажите про рост вдвое за год.',
+      evidence_ids: ['pack_1:sec-9'],
+      content_units: [],
+    } as unknown as DeckPlan['slides'][number]
+    const headings = new Map([['sec-9', 'Art 747cd24355d54ffdbfc765e98296e5a9']])
+    const notes = buildSlideNotesView(planSlide, buildExplainView(null, planSlide, undefined, null), headings, [])
+    expect(notes.speakerNote).toBe('Скажите про рост вдвое за год.')
+    expect(notes.sources.map((item) => item.label)).toEqual(['ваши материалы'])
+  })
+
+  it('returns no speaker note when the note is only a technical dump', () => {
+    const planSlide = {
+      id: 'slide-3',
+      index: 2,
+      purpose: 'data',
+      title_intent: 'Метрики',
+      key_message: 'Три вывода',
+      speaker_note: 'Данные: metrics.csv (12 строк; 2 колонки). Задача: сравнение. Почему bar: категории.',
+      evidence_ids: [],
+      content_units: [],
+    } as unknown as DeckPlan['slides'][number]
+    const notes = buildSlideNotesView(planSlide, buildExplainView(null, planSlide, undefined, null), new Map(), [])
+    expect(notes.speakerNote).toBeNull()
+  })
+
   it('resolves assistant note by priority and filters out forbidden words', () => {
     expect(
       resolvePolishNote({

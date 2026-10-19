@@ -56,4 +56,24 @@ describe('useAnalyzeBrandbook', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data).toBeNull()
   })
+
+  it('retries without analyze when vision analysis fails', async () => {
+    const bodies: unknown[] = []
+    server.use(
+      http.patch('*/api/v1/brandbooks/:brandbookId', async ({ request }) => {
+        bodies.push(await request.json())
+        if (bodies.length === 1) return HttpResponse.json({ error: { code: 'structured_output_invalid', message: 'analysis failed' } }, { status: 500 })
+        return HttpResponse.json({ id: 'bb_retry', name: 'Брендбук', palette: [], fonts: [], priority: 'brandbook' })
+      }),
+    )
+    const { result } = setup(() => mod.useAnalyzeBrandbook())
+    await act(async () => {
+      await result.current.mutateAsync({ brandbookId: 'bb_retry', priority: 'brandbook' })
+    })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(bodies).toHaveLength(2)
+    expect(bodies[0]).toMatchObject({ analyze: true })
+    expect(bodies[1]).toMatchObject({ analyze: false, priority: 'brandbook' })
+    expect(result.current.data?.id).toBe('bb_retry')
+  })
 })

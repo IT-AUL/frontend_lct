@@ -6,7 +6,7 @@ test('polish step: studio layout, slide rework, audit repair, style switch with 
   await openApp(page)
 
   await test.step('a finished project opens straight on the polish step with calm summary and Slide tab first', async () => {
-    await page.getByRole('list', { name: 'Проекты' }).getByRole('link', { name: new RegExp(SEEDED_PROJECT) }).click()
+    await page.getByRole('list', { name: 'Проекты', exact: true }).getByRole('link', { name: new RegExp(SEEDED_PROJECT) }).click()
     await expect(page).toHaveURL(/\/polish\//, { timeout: 20_000 })
     const summary = page.getByRole('region', { name: 'Сводка аудита' })
     await expect(summary).toBeVisible({ timeout: 20_000 })

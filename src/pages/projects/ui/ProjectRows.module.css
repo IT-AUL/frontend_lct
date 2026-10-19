@@ -178,6 +178,12 @@
   outline-offset: 1px;
 }
 
+.row[data-confirming] .status,
+.row[data-confirming] .slides,
+.row[data-confirming] .time {
+  visibility: hidden;
+}
+
 .confirm {
   position: absolute;
   right: 8px;
@@ -217,6 +223,11 @@
 
 .confirmNo:hover {
   background: var(--sunken);
+}
+
+.row:has(> .confirm) .slides,
+.row:has(> .confirm) .time {
+  visibility: hidden;
 }
 
 .more {

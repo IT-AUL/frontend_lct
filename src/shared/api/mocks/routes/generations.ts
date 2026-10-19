@@ -31,8 +31,10 @@ export function generationRoutes(context: MockContext): RequestHandler[] {
 
   const run = async (projectId: string, request: RunRecord['request'], parentRunId: string | null) => {
     const record = startGeneration(store, projectId, request, parentRunId)
+    store.touchProject(projectId, { latest_run_id: record.detail.id, latest_run_state: 'running' })
     await wait(generationDelay)
     await completeGeneration(store, record.detail.id)
+    store.touchProject(projectId, { latest_run_id: record.detail.id, latest_run_state: 'completed' })
     return record
   }
 
@@ -47,7 +49,12 @@ export function generationRoutes(context: MockContext): RequestHandler[] {
 
     route('get', '/generations/:runId', ({ param }) => json(generationDetail(store, store.run(param('runId'))))),
 
-    route('post', '/generations/:runId/cancel', ({ param }) => json(cancelGeneration(store, param('runId')))),
+    route('post', '/generations/:runId/cancel', ({ param }) => {
+      const job = cancelGeneration(store, param('runId'))
+      const record = store.run(param('runId'))
+      store.touchProject(record.detail.project_id, { latest_run_id: record.detail.id, latest_run_state: 'canceled' })
+      return json(job)
+    }),
 
     route('post', '/generations/:runId/retry', async ({ param }) => {
       const previous = assertRetryable(store, param('runId'))

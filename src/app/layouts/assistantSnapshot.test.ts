@@ -24,6 +24,25 @@ describe('progressSnapshot', () => {
     expect(done.hrefs[7]).toBe('/projects/p1/runs/r1/polish')
   })
 
+  it('keeps the style step clickable for a generated run without a local draft', () => {
+    const snapshot = progressSnapshot({ ...base, hasTemplate: true, hasContent: true, runId: 'r1', generated: true })
+    expect(snapshot.completed).toEqual([1, 4, 5, 6])
+    expect(snapshot.hrefs[4]).toBe('/projects/p1/runs/r1/plan')
+    expect(snapshot.hrefs[5]).toBe('/projects/p1/style')
+  })
+
+  it('opens the draft plan and style steps from the server-side plan artifact', () => {
+    const session = { step: 5, completed_steps: [], skipped_steps: [], artifacts: { plan_id: 'plan-1' } } as unknown as Parameters<typeof progressSnapshot>[1]
+    const snapshot = progressSnapshot({ ...base, hasTemplate: true, hasContent: true, runId: 'r1', generated: true }, session)
+    expect(snapshot.hrefs[4]).toBe('/projects/p1/plan')
+    expect(snapshot.hrefs[5]).toBe('/projects/p1/style')
+  })
+
+  it('marks polish done for a generated deck with zero blockers', () => {
+    const snapshot = progressSnapshot({ ...base, hasTemplate: true, hasContent: true, runId: 'r1', generated: true, polishClear: true })
+    expect(snapshot.completed).toContain(7)
+  })
+
   it('takes completed, skipped and current steps from the session', () => {
     const session = { step: 4, completed_steps: [1, 2], skipped_steps: [3] } as unknown as Parameters<typeof progressSnapshot>[1]
     const snapshot = progressSnapshot({ ...base, hasTemplate: true, hasContent: true }, session)

@@ -345,14 +345,26 @@ export interface SlideNotesView {
   sources: SlideSource[]
 }
 
+const TECH_NOTE_SENTENCE_RE = /^(данные|задача|почему\s+\S+|альтернативы|не\s+подошли|источник(?:\s+данных)?|опирается\s+на|проверено|метрика)\s*:/i
+const TECH_NOTE_ID_RE = /^[0-9a-f-]{8,}$/i
+
+function cleanSpeakerNote(raw: string | null | undefined): string | null {
+  const trimmed = raw?.trim() ?? ''
+  if (!trimmed || /^[a-z0-9_.-]+$/i.test(trimmed)) return null
+  const kept = trimmed
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence && !TECH_NOTE_SENTENCE_RE.test(sentence) && !TECH_NOTE_ID_RE.test(sentence))
+  return kept.join(' ').trim() || null
+}
+
 export function buildSlideNotesView(
   planSlide: SlidePlan | undefined,
   explainView: ExplainView,
   headings: ReadonlyMap<string, string>,
   researchSources: readonly ResearchSource[] = [],
 ): SlideNotesView {
-  const rawSpeakerNote = planSlide?.speaker_note?.trim() || null
-  const speakerNote = rawSpeakerNote && !/^[a-z0-9_.-]+$/i.test(rawSpeakerNote) ? rawSpeakerNote : null
+  const speakerNote = cleanSpeakerNote(planSlide?.speaker_note)
   const rawKeyMessage = planSlide?.key_message?.trim() || null
   const keyMessage = rawKeyMessage && !/^[a-z0-9_.-]+$/i.test(rawKeyMessage) ? rawKeyMessage : null
   const units = planSlide?.content_units ?? []
