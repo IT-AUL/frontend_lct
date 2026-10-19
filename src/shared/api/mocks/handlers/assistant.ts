@@ -216,7 +216,9 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
       const files = form.getAll('files').filter((file): file is File => typeof file !== 'string')
       const idea = form.get('idea')
       if (!files.length && !(typeof idea === 'string' && idea.trim())) throw validationError('files', 'Добавьте файлы или идею')
-      const scenario = files.some((file) => /\.(csv|xlsx)$/.test(file.name)) ? 'data' : 'idea'
+      const isDataFileName = (name: string) =>
+        /\.(csv|xlsx)$/i.test(name) || (/\.json$/i.test(name) && !/brand|бренд|tokens|logo|логотип/i.test(name))
+      const scenario = files.some((file) => isDataFileName(file.name)) ? 'data' : 'idea'
       const intake = fixture(scenario, 'intake')
       intake.project_id = projectId
       intake.files = files.map((file) => {
@@ -226,7 +228,7 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
           ? 'unknown'
           : /\.(pptx|potx)$/i.test(file.name)
             ? 'template'
-            : /\.(csv|xlsx)$/i.test(file.name)
+            : isDataFileName(file.name)
               ? 'data'
               : isImg || /brand|бренд|tokens|logo|логотип/i.test(file.name)
                 ? 'brandbook'
@@ -249,6 +251,71 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
         packId = prefixedId('pack')
         const understanding = fixture(scenario, 'understanding')
         understanding.content_pack_id = packId
+        const existingDatasets = objects(understanding.datasets)
+        const extraDatasets: Object[] = []
+        const presetDims: Record<string, [number, number]> = {
+          'sales_monthly.csv': [24, 3],
+          'regions_comparison.csv': [6, 3],
+          'channels_share.json': [4, 2],
+          'nps_with_gaps.csv': [12, 2],
+          'order_values.csv': [60, 1],
+          'products_reference.csv': [240, 6],
+        }
+        for (const file of files.filter((item) => isDataFileName(item.name))) {
+          const alreadyListed = existingDatasets.some((ds) => String(ds.file ?? '').toLowerCase() === file.name.toLowerCase())
+          if (alreadyListed) continue
+          const rawText = typeof file.text === 'function' ? await file.text().catch(() => '') : ''
+          let rows = 0
+          let cols = 0
+          if (/\.json$/i.test(file.name)) {
+            try {
+              const parsed: unknown = JSON.parse(rawText)
+              if (Array.isArray(parsed)) {
+                rows = parsed.length
+                cols = isRecord(parsed[0]) ? Object.keys(parsed[0]).length : 1
+              } else if (isRecord(parsed) && Array.isArray(parsed.data)) {
+                rows = parsed.data.length
+                cols = Array.isArray(parsed.columns)
+                  ? parsed.columns.length
+                  : Array.isArray(parsed.data[0])
+                    ? parsed.data[0].length
+                    : 2
+              }
+            } catch {
+              rows = 0
+            }
+          } else if (/\.csv$/i.test(file.name)) {
+            const lines = rawText.trim().split(/\r?\n/).filter(Boolean)
+            rows = Math.max(0, lines.length - 1)
+            const header = lines[0]?.replace(/"[^"]*"/g, 'col') ?? ''
+            cols = header ? header.split(',').length : 0
+          }
+          if (rows === 0 || cols === 0) {
+            const fallback = presetDims[file.name.toLowerCase()]
+            if (fallback) {
+              ;[rows, cols] = fallback
+            }
+          }
+          if (rows > 0 && cols > 0) {
+            extraDatasets.push({
+              id: prefixedId('ds'),
+              title: file.name.replace(/\.[^.]+$/, ''),
+              file: file.name,
+              profile_summary: `${rows} строк; ${cols} колонок`,
+              task: 'comparison',
+              task_ru: 'сравнение',
+              recommendations: [],
+              why: '',
+              insights: [],
+            })
+          }
+        }
+        if (extraDatasets.length > 0) {
+          understanding.datasets = [...existingDatasets, ...extraDatasets]
+        }
+        if (!intake.template_id) {
+          intake.assistant_note = 'Материалы принял — добавьте корпоративный шаблон .pptx или .potx, чтобы я знал правила оформления.'
+        }
         packs.set(packId, { projectId, understanding })
       } else intake.assistant_note = 'Принял: шаблон. Добавьте материалы или идею.'
       intake.content_pack_id = packId ?? object(current.session.artifacts).content_pack_id ?? null

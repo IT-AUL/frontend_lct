@@ -14,8 +14,10 @@ export function progressSnapshot(progress: ProjectProgress, session?: AssistantS
   if (progress.generated) completed.push(5, 6)
   if (progress.repaired || progress.exported) completed.push(7)
   const hrefs: AssistantStepSnapshot['hrefs'] = { 1: routes.start(projectId) }
-  if (progress.hasTemplate) {
+  if (hasMaterials) {
     hrefs[2] = routes.understanding(projectId)
+  }
+  if (hasPlan) {
     hrefs[3] = routes.questions(projectId)
   }
   if (progress.hasPlanDraft) {
@@ -29,8 +31,8 @@ export function progressSnapshot(progress: ProjectProgress, session?: AssistantS
   if (!session) return { completed, skipped: [], hrefs }
   const merged = [...new Set<AssistantStepNumber>([...completed, ...session.completed_steps])]
   for (const step of [...session.completed_steps, ...session.skipped_steps, session.step]) {
-    if (step === 2 && !hrefs[2]) hrefs[2] = routes.understanding(projectId)
-    if (step === 3 && !hrefs[3]) hrefs[3] = routes.questions(projectId)
+    if (step >= 2 && !hrefs[2]) hrefs[2] = routes.understanding(projectId)
+    if (step >= 3 && !hrefs[3]) hrefs[3] = routes.questions(projectId)
   }
   return { completed: merged, skipped: session.skipped_steps, current: session.step, hrefs }
 }

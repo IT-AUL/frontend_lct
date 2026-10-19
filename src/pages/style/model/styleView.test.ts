@@ -201,5 +201,26 @@ describe('styleView model', () => {
     })
     expect(single?.deck_plan?.id).toBe(deckPlan.id)
     expect(single).not.toHaveProperty('deck_plan_id')
+
+    const fastPayload = buildGenerationPayload({
+      stored: {
+        request: {
+          template_id: 'tpl_1',
+          content_pack_id: 'pack_1',
+          brief: { purpose: 'Итоги', audience: '', language: 'ru', target_slide_count: 8 },
+          use_llm: true,
+        },
+        result: { planId: 'plan_1', proposals: [], sufficiency: null, research: null },
+        createdAt: '2026-10-18T10:00:00Z',
+      },
+      plan: deckPlan,
+      session: null,
+      project: undefined,
+      previewId: 'prev_1',
+      strategies: ['balanced'],
+      executionMode: 'fast',
+    })
+    expect(fastPayload?.execution_mode).toBe('fast')
+    expect(fastPayload?.use_llm).toBe(false)
   })
 })

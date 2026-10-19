@@ -47,6 +47,10 @@ vi.mock('@/entities/project', async (importOriginal) => ({
   rememberRun: vi.fn(),
 }))
 
+vi.mock('@/entities/template', () => ({
+  useDesignDna: vi.fn(() => ({ data: undefined })),
+}))
+
 vi.mock('@/features/edit-deck-plan', async (importOriginal) => ({
   ...(await importOriginal<typeof EditPlanModule>()),
   readPlanRequest: vi.fn(),

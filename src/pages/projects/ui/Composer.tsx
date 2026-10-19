@@ -7,7 +7,17 @@ import { isApiError } from '@/shared/api'
 import { routes } from '@/shared/config'
 import { intakeHandoffState } from '@/shared/lib/intake-handoff'
 import { Button, FILE_KIND_LABEL, Icon, Paperclip, X } from '@/shared/ui'
-import { guessKind, INTAKE_ACCEPT, isIntakeFile } from '@/widgets/intake-board'
+import {
+  buildPresetFiles,
+  detectActivePresetId,
+  getStage2Preset,
+  guessKind,
+  INTAKE_ACCEPT,
+  isIntakeFile,
+  isPresetFileName,
+  STAGE2_PRESETS,
+  type Stage2PresetId,
+} from '@/widgets/intake-board'
 import { nameFromTopic } from '../model/projectView'
 import styles from './Composer.module.css'
 
@@ -27,6 +37,7 @@ export function Composer() {
 
   const ready = Boolean(topic.trim()) || files.length > 0
   const hasTemplate = files.some((file) => guessKind(file.name) === 'template')
+  const activePresetId = detectActivePresetId(files.map((file) => file.name))
 
   const addFiles = (picked: File[]) => {
     if (!picked.length) return
@@ -36,6 +47,15 @@ export function Composer() {
       const known = new Set(current.map(fileKey))
       return [...current, ...supported.filter((file) => !known.has(fileKey(file)))]
     })
+  }
+
+  const applyPreset = (presetId: Stage2PresetId) => {
+    const preset = getStage2Preset(presetId)
+    if (!preset) return
+    setTopic(preset.topic)
+    setRejected([])
+    const presetFiles = buildPresetFiles(preset.id)
+    setFiles((current) => [...current.filter((file) => !isPresetFileName(file.name)), ...presetFiles])
   }
 
   const removeFile = (file: File) => setFiles((current) => current.filter((item) => item !== file))
@@ -131,6 +151,23 @@ export function Composer() {
           }}
         />
       </form>
+      <div className={styles.presets} role="group" aria-label="Попробовать на данных">
+        <span className={styles.presetsLabel}>Попробовать на данных:</span>
+        <div className={styles.presetChips}>
+          {STAGE2_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className={styles.presetChip}
+              aria-pressed={activePresetId === preset.id}
+              title={`${preset.title} · ${preset.summary}`}
+              onClick={() => applyPreset(preset.id)}
+            >
+              {preset.chip}
+            </button>
+          ))}
+        </div>
+      </div>
       {(rejected.length > 0 || error) && (
         <p className={styles.error} role="alert">
           {error ?? `Не подходит формат: ${rejected.join(', ')}`}

@@ -69,6 +69,7 @@ export function existingFiles(input: {
   brandbook: string | null | undefined
   datasets: readonly DatasetMetaInput[]
   sections: number
+  hasText?: boolean
 }): ExistingFile[] {
   const rows: ExistingFile[] = []
   if (input.template) rows.push({ name: input.template, kind: 'template' })
@@ -78,7 +79,7 @@ export function existingFiles(input: {
     const meta = formatDatasetDimensions(dataset)
     rows.push(meta ? { name, kind: 'data', meta } : { name, kind: 'data' })
   }
-  if (input.sections > 0 && input.datasets.length === 0) rows.push({ name: 'Текст материалов', kind: 'content' })
+  if ((input.sections > 0 && input.datasets.length === 0) || input.hasText) rows.push({ name: 'Текст материалов', kind: 'content' })
   if (input.brandbook) rows.push({ name: input.brandbook, kind: 'brandbook' })
   return rows
 }

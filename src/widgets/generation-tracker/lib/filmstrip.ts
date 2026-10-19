@@ -266,11 +266,16 @@ export function buildFilmstripSlots({
   const recordBySlideKey = new Map<string, SlidePreviewRecord>()
   const recordBySlideId = new Map<string, SlidePreviewRecord>()
   const recordBySlotIndex = new Map<number, SlidePreviewRecord>()
+  const idsByVariant = new Map<string, Set<string>>()
 
   let maxRecordSlot = -1
   for (const item of records) {
     if (item.slideKey) {
       recordBySlideKey.set(item.slideKey, mergePreviewRecord(recordBySlideKey.get(item.slideKey), item))
+      if (item.slideKey.includes(':')) {
+        const suffixKey = item.slideKey.slice(item.slideKey.lastIndexOf(':'))
+        recordBySlideKey.set(suffixKey, mergePreviewRecord(recordBySlideKey.get(suffixKey), item))
+      }
     }
     if (item.slideId) {
       recordBySlideId.set(item.slideId, mergePreviewRecord(recordBySlideId.get(item.slideId), item))
@@ -280,9 +285,22 @@ export function buildFilmstripSlots({
       if (slotIdx > maxRecordSlot) maxRecordSlot = slotIdx
       recordBySlotIndex.set(slotIdx, mergePreviewRecord(recordBySlotIndex.get(slotIdx), item))
     }
+    const variantPrefix = item.slideKey?.includes(':') ? item.slideKey.slice(0, item.slideKey.indexOf(':')) : ''
+    const perDeckKey =
+      item.index !== null
+        ? String(item.index)
+        : item.slideKey?.includes(':')
+          ? item.slideKey.slice(item.slideKey.lastIndexOf(':') + 1)
+          : (item.slideId ?? item.slideKey ?? '')
+    if (perDeckKey) {
+      const set = idsByVariant.get(variantPrefix) ?? new Set<string>()
+      set.add(perDeckKey)
+      idsByVariant.set(variantPrefix, set)
+    }
   }
 
-  const totalCount = Math.max(planSlides.length, slides.length, maxRecordSlot + 1, recordBySlideId.size, recordBySlideKey.size)
+  const maxVariantRecords = Math.max(0, ...[...idsByVariant.values()].map((set) => set.size))
+  const totalCount = Math.max(planSlides.length, slides.length, maxRecordSlot + 1, maxVariantRecords)
   if (totalCount === 0) return []
 
   const variantSlideByPlanId = new Map<string, SlideInfo>()
@@ -371,7 +389,7 @@ export function buildStageSummary({
   hasPlan: boolean
 }): BuildStageSummary {
   const totalSlides = slots.length
-  const readySlides = slots.filter((slot) => Boolean(slot.imageUrl) || slot.state === 'ready').length
+  const readySlides = Math.min(totalSlides, slots.filter((slot) => Boolean(slot.imageUrl) || slot.state === 'ready').length)
   const draftSlides = slots.filter((slot) => slot.previewBadge === 'черновик').length
   const updatingSlides = slots.filter((slot) => slot.previewBadge === 'обновляется').length
   const knownStage = pipelineStage(stage)
@@ -443,6 +461,16 @@ export function buildStageSummary({
   }
 }
 
+function clampNoteProgress(note: string, totalSlides?: number): string {
+  return note.replace(/(\d+)\s+из\s+(\d+)/g, (_match, rawDone: string, rawTotal: string) => {
+    const parsedDone = Number.parseInt(rawDone, 10)
+    const parsedTotal = Number.parseInt(rawTotal, 10)
+    const total = totalSlides && totalSlides > 0 ? totalSlides : parsedTotal
+    if (!Number.isFinite(parsedDone) || !Number.isFinite(total) || total <= 0) return `${rawDone} из ${rawTotal}`
+    return `${Math.min(parsedDone, total)} из ${total}`
+  })
+}
+
 export function latestAssistantNote(
   events: readonly JobEvent[],
   variantId?: string | null,
@@ -456,20 +484,23 @@ export function latestAssistantNote(
     if (!matchesVariant(event, variantId)) continue
     const previewArtifactId = readString(event, 'preview_artifact_id') ?? readString(event, 'image_artifact_id')
     if (!previewArtifactId) continue
-    const key = readString(event, 'slide_key') ?? readString(event, 'slide_id') ?? String(readNumber(event, 'index') ?? event.sequence)
-    const variantKey = readString(event, 'variant_id') ?? (key.includes(':') ? key.slice(0, key.indexOf(':')) : '')
+    const rawKey = readString(event, 'slide_key') ?? readString(event, 'slide_id') ?? String(readNumber(event, 'index') ?? event.sequence)
+    const variantKey = readString(event, 'variant_id') ?? (rawKey.includes(':') ? rawKey.slice(0, rawKey.indexOf(':')) : '')
+    const slideIndex = readNumber(event, 'index') ?? parseSlideKeyIndex(rawKey)
+    const slotKey = slideIndex !== null ? String(slideIndex) : (rawKey.includes(':') ? rawKey.slice(rawKey.lastIndexOf(':') + 1) : rawKey)
     const slots = readyByVariant.get(variantKey) ?? new Set<string>()
-    slots.add(key)
+    slots.add(slotKey)
     readyByVariant.set(variantKey, slots)
   }
-  const readyCount = Math.max(0, ...[...readyByVariant.values()].map((slots) => slots.size))
+  const rawReadyCount = Math.max(0, ...[...readyByVariant.values()].map((slots) => slots.size))
+  const readyCount = totalSlides && totalSlides > 0 ? Math.min(rawReadyCount, totalSlides) : rawReadyCount
 
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const event = events[index]
     if (!event) continue
     if (!matchesVariant(event, variantId)) continue
     const note = readString(event, 'assistant_note')
-    if (note) return note
+    if (note) return clampNoteProgress(note, totalSlides)
     if (event.type === 'slide.ready' && readyCount > 0) {
       const total = totalSlides && totalSlides > 0 ? totalSlides : readyCount
       return `Собираю ${Math.min(readyCount, total)} из ${total}…`
@@ -480,7 +511,7 @@ export function latestAssistantNote(
     const event = events[index]
     if (!event) continue
     const note = readString(event, 'assistant_note')
-    if (note) return note
+    if (note) return clampNoteProgress(note, totalSlides)
   }
 
   return null

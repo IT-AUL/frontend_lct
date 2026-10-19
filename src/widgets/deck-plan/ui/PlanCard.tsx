@@ -131,7 +131,9 @@ export function PlanCard({ slide, number, selected, researching, offTopic, onOpe
             <ChartMiniSvg type={chart.type} />
           </span>
           <span className={styles.chartText}>
-            <span className={styles.chartLabel}>График · {chart.label}</span>
+            <span className={styles.chartLabel}>
+              {chart.type === 'table' || chart.type === 'kpi' ? chart.label : `График · ${chart.label}`}
+            </span>
             <span className={styles.chartWhy}>{chart.why}</span>
           </span>
         </div>

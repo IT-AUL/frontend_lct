@@ -204,7 +204,12 @@ export function PlanStep(props: PlanStepProps) {
       }
       if (result.slide) {
         const serverSlide = result.slide
-        const nextPlan: DeckPlan = { ...draft.plan, slides: draft.plan.slides.map((item) => (item.id === slideId ? serverSlide : item)) }
+        const currentSlide = draft.plan.slides.find((item) => item.id === slideId)
+        const mergedSlide =
+          currentSlide?.title_intent.trim() && serverSlide.title_intent !== currentSlide.title_intent
+            ? { ...serverSlide, title_intent: currentSlide.title_intent }
+            : serverSlide
+        const nextPlan: DeckPlan = { ...draft.plan, slides: draft.plan.slides.map((item) => (item.id === slideId ? mergedSlide : item)) }
         draft.replace(nextPlan, true)
         onServerPlanSet(result.plan_set, nextPlan)
       }

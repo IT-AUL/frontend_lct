@@ -91,6 +91,7 @@
   color: var(--ink);
   font-size: 17px;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .datasetFile {
@@ -117,6 +118,13 @@
   font-size: 12px;
   line-height: 1.4;
   white-space: nowrap;
+}
+
+.datasetWhy {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .insight {
@@ -156,6 +164,7 @@
   font-size: 16px;
   font-weight: 600;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .insightOpen {
@@ -184,6 +193,7 @@
   color: var(--ink-2);
   font-size: 14px;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .insightRows {
@@ -211,6 +221,7 @@
   color: var(--ink);
   font-size: 14px;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .insightRow[data-decision] .insightStepText {

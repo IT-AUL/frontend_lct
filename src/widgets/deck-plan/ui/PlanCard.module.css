@@ -112,6 +112,7 @@
   font: inherit;
   resize: none;
   overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .title {

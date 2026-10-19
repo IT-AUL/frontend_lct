@@ -431,6 +431,7 @@ export interface BuildGenerationPayloadOptions {
   project: Project | null | undefined
   previewId: string | null
   strategies: readonly CatalogStrategy[]
+  executionMode?: BuildExecutionMode
 }
 
 export function buildGenerationPayload({
@@ -440,6 +441,7 @@ export function buildGenerationPayload({
   project,
   previewId,
   strategies,
+  executionMode,
 }: BuildGenerationPayloadOptions): GenerationCreate | null {
   const templateId =
     stored?.request.template_id ??
@@ -462,6 +464,7 @@ export function buildGenerationPayload({
   const syncedPlan = preparedPlan ? { ...preparedPlan, brief } : null
   const planId = stored?.result.planId ?? session?.artifacts.plan_id ?? null
   const chosenStrategies = strategies.length > 0 ? strategies : [DEFAULT_STRATEGY]
+  const useLlm = executionMode === 'fast' ? false : (stored?.request.use_llm ?? false)
 
   return {
     template_id: templateId,
@@ -469,7 +472,8 @@ export function buildGenerationPayload({
     provider_session_id: stored?.request.provider_session_id ?? null,
     brief,
     variants: chosenStrategies.map((strategy) => ({ strategy })),
-    use_llm: stored?.request.use_llm ?? false,
+    use_llm: useLlm,
+    ...(executionMode ? { execution_mode: executionMode } : {}),
     ...(syncedPlan ? { deck_plan: syncedPlan } : planId ? { deck_plan_id: planId } : {}),
     ...(previewId ? { preview_id: previewId } : {}),
     ...(session?.artifacts.brandbook_id ? { brandbook_id: session.artifacts.brandbook_id } : {}),

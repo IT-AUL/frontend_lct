@@ -7,6 +7,7 @@ export {
   deckPurposeLabel,
   EDITOR_VISUALS,
   formatSlideRange,
+  normalizeChartReasonText,
   ORIGIN_LABEL,
   parseEvidenceRef,
   parseSlideChartView,

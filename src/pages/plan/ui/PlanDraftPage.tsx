@@ -212,7 +212,19 @@ function withCanonicalBrief(plan: DeckPlan, sessionBrief: Record<string, unknown
   if (resolvedKey && !isMeaningfulBriefString(brief.key_message)) {
     brief.key_message = resolvedKey
   }
-  return { ...plan, brief }
+  const slides = plan.slides.map((slide) => {
+    if (slide.purpose === 'title' && /\.(csv|tsv|xlsx|xls)$/i.test(slide.title_intent.trim())) {
+      const cleanCover =
+        isMeaningfulBriefString(brief.purpose) && !/\.(csv|tsv|xlsx|xls)$/i.test(brief.purpose)
+          ? brief.purpose.trim()
+          : resolvedKey && !/\.(csv|tsv|xlsx|xls)$/i.test(resolvedKey)
+            ? resolvedKey.trim()
+            : slide.title_intent
+      return cleanCover !== slide.title_intent ? { ...slide, title_intent: cleanCover } : slide
+    }
+    return slide
+  })
+  return { ...plan, brief, slides }
 }
 
 export function PlanDraftPage() {
@@ -235,7 +247,9 @@ export function PlanDraftPage() {
   const fallbackBuild = useBuildFromPlan(projectId, draftKey)
 
   const sessionPlanId = sessionQuery.data?.artifacts.plan_id ?? null
-  const canAutoBuild = Boolean(!stored && (sessionPlanId || (sessionQuery.data?.artifacts.template_id && sessionQuery.data?.artifacts.content_pack_id)))
+  const sessionTemplateId = sessionQuery.data?.artifacts.template_id ?? null
+  const sessionContentPackId = sessionQuery.data?.artifacts.content_pack_id ?? null
+  const canAutoBuild = Boolean(!stored && (sessionPlanId || (sessionTemplateId && sessionContentPackId)))
 
   useEffect(() => {
     if (stored || rebuilding || autoBuildAttempted.current) return
@@ -267,7 +281,10 @@ export function PlanDraftPage() {
             { keyMessage: brief.key_message ?? null },
             { signal: options.signal },
           )
-          if (fetched) return fetched
+          const fetchedPackId = (fetched?.result.proposals[0]?.deckPlan as { content_pack_id?: string | null } | undefined)?.content_pack_id
+          if (fetched && (!contentPackId || !fetchedPackId || fetchedPackId === contentPackId)) {
+            return fetched
+          }
         }
         if (!templateId || !contentPackId) {
           throw new Error('План не найден')
@@ -347,6 +364,7 @@ export function PlanDraftPage() {
     const syncedPlan = withCanonicalBrief(readDraftPlanFromStorage(draftKey, proposal.deckPlan, draftPlan), sessionQuery.data?.brief)
     const next = syncPlanDraftToStorage(projectId, stored, syncedPlan, proposal.strategy)
     setStored(next)
+    void syncPlanSlidesBeforeAutopilot(planId, proposal.deckPlan, syncedPlan, proposal.strategy)
     navigate(routes.style(projectId))
   }
 
@@ -379,13 +397,14 @@ export function PlanDraftPage() {
   }
 
   const { sufficiency, research, planId } = stored.result
-  const resolvedKeyMessage = resolveDeckKeyMessage(proposal.deckPlan, stored.keyMessage, sessionQuery.data?.brief ?? null)
+  const canonicalBasePlan = withCanonicalBrief(proposal.deckPlan, sessionQuery.data?.brief)
+  const resolvedKeyMessage = resolveDeckKeyMessage(canonicalBasePlan, stored.keyMessage, sessionQuery.data?.brief ?? null)
 
   return (
     <PlanStep
-      key={proposal.deckPlan.id}
+      key={canonicalBasePlan.id}
       draftKey={draftKey}
-      basePlan={proposal.deckPlan}
+      basePlan={canonicalBasePlan}
       buildBody={buildBody(stored)}
       planId={planId}
       strategy={proposal.strategy}

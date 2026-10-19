@@ -73,4 +73,34 @@ describe('Composer', () => {
     expect(screen.queryByRole('list', { name: 'Прикреплённые файлы' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Начать' })).toBeDisabled()
   })
+
+  it('populates topic and sample dataset files when clicking a preset chip without removing an attached template', async () => {
+    const { container } = renderComposer()
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, { target: { files: [new File(['x'], 'brand.pptx')] } })
+
+    const revenueBtn = screen.getByRole('button', { name: 'Выручка и каналы' })
+    await userEvent.click(revenueBtn)
+
+    expect(revenueBtn).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('textbox', { name: 'О чём презентация' })).toHaveValue(
+      'Итоги продаж за 24 месяца для совета директоров: динамика выручки, лидеры по регионам и структура каналов привлечения',
+    )
+    const fileList = screen.getByRole('list', { name: 'Прикреплённые файлы' })
+    expect(fileList).toHaveTextContent('brand.pptxШаблон')
+    expect(fileList).toHaveTextContent('sales_monthly.csvДанные')
+    expect(fileList).toHaveTextContent('regions_comparison.csvДанные')
+    expect(fileList).toHaveTextContent('channels_share.jsonДанные')
+
+    const analyticsBtn = screen.getByRole('button', { name: 'Аналитика и пропуски' })
+    await userEvent.click(analyticsBtn)
+
+    expect(analyticsBtn).toHaveAttribute('aria-pressed', 'true')
+    expect(revenueBtn).toHaveAttribute('aria-pressed', 'false')
+    expect(fileList).toHaveTextContent('brand.pptxШаблон')
+    expect(fileList).not.toHaveTextContent('sales_monthly.csv')
+    expect(fileList).toHaveTextContent('nps_with_gaps.csvДанные')
+    expect(fileList).toHaveTextContent('order_values.csvДанные')
+    expect(fileList).toHaveTextContent('report_with_table.mdТекст / слайды')
+  })
 })

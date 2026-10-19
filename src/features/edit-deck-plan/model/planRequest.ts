@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { parsePlanDraft, requestPlans, type ContentFillMode, type DeckPlan, type PlanDraftResult, type PlanRequest, type PlanRequestOptions, type VariantRequest } from '@/entities/generation'
 import { api, isUnsupportedEndpoint, requestOptionalJson, unwrap } from '@/shared/api'
-import { readJson, writeJson } from '@/shared/lib/storage'
+import { readJson, removeKey, writeJson } from '@/shared/lib/storage'
 
 const STORAGE_PREFIX = 'deckdna.plan-request.v1:'
 
@@ -41,6 +41,11 @@ export function readPlanRequest(projectId: string): StoredPlanRequest | null {
 export function writePlanRequest(projectId: string, stored: StoredPlanRequest): StoredPlanRequest {
   writeJson(storageKey(projectId), stored)
   return stored
+}
+
+export function clearPlanRequest(projectId: string): void {
+  if (!projectId) return
+  removeKey(storageKey(projectId))
 }
 
 export function syncPlanDraftToStorage(projectId: string, stored: StoredPlanRequest, deckPlan: DeckPlan, strategy: string | null): StoredPlanRequest {

@@ -5,13 +5,27 @@ import type { BrandPriority, IntakeFile, IntakeKind, IntakeResult } from '@/enti
 import { uploadContentPack, useContentPack } from '@/entities/content-pack'
 import { useInvalidateProject, useProject } from '@/entities/project'
 import { buildDesignSystem, uploadTemplate, useDesignDna, useTemplate } from '@/entities/template'
+import { clearPlanRequest } from '@/features/edit-deck-plan'
 import { isApiError } from '@/shared/api'
 import { routes } from '@/shared/config'
 import { readIntakeHandoff } from '@/shared/lib/intake-handoff'
 import { Button, ChoiceListSkeleton, EmptyState, PassportSkeleton, Segmented, useToast } from '@/shared/ui'
 import { DesignDnaSkeleton } from '@/widgets/design-dna'
-import { guessKind, IntakeDropzone, isContentFile, isIntakeFile, mergeIntakeFiles } from '@/widgets/intake-board'
-import type { PendingFile } from '@/widgets/intake-board'
+import {
+  buildPresetFiles,
+  detectActivePresetId,
+  getStage2Preset,
+  guessKind,
+  IntakeDropzone,
+  isContentFile,
+  isIntakeFile,
+  isPresetFileName,
+  isPresetTopic,
+  mergeIntakeFiles,
+  STAGE2_PRESETS,
+  type PendingFile,
+  type Stage2PresetId,
+} from '@/widgets/intake-board'
 import { StepShell } from '@/widgets/step-shell'
 import { existingFiles, topicFromBrief, withoutColorCodes } from '../lib/existing'
 import { dnaFileName, downloadJson, previewIds } from '../lib/passport'
@@ -20,6 +34,30 @@ import { ExistingRows, FileRows } from './FileRows'
 import { TemplateRules } from './TemplateRules'
 import { TemplateTable } from './TemplateTable'
 import styles from './IntakePage.module.css'
+
+const INTAKE_FILES_STORAGE_PREFIX = 'deckdna.intake-files.v1:'
+
+function readStoredIntakeFiles(projectId: string): IntakeFile[] {
+  if (!projectId || typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(`${INTAKE_FILES_STORAGE_PREFIX}${projectId}`)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as unknown
+    return Array.isArray(parsed) ? (parsed as IntakeFile[]) : []
+  } catch {
+    return []
+  }
+}
+
+function writeStoredIntakeFiles(projectId: string, files: IntakeFile[]): void {
+  if (!projectId || typeof window === 'undefined') return
+  try {
+    if (files.length === 0) window.localStorage.removeItem(`${INTAKE_FILES_STORAGE_PREFIX}${projectId}`)
+    else window.localStorage.setItem(`${INTAKE_FILES_STORAGE_PREFIX}${projectId}`, JSON.stringify(files))
+  } catch {
+    return
+  }
+}
 
 function errorText(error: unknown, fallback: string): string {
   return isApiError(error) && error.message ? error.message : fallback
@@ -55,7 +93,7 @@ export function IntakePage() {
   const analyzeBrandbook = useAnalyzeBrandbook()
 
   const [idea, setIdea] = useState<string | null>(null)
-  const [files, setFiles] = useState<IntakeFile[]>([])
+  const [files, setFilesState] = useState<IntakeFile[]>(() => readStoredIntakeFiles(projectId))
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([])
   const [intake, setIntake] = useState<IntakeResult | null>(null)
   const [note, setNote] = useState<string | null>(null)
@@ -65,6 +103,14 @@ export function IntakePage() {
   const [priorityOverride, setPriorityOverride] = useState<BrandPriority | null>(null)
   const [autopilotStarted, setAutopilotStarted] = useState(false)
   const [legacyError, setLegacyError] = useState<string | null>(null)
+
+  const setFiles = (updater: IntakeFile[] | ((prev: IntakeFile[]) => IntakeFile[])) => {
+    setFilesState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      writeStoredIntakeFiles(projectId, next)
+      return next
+    })
+  }
 
   const artifacts = session.data?.artifacts
   const templateId = intake?.template_id ?? artifacts?.template_id ?? project.data?.template_id ?? null
@@ -90,22 +136,24 @@ export function IntakePage() {
   const applyIntake = (data: IntakeResult) => {
     setIntake(data)
     setFiles((prev) => mergeIntakeFiles(prev, data.files))
+    if (data.files.length > 0) clearPlanRequest(projectId)
     if (data.assistant_note) setNote(data.assistant_note)
   }
 
-  const sendFilesLegacy = async (picked: File[]) => {
+  const sendFilesLegacy = async (picked: File[], ideaOverride?: string) => {
     setFiles((prev) => mergeIntakeFiles(prev, picked.map(legacyFile)))
     setPendingFiles(picked.map((file) => ({ name: file.name, size: file.size })))
     setLegacyError(null)
     const templates = picked.filter((file) => /\.(pptx|potx)$/i.test(file.name))
     const templateNames = new Set(templates)
     const others = picked.filter((file) => !templateNames.has(file) && isIntakeFile(file.name))
-    const text = ideaText.trim()
+    const text = (ideaOverride ?? ideaText).trim()
     const ideaFile = text ? new File([text], 'idea.md', { type: 'text/markdown' }) : null
     try {
       if (templates[0]) await uploadTemplate(projectId, templates[0])
       const rest = [...templates.slice(1), ...others, ...(ideaFile ? [ideaFile] : [])]
       if (rest.length) await uploadContentPack(projectId, rest, text ? { topic: text } : {})
+      clearPlanRequest(projectId)
       void invalidateProject(projectId)
       setNote('Принял по прежнему пути: шаблон и материалы по отдельности.')
     } catch (error) {
@@ -119,7 +167,7 @@ export function IntakePage() {
     if (!picked.length || upload.isPending) return
     setLegacyError(null)
     if (intakeMissing.current) {
-      void sendFilesLegacy(picked)
+      void sendFilesLegacy(picked, ideaOverride)
       return
     }
     setPendingFiles(picked.map((file) => ({ name: file.name, size: file.size })))
@@ -131,12 +179,22 @@ export function IntakePage() {
           if (data) applyIntake(data)
           else {
             intakeMissing.current = true
-            void sendFilesLegacy(picked)
+            void sendFilesLegacy(picked, ideaOverride)
           }
         },
         onError: () => setPendingFiles([]),
       },
     )
+  }
+
+  const applyPreset = (presetId: Stage2PresetId) => {
+    const preset = getStage2Preset(presetId)
+    if (!preset || upload.isPending || pendingFiles.length > 0 || advancing) return
+    const currentIdea = ideaText.trim()
+    const nextIdea = !currentIdea || isPresetTopic(currentIdea) ? preset.topic : currentIdea
+    setIdea(nextIdea)
+    setFiles((current) => current.filter((file) => !isPresetFileName(file.name)))
+    sendFiles(buildPresetFiles(preset.id), nextIdea)
   }
 
   const consumeHandoff = useEffectEvent(() => {
@@ -296,6 +354,7 @@ export function IntakePage() {
   const uploadError = legacyError ?? (upload.error ? errorText(upload.error, 'Не удалось отправить файлы.') : null)
   const priorityValue = priorityOverride ?? brandbookSummary.data?.priority ?? 'brandbook'
   const hint = canContinue ? null : templateId ? 'Добавьте материалы или напишите, о чём презентация.' : 'Нужен шаблон в формате .pptx или .potx.'
+  const activePresetId = detectActivePresetId([...files.map((file) => file.name), ...pendingFiles.map((file) => file.name)])
 
   return (
     <StepShell
@@ -361,6 +420,24 @@ export function IntakePage() {
         />
       </label>
       <IntakeDropzone onFiles={sendFiles} disabled={busy} compact />
+      <div className={styles.presets} role="group" aria-label="Подставить пример данных">
+        <span className={styles.presetsLabel}>Подставить пример данных:</span>
+        <div className={styles.presetChips}>
+          {STAGE2_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className={styles.presetChip}
+              disabled={busy}
+              aria-pressed={activePresetId === preset.id}
+              title={`${preset.title} · ${preset.summary}`}
+              onClick={() => applyPreset(preset.id)}
+            >
+              {preset.chip}
+            </button>
+          ))}
+        </div>
+      </div>
       {files.length === 0 && pendingFiles.length === 0 && (
         <ExistingRows
           files={existingFiles({
@@ -368,10 +445,13 @@ export function IntakePage() {
             brandbook: brandbookSummary.data?.name,
             datasets: contentPack.data?.datasets ?? [],
             sections: contentPack.data?.sections.length ?? 0,
+            hasText: (contentPack.data?.sections.length ?? 0) > (contentPack.data?.datasets?.length ?? 0),
           })}
         />
       )}
-      {(files.length > 0 || pendingFiles.length > 0) && <FileRows files={files} pending={pendingFiles} onKind={changeKind} onRemove={removeFile} />}
+      {(files.length > 0 || pendingFiles.length > 0) && (
+        <FileRows files={files} pending={pendingFiles} packId={packId} onKind={changeKind} onRemove={removeFile} />
+      )}
       {uploadError && (
         <p className={styles.error} role="alert">
           {uploadError}

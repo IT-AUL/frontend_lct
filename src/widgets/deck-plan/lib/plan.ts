@@ -265,13 +265,21 @@ function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0) : []
 }
 
+export function normalizeChartReasonText(text: string): string {
+  return text
+    .replace(/в задаче сказано про динамика(?!\p{L})/giu, 'в задаче сказано про динамику')
+    .replace(/в задаче сказано про структура(?!\p{L})/giu, 'в задаче сказано про структуру')
+    .replace(/про динамика(?!\p{L})/giu, 'про динамику')
+    .replace(/про структура(?!\p{L})/giu, 'про структуру')
+}
+
 export function parseSlideChartView(slide: Pick<SlidePlan, 'chart'>): SlideChartView | null {
   const raw = slide.chart
   if (!isRecord(raw) || typeof raw.type !== 'string' || !raw.type.trim()) return null
   const type = raw.type.trim()
   const label = chartTypeLabel(type)
-  const reasons = stringArray(raw.reasons)
-  const rawWhy = typeof raw.why === 'string' && raw.why.trim() ? raw.why.trim() : null
+  const reasons = stringArray(raw.reasons).map(normalizeChartReasonText)
+  const rawWhy = typeof raw.why === 'string' && raw.why.trim() ? normalizeChartReasonText(raw.why.trim()) : null
   const why = rawWhy ?? (reasons.length > 0 ? `${label}: ${reasons.join(', ')}.` : `Выбран тип «${label}» по структуре данных.`)
   const seen = new Set<string>([type])
   const options: SlideChartOption[] = [{ type, label, active: true, reasons }]
@@ -285,7 +293,7 @@ export function parseSlideChartView(slide: Pick<SlidePlan, 'chart'>): SlideChart
         type: altType,
         label: chartTypeLabel(altType),
         active: false,
-        reasons: stringArray(item.reasons),
+        reasons: stringArray(item.reasons).map(normalizeChartReasonText),
       })
     }
   }

@@ -6,7 +6,7 @@ import { isApiError } from '@/shared/api'
 import { routes } from '@/shared/config'
 import { Button, EmptyState, Icon, Plus, Search, Segmented, X } from '@/shared/ui'
 import { ProjectListSkeleton, sortProjects } from '@/widgets/project-list'
-import { FILTER_LABEL, FILTER_ORDER, filterCounts, matchesFilter, matchesQuery, type ProjectFilter } from '../model/projectView'
+import { FILTER_LABEL, FILTER_ORDER, filterCounts, matchesFilter, matchesQuery, projectView, type ProjectFilter } from '../model/projectView'
 import { Composer } from './Composer'
 import { ContinueStrip } from './ContinueStrip'
 import { ProjectRows } from './ProjectRows'
@@ -26,7 +26,7 @@ export function ProjectsPage() {
   const list = useMemo(() => sortProjects(projects.data ?? []), [projects.data])
   const counts = useMemo(() => filterCounts(list), [list])
   const filtered = useMemo(() => list.filter((project) => matchesFilter(project, filter) && matchesQuery(project, query)), [list, filter, query])
-  const recent = list.length >= CONTINUE_MIN_PROJECTS ? list.filter((project) => project.template_id).slice(0, CONTINUE_COUNT) : []
+  const recent = list.length >= CONTINUE_MIN_PROJECTS ? list.filter((project) => projectView(project).filter === 'ready').slice(0, CONTINUE_COUNT) : []
   const filterOptions = FILTER_ORDER.filter((value) => value === 'all' || counts[value] > 0).map((value) => ({
     value,
     label: `${FILTER_LABEL[value]} ${counts[value]}`,

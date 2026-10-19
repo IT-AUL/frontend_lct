@@ -16,6 +16,7 @@ interface StyleCompareDialogProps {
   onOpenChange: (open: boolean) => void
   onBuildSelected: () => void
   buildDisabled?: boolean
+  aspectRatio?: number | null
 }
 
 export function StyleCompareDialog({
@@ -28,6 +29,7 @@ export function StyleCompareDialog({
   onOpenChange,
   onBuildSelected,
   buildDisabled = false,
+  aspectRatio = null,
 }: StyleCompareDialogProps) {
   const referenceSlots = columns[0]?.slots ?? []
   const currentIndex = Math.max(
@@ -128,7 +130,7 @@ export function StyleCompareDialog({
                     </div>
                   </div>
                   <p className={styles.cardDifference}>{column.difference}</p>
-                  <div className={styles.stageFrame}>
+                  <div className={styles.stageFrame} style={aspectRatio ? { aspectRatio: String(aspectRatio) } : undefined}>
                     {slot?.state === 'ready' && slot.imageUrl ? (
                       <img
                         className={styles.stageImage}

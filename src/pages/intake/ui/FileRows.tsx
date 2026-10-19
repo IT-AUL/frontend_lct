@@ -28,18 +28,19 @@ function suggestedKind(file: IntakeFile): IntakeKind {
 interface FileRowsProps {
   files: readonly IntakeFile[]
   pending: readonly PendingFile[]
+  packId?: string | null
   datasets?: readonly DatasetMetaInput[]
   onKind: (name: string, kind: IntakeKind) => void
   onRemove: (name: string) => void
 }
 
-export function FileRows({ files, pending, datasets: datasetsProp, onKind, onRemove }: FileRowsProps) {
+export function FileRows({ files, pending, packId: packIdProp, datasets: datasetsProp, onKind, onRemove }: FileRowsProps) {
   const { projectId } = useParams<{ projectId: string }>()
   const hasDataFile = files.some((file) => file.accepted && file.kind === 'data')
   const shouldFetch = datasetsProp === undefined && hasDataFile && Boolean(projectId)
-  const session = useAssistantSession(shouldFetch ? projectId : null)
-  const project = useProject(shouldFetch ? projectId : undefined)
-  const packId = shouldFetch ? (session.data?.artifacts.content_pack_id ?? project.data?.content_pack_id ?? null) : null
+  const session = useAssistantSession(shouldFetch && !packIdProp ? projectId : null)
+  const project = useProject(shouldFetch && !packIdProp ? projectId : undefined)
+  const packId = shouldFetch ? (packIdProp ?? session.data?.artifacts.content_pack_id ?? project.data?.content_pack_id ?? null) : null
   const contentPack = useContentPack(packId)
   const understanding = useUnderstanding(packId)
   const datasets = datasetsProp ?? (contentPack.data?.datasets?.length ? contentPack.data.datasets : understanding.data?.datasets) ?? []

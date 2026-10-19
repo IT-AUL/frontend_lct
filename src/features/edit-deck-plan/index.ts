@@ -26,6 +26,7 @@ export {
 export type { BuildOptions, EditableUnit, QuickSlideAction, SlideChartAlternative, SlideChartInfo, SlidePatch } from './lib/editPlan'
 export {
   applyServerPlanSet,
+  clearPlanRequest,
   clearSlideResearchOutcomes,
   fetchAndStorePlan,
   formatSlideResearchOutcome,

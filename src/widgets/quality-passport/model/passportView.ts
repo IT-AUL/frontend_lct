@@ -336,8 +336,21 @@ function provenanceRows(passport: QualityPassport, context: PassportContext): Pr
     value: hasExtendedCheck ? 'Расширенный (правила и смысл)' : 'Стандартный (по правилам шаблона)',
   })
 
-  for (const [path, hash] of Object.entries(provenance.configHashes)) {
-    rows.push({ key: `config:${path}`, label: 'Конфигурация', value: `sha ${formatShortHash(hash)}` })
+  const configEntries = Object.entries(provenance.configHashes)
+  const seenConfigHashes = new Set<string>()
+  const uniqueConfigs = configEntries.filter(([, hash]) => {
+    const short = formatShortHash(hash)
+    if (seenConfigHashes.has(short)) return false
+    seenConfigHashes.add(short)
+    return true
+  })
+  const CONFIG_LABELS: Record<string, string> = {
+    'configs/generation.default.yaml': 'Конфигурация сборки',
+    'configs/audit.default.yaml': 'Конфигурация проверки',
+  }
+  for (const [path, hash] of uniqueConfigs) {
+    const label = uniqueConfigs.length > 1 ? (CONFIG_LABELS[path] ?? 'Конфигурация') : 'Конфигурация'
+    rows.push({ key: `config:${path}`, label, value: `sha ${formatShortHash(hash)}` })
   }
   return rows
 }

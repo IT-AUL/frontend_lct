@@ -534,5 +534,79 @@ describe('GenerationPage', () => {
     expect(grid.queryByText('правка в очереди')).not.toBeInTheDocument()
     vi.restoreAllMocks()
   })
+
+  it('caps the slide progress counter at 9 of 9 across 27 multi-variant slide events and clears it on failure', () => {
+    const basePlan = running.deck_plan
+    const nineSlideDeckPlan = basePlan
+      ? {
+          ...basePlan,
+          slides: basePlan.slides.slice(0, 9),
+        }
+      : null
+    const threeVariantRunning = {
+      ...running,
+      deck_plan: nineSlideDeckPlan,
+      variants: running.variants.map((variant, index) => ({
+        ...variant,
+        id: (['var_f', 'var_b', 'var_v'] as const)[index] ?? 'var_v',
+        strategy: (['faithful', 'balanced', 'visual'] as const)[index] ?? 'visual',
+        status: (['completed', 'running', 'running'] as const)[index] ?? 'running',
+      })),
+    }
+    const events: JobEvent[] = []
+    let sequence = 1
+    for (const variant of ['var_f', 'var_b', 'var_v']) {
+      for (let slideNum = 1; slideNum <= 9; slideNum += 1) {
+        events.push({
+          sequence,
+          type: 'slide.ready',
+          timestamp: '2026-10-18T12:00:00Z',
+          jobId: 'job_1',
+          stage: 'render',
+          progress: 0.5,
+          message: null,
+          data: {
+            variant_id: variant,
+            slide_key: `${variant}:${slideNum}`,
+            index: slideNum,
+            slide_id: `${variant}_s_${slideNum}`,
+            preview_revision: 1,
+            status: 'draft',
+            preview_artifact_id: `art_${sequence}`,
+          },
+        })
+        sequence += 1
+      }
+    }
+    vi.mocked(useJobEvents).mockReturnValue({ events, lastEvent: events[events.length - 1] ?? null, done: false, error: null })
+    useTracker(makeTracker({ generationId: RUN, generation: threeVariantRunning, phase: 'running', canCancel: true }))
+    const { unmount } = renderPage(RUN)
+
+    expect(screen.getByText('Собираю 9 из 9…')).toBeInTheDocument()
+    expect(screen.queryByText(/27 из 9/)).not.toBeInTheDocument()
+    const stages = within(screen.getByRole('list', { name: 'Этапы сборки' }))
+    expect(stages.getByText('Слайды 9 из 9')).toBeInTheDocument()
+    unmount()
+
+    const threeVariantFailed = {
+      ...threeVariantRunning,
+      state: 'failed' as const,
+      variants: threeVariantRunning.variants.map((v) => ({ ...v, status: 'failed' as const })),
+    }
+    useTracker(
+      makeTracker({
+        generationId: RUN,
+        generation: threeVariantFailed,
+        phase: 'failed',
+        finishedAt: Date.now(),
+        jobError: { code: 'layout_error', message: 'Ошибка раскладки', stage: 'layout_mapping' },
+      }),
+    )
+    renderPage(RUN)
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Не получилось собрать' })).toBeInTheDocument()
+    expect(screen.getByText('Бриф и файлы сохранены.')).toBeInTheDocument()
+    expect(screen.queryByText(/Собираю/)).not.toBeInTheDocument()
+  })
 })
 

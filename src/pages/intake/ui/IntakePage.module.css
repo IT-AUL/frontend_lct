@@ -30,6 +30,64 @@
   border-color: transparent;
 }
 
+.presets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.presetsLabel {
+  color: var(--ink-3);
+  font: var(--type-caption);
+  font-weight: 400;
+}
+
+.presetChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.presetChip {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink-2);
+  font: var(--type-caption);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast),
+    color var(--motion-fast);
+}
+
+.presetChip:hover:not(:disabled) {
+  border-color: var(--ink-3);
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.presetChip[aria-pressed='true'],
+.presetChip[aria-pressed='true']:hover:not(:disabled) {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--inv);
+}
+
+.presetChip:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.presetChip:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 .files {
   display: flex;
   flex-direction: column;

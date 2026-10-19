@@ -220,11 +220,6 @@ export function GenerationPage() {
     return () => controller.abort()
   }, [deckPlan, projectId, sessionPlanId, tracker.generation?.template_id, tracker.generation?.content_pack_id, session?.artifacts.template_id, session?.artifacts.content_pack_id])
 
-  const assistantNote = useMemo(
-    () => latestAssistantNote(jobEvents.events, null, deckPlan?.slides.length),
-    [jobEvents.events, deckPlan?.slides.length],
-  )
-
   useEffect(() => {
     if ((!tracking && !isJobRun) || !generationId) return
     rememberRun(projectId, generationId)
@@ -255,6 +250,13 @@ export function GenerationPage() {
     cards,
     selectedKey,
   })
+  const totalDeckSlides = deckPlan?.slides.length || slots.length || undefined
+  const assistantNote = useMemo(
+    () =>
+      latestAssistantNote(jobEvents.events, activeVariantId, totalDeckSlides) ??
+      latestAssistantNote(jobEvents.events, null, totalDeckSlides),
+    [jobEvents.events, activeVariantId, totalDeckSlides],
+  )
   const changesQuery = useVariantChanges(activeVariantId)
   const hasPendingChanges = hasPendingVariantChanges(changesQuery.data)
 
@@ -312,7 +314,11 @@ export function GenerationPage() {
   }
 
   const title = lost ? 'Сборка потерялась' : phase === 'completed' ? 'Презентация готова' : phase === 'failed' ? 'Не получилось собрать' : 'Собираю презентацию'
-  const note = lost ? 'Материалы и план сохранены.' : phase === 'completed' ? lead(phase, null) : (assistantNote ?? lead(phase, template?.filename ?? null))
+  const note = lost
+    ? 'Материалы и план сохранены.'
+    : phase === 'completed' || phase === 'failed' || phase === 'canceled'
+      ? lead(phase, null)
+      : (assistantNote ?? lead(phase, template?.filename ?? null))
 
   return (
     <StepShell
