@@ -131,6 +131,21 @@ describe('buildPassportView', () => {
     expect(rows('mode').value).toBe('Расширенный (правила и смысл)')
   })
 
+  it('localizes technical disclosures instead of printing raw english text', () => {
+    const raw = structuredClone(passportFixture) as unknown as { fallbacks: unknown[] }
+    raw.fallbacks = [
+      {
+        feature: 'metrics.content_support.numbers_verified',
+        disclosure: 'numbers_verified/numbers_failed count only whether a numeric value appears anywhere in the source text',
+      },
+    ]
+
+    const view = buildPassportView(parsePassport(raw), context)
+
+    expect(view.fallbacks[0]?.label).toBe('Сверка чисел с источником')
+    expect(view.fallbacks[0]?.detail).toBe('Подробности — в техническом приложении паспорта.')
+  })
+
   it('falls back to variant PEI and marks unknown proof values', () => {
     const raw = structuredClone(passportFixture) as unknown as { metrics: Record<string, unknown> }
     raw.metrics.validity = {}

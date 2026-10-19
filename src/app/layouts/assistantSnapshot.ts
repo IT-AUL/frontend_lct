@@ -6,13 +6,13 @@ import { routes } from '@/shared/config'
 export function progressSnapshot(progress: ProjectProgress, session?: AssistantSession | null): AssistantStepSnapshot {
   const { projectId, runId } = progress
   const hasMaterials = progress.hasTemplate && progress.hasContent
-  const hasPlan = Boolean(progress.hasPlanDraft) || progress.generated
+  const hasPlan = Boolean(progress.hasPlanDraft) || progress.generated || Boolean(session?.artifacts?.plan_id)
   const runReady = Boolean(runId) && !progress.runPending
   const completed: AssistantStepNumber[] = []
   if (hasMaterials) completed.push(1)
   if (hasPlan) completed.push(4)
   if (progress.generated) completed.push(5, 6)
-  if (progress.repaired || progress.exported) completed.push(7)
+  if (progress.repaired || progress.exported || (progress.generated && progress.polishClear)) completed.push(7)
   const hrefs: AssistantStepSnapshot['hrefs'] = { 1: routes.start(projectId) }
   if (hasMaterials) {
     hrefs[2] = routes.understanding(projectId)
@@ -20,11 +20,13 @@ export function progressSnapshot(progress: ProjectProgress, session?: AssistantS
   if (hasPlan) {
     hrefs[3] = routes.questions(projectId)
   }
-  if (progress.hasPlanDraft) {
+  if (progress.hasPlanDraft || session?.artifacts?.plan_id || (progress.generated && !runId)) {
     hrefs[4] = routes.planDraft(projectId)
-    hrefs[5] = routes.style(projectId)
   } else if (runId && runReady) {
     hrefs[4] = routes.plan(projectId, runId)
+  }
+  if (progress.hasPlanDraft || session?.artifacts?.plan_id || progress.generated) {
+    hrefs[5] = routes.style(projectId)
   }
   if (runId) hrefs[6] = routes.run(projectId, runId)
   if (runId && runReady && progress.generated) hrefs[7] = routes.polish(projectId, runId)

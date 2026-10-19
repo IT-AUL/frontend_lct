@@ -399,6 +399,11 @@ const AUTHOR_NOTES_LABEL = 'Тезисы автора'
 const SECTION_NUM_RE = /^sec[-_](\d+)$/i
 const DATASET_TOKEN_RE = /^(?:ds:)?(ds[-_][a-z0-9_]+?)(?:-(?:trend|by\d+|corr|dist|top|part|stat|i\d+|row\d+|col\d+)\b.*)?$/i
 const TECHNICAL_ID_RE = /^(?:(?:pack|sec|ds|ev|art|slide|tbl|block|unit)[-_:]|[bs]:|[a-z]{1,6}[-_]\d|[0-9a-f]{8,})/i
+const TECHNICAL_LABEL_RE = /^(?:(?:art|artifact|pack|sec|ds|ev|blk|block|unit|slide|tbl|src|file|img)[\s_.:-]*[0-9a-f-]{4,}|[0-9a-f]{12,}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}[0-9a-f]{8})$/i
+
+function humanSourceLabel(label: string): string {
+  return TECHNICAL_LABEL_RE.test(label.trim()) ? UNKNOWN_SOURCE_LABEL : label
+}
 
 function registerSectionAliases(map: Map<string, string>, rawId: string, label: string, overwrite = true) {
   const id = rawId.trim()
@@ -517,15 +522,15 @@ export function slideSources(evidenceIds: readonly string[], headings: ReadonlyM
     if (ref.meta || token === 'meta' || trimmed.endsWith(':meta')) {
       const metaHeading = headings.get('meta')?.trim()
       key = metaHeading ? 'meta' : 'materials'
-      label = metaHeading || UNKNOWN_SOURCE_LABEL
+      label = humanSourceLabel(metaHeading || UNKNOWN_SOURCE_LABEL)
     } else if (datasetId) {
       const dsHeading = headings.get(token)?.trim() || headings.get(datasetId)?.trim() || headings.get('ds:*')?.trim()
       key = dsHeading ? datasetId : 'materials'
-      label = dsHeading || UNKNOWN_SOURCE_LABEL
+      label = humanSourceLabel(dsHeading || UNKNOWN_SOURCE_LABEL)
     } else {
       const resolved = resolveSectionHeading(token, trimmed, headings)
       key = resolved ? token : 'materials'
-      label = resolved || UNKNOWN_SOURCE_LABEL
+      label = humanSourceLabel(resolved || UNKNOWN_SOURCE_LABEL)
     }
 
     const dedupeKey = [...sources.values()].find((item) => item.label === label)?.key ?? key

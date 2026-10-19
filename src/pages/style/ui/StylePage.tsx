@@ -189,6 +189,7 @@ export function StylePage() {
     isStreaming: isStreaming || startPreviews.isPending || autoPlanning,
     unsupported,
     hasPlan,
+    plan: activePlan,
   })
 
   const handleBuild = (mode: 'single' | 'all') => {

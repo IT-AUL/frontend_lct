@@ -19,6 +19,7 @@ interface PlanCardProps {
   onUnitChange: (position: number, text: string) => void
   onUnitAdd: () => void
   onUnitRemove: (position: number) => void
+  onChartPick?: (type: string) => void
 }
 
 interface AutoTextProps {
@@ -60,7 +61,7 @@ function visualLine(slide: SlidePlan): string | null {
   return visual
 }
 
-export function PlanCard({ slide, number, selected, researching, offTopic, onOpen, onTitleChange, onUnitChange, onUnitAdd, onUnitRemove }: PlanCardProps) {
+export function PlanCard({ slide, number, selected, researching, offTopic, onOpen, onTitleChange, onUnitChange, onUnitAdd, onUnitRemove, onChartPick }: PlanCardProps) {
   const points = slide.content_units.map((unit, position) => ({ unit, position })).filter(({ unit }) => isEditableUnit(unit))
   const shown = points.slice(0, VISIBLE_POINTS)
   const hidden = points.length - shown.length
@@ -136,6 +137,24 @@ export function PlanCard({ slide, number, selected, researching, offTopic, onOpe
             </span>
             <span className={styles.chartWhy}>{chart.why}</span>
           </span>
+        </div>
+      )}
+
+      {chart && onChartPick && chart.options.length > 1 && (
+        <div className={styles.chartTypes} role="group" aria-label={`Тип визуала слайда ${number}`}>
+          {chart.options.map((option) => (
+            <button
+              key={option.type}
+              type="button"
+              className={styles.chartType}
+              data-active={option.active || undefined}
+              aria-pressed={option.active}
+              title={option.reasons.length > 0 ? option.reasons.join(' ') : undefined}
+              onClick={() => onChartPick(option.type)}
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
       )}
 

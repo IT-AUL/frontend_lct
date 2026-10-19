@@ -1,5 +1,5 @@
 import type { Insight, Understanding, UnderstandingBlock, UnderstandingDataset } from '@/entities/assistant'
-import { datasetGroups, insightSource, profileFacts, stepNote } from './table'
+import { datasetChartWhy, datasetGroups, insightSource, profileFacts, stepNote } from './table'
 
 function block(patch: Partial<UnderstandingBlock> = {}): UnderstandingBlock {
   return {
@@ -96,6 +96,18 @@ describe('profileFacts', () => {
   it('returns an empty list without a profile', () => {
     expect(profileFacts(null)).toEqual([])
     expect(profileFacts('')).toEqual([])
+  })
+})
+
+describe('datasetChartWhy', () => {
+  it('strips the unchartable-data preamble and keeps the constructive part', () => {
+    const ds = dataset({ why: 'Эти данные не подходят для графика: нет главной метрики для графика. Покажу их компактной таблицей.' })
+    expect(datasetChartWhy(ds)).toBe('Покажу их компактной таблицей.')
+  })
+
+  it('keeps a plain reason without the preamble untouched', () => {
+    const ds = dataset({ why: 'Линейный график: 24 точки за 2 года, рост во второй половине.' })
+    expect(datasetChartWhy(ds)).toBe('Линейный график: 24 точки за 2 года, рост во второй половине.')
   })
 })
 

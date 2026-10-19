@@ -285,6 +285,45 @@
   -webkit-line-clamp: 2;
 }
 
+.chartTypes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chartType {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink-2);
+  font: var(--type-caption);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast),
+    border-color var(--motion-fast),
+    color var(--motion-fast);
+}
+
+.chartType:hover {
+  border-color: var(--ink-3);
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.chartType[data-active],
+.chartType[data-active]:hover {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--inv);
+}
+
+.chartType:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 .visual {
   margin: 0;
   color: var(--ink-2);

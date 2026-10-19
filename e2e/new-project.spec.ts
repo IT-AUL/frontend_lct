@@ -46,7 +46,7 @@ test('home: a topic and a template start a named project on step 1', async ({ pa
 
 test('old addresses lead to the single page of their step', async ({ page }) => {
   await openApp(page)
-  const link = page.getByRole('list', { name: 'Проекты' }).getByRole('link', { name: new RegExp(SEEDED_PROJECT) })
+  const link = page.getByRole('list', { name: 'Проекты', exact: true }).getByRole('link', { name: new RegExp(SEEDED_PROJECT) })
   await expect(link).toBeVisible()
   const href = (await link.getAttribute('href')) ?? ''
   const match = /\/projects\/([^/]+)\/runs\/([^/]+)/.exec(href)

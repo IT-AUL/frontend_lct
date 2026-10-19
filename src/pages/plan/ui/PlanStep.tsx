@@ -266,6 +266,7 @@ export function PlanStep(props: PlanStepProps) {
                   onUnitChange={(unit, text) => draft.updateUnit(slide.id, unit, text)}
                   onUnitAdd={() => draft.addUnit(slide.id)}
                   onUnitRemove={(unit) => draft.removeUnit(slide.id, unit)}
+                  onChartPick={(type) => changeChart(slide.id, type)}
                 />
               </li>
             ))}

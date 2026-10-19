@@ -130,4 +130,29 @@ describe('IntakePage presets', () => {
     expect(screen.getByText('products_reference.csv')).toBeInTheDocument()
     expect(presetBtn).toHaveAttribute('aria-pressed', 'true')
   })
+
+  it('explains why next is disabled when the project has no template and no files', () => {
+    vi.mocked(useProject).mockReturnValue({
+      data: { id: 'prj_1', name: 'Тест', template_id: null, content_pack_id: null },
+      isPending: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useProject>)
+    vi.mocked(useAssistantSession).mockReturnValue({
+      data: { project_id: 'prj_1', step: 1, completed_steps: [], artifacts: { template_id: null, content_pack_id: null }, brief: {} },
+    } as unknown as ReturnType<typeof useAssistantSession>)
+
+    renderIntakePage()
+
+    expect(screen.getByText('Нужен шаблон в формате .pptx или .potx.')).toBeInTheDocument()
+  })
+
+  it('shows the reading skeleton while the template is being analyzed', () => {
+    vi.mocked(useTemplateSummary).mockReturnValue({ data: null, isPending: true } as unknown as ReturnType<typeof useTemplateSummary>)
+
+    renderIntakePage()
+
+    expect(screen.getByRole('status', { name: 'Читаю шаблон' })).toBeInTheDocument()
+    expect(screen.queryByText('Здесь появится паспорт вашего шаблона')).not.toBeInTheDocument()
+  })
 })

@@ -73,22 +73,30 @@ export function useAnalyzeBrandbook() {
     mutationFn: async ({ brandbookId, priority, force }: AnalyzeBrandbookInput): Promise<BrandbookSummary | null> => {
       if (!brandbookId) return null
       const activeSession = getActiveProviderSession()
-      try {
-        const raw = await unwrap(
+      const patch = (body: Record<string, unknown>) =>
+        unwrap(
           api.PATCH('/api/v1/brandbooks/{brandbook_id}', {
             params: { path: { brandbook_id: brandbookId } },
-            body: {
-              analyze: true,
-              ...(priority ? { priority } : {}),
-              ...(force ? { force: true } : {}),
-              ...(activeSession?.id ? { provider_session_id: activeSession.id, use_llm: true } : {}),
-            } as unknown as { priority: 'brandbook' | 'template' },
+            body: body as { priority: 'brandbook' | 'template' },
           }),
         )
+      try {
+        const raw = await patch({
+          analyze: true,
+          ...(priority ? { priority } : {}),
+          ...(force ? { force: true } : {}),
+          ...(activeSession?.id ? { provider_session_id: activeSession.id, use_llm: true } : {}),
+        })
         return normalizeAnalyzedBrandbook(raw)
       } catch (error) {
         if (isUnsupportedEndpoint(error)) return null
-        throw error
+        try {
+          const raw = await patch({ analyze: false, ...(priority ? { priority } : {}), ...(force ? { force: true } : {}) })
+          return normalizeAnalyzedBrandbook(raw)
+        } catch (retryError) {
+          if (isUnsupportedEndpoint(retryError)) return null
+          throw retryError
+        }
       }
     },
     onSuccess: (data, { brandbookId }) => {

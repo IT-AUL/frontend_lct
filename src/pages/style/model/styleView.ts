@@ -352,6 +352,7 @@ export interface ResolveStyleNoteOptions {
   isStreaming: boolean
   unsupported?: boolean
   hasPlan: boolean
+  plan?: DeckPlan | null
 }
 
 export function resolveStyleAssistantNote({
@@ -361,6 +362,7 @@ export function resolveStyleAssistantNote({
   isStreaming,
   unsupported = false,
   hasPlan,
+  plan,
 }: ResolveStyleNoteOptions): string {
   if (!hasPlan) {
     return 'Сначала составьте план презентации, чтобы я примерил три стиля на ваших слайдах.'
@@ -371,8 +373,9 @@ export function resolveStyleAssistantNote({
   if (completedMeta.assistantNote?.trim()) return completedMeta.assistantNote.trim()
   if (isStreaming) {
     const readyCount = extractPreviewReadyMap(events).size
+    const total = resolveSlideOrder(preview, events, plan).length * STRATEGY_ORDER.length
     if (readyCount > 0) {
-      return `Примерил ${readyCount} из 9 пробных слайдов — сравните плотность текста и подачу графиков…`
+      return `Примерил ${readyCount} из ${total} пробных слайдов — сравните плотность текста и подачу графиков…`
     }
     return 'Примеряю три стиля вёрстки на ключевых слайдах вашего плана…'
   }

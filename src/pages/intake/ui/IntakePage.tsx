@@ -277,7 +277,8 @@ export function IntakePage() {
   const hasContent = Boolean(packId) || files.some(isContentFile) || Boolean(ideaText.trim())
   const canContinue = Boolean(templateId) && hasContent && !advancing
   const busy = upload.isPending || pendingFiles.length > 0 || advancing
-  const analyzing = Boolean(templateId) && templateSummary.isPending
+  const templateUploading = pendingFiles.some((file) => /\.(pptx|potx)$/i.test(file.name))
+  const analyzing = templateUploading || (Boolean(templateId) && templateSummary.isPending)
   const autopilotFailed = autopilotStarted && job.done && !session.data?.artifacts.generation_id
   const autopilotRunning = autopilotStarted && !autopilotFailed
   const assistantNote = autopilotFailed
@@ -457,7 +458,7 @@ export function IntakePage() {
           {uploadError}
         </p>
       )}
-      {hint && files.length > 0 && <p className={styles.hint}>{hint}</p>}
+      {hint && <p className={styles.hint}>{hint}</p>}
     </StepShell>
   )
 }

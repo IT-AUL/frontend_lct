@@ -22,9 +22,12 @@ export function normalizeReasonGrammar(text: string): string {
     .replace(/про структура(?!\p{L})/giu, 'про структуру')
 }
 
+const UNCHARTABLE_PREAMBLE = /^эти данные не подходят для графика[^.]*\.\s*/iu
+
 export function datasetChartWhy(dataset: UnderstandingDataset): string | null {
   if (typeof dataset.why === 'string' && dataset.why.trim()) {
-    return normalizeReasonGrammar(dataset.why.trim())
+    const why = normalizeReasonGrammar(dataset.why.trim())
+    return why.replace(UNCHARTABLE_PREAMBLE, '').trim() || why
   }
   const topRec = dataset.recommendations?.[0]
   if (topRec?.reasons && topRec.reasons.length > 0) {

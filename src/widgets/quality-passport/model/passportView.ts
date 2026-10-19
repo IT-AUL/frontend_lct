@@ -163,6 +163,27 @@ const FALLBACK_LABEL: Record<string, string> = {
   passed: 'Пройдено',
   completed: 'Пройдено',
   failed: 'Не пройдено',
+  'metrics.content_support.numbers_verified': 'Сверка чисел с источником',
+  'metrics.content_support.numbers_failed': 'Числа без подтверждения в источнике',
+  numbers_verified: 'Сверка чисел с источником',
+  numbers_failed: 'Числа без подтверждения в источнике',
+}
+
+const FALLBACK_DETAIL: Record<string, string> = {
+  numeric_presence_only: 'Сверено только наличие числа в исходном тексте, без пересчёта формул.',
+}
+
+function localizeFallbackDetail(detail: string): string | null {
+  const trimmed = detail.trim()
+  if (!trimmed) return null
+  const lowered = trimmed.toLowerCase()
+  if (FALLBACK_DETAIL[lowered]) return FALLBACK_DETAIL[lowered]
+  if (/[а-яё]/i.test(trimmed)) return trimmed
+  if (/^[\x20-\x7e]+$/.test(trimmed)) {
+    const token = translatePassportToken(trimmed)
+    return token === trimmed ? 'Подробности — в техническом приложении паспорта.' : token
+  }
+  return trimmed
 }
 
 const PEI_MEANING: Record<number, string> = {
@@ -391,7 +412,7 @@ export function buildPassportView(passport: QualityPassport, context: PassportCo
     usage: null,
     fallbacks: passport.fallbacks.map((item) => ({
       label: localizeFixLabel(item.label),
-      detail: item.detail ? translatePassportToken(item.detail) : null,
+      detail: item.detail ? localizeFallbackDetail(item.detail) : null,
     })),
     autoFixes: passport.autoFixes.map((fix) => ({
       label: localizeFixLabel(fix.ruleCode),

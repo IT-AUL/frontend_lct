@@ -188,7 +188,7 @@ export function SlideEditor(props: SlideEditorProps) {
           <p className={styles.hint}>{chart.why}</p>
           {chart.options.length > 1 && (
             <div className={styles.chips} role="radiogroup" aria-label="Тип графика">
-              {chart.options.map((option) => (
+              {chart.options.filter((option) => option.type !== 'table' || option.active).map((option) => (
                 <button key={option.type} type="button" role="radio" aria-checked={option.active} className={styles.chip} onClick={() => !option.active && onChart(option.type)}>
                   {option.label}
                 </button>

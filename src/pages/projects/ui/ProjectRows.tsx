@@ -26,10 +26,10 @@ function slidesLabel(project: Project): string {
   return count > 0 ? `${count} ${pluralize(count, ['слайд', 'слайда', 'слайдов'])}` : ''
 }
 
-function DeleteControl({ project }: { project: Project }) {
+function DeleteControl({ project, confirming, onConfirming }: { project: Project; confirming: boolean; onConfirming: (value: boolean) => void }) {
   const remove = useDeleteProject()
   const toast = useToast()
-  const [confirming, setConfirming] = useState(false)
+  const setConfirming = onConfirming
 
   if (!confirming) {
     return (
@@ -66,8 +66,9 @@ function DeleteControl({ project }: { project: Project }) {
 
 function ProjectRow({ project, group }: { project: Project; group: ProjectGroup['id'] }) {
   const view = projectView(project)
+  const [confirming, setConfirming] = useState(false)
   return (
-    <li className={styles.row}>
+    <li className={styles.row} data-confirming={confirming || undefined}>
       <Link to={view.href} className={styles.link}>
         <span className={styles.main}>
           <span className={styles.name}>{project.name}</span>
@@ -82,7 +83,7 @@ function ProjectRow({ project, group }: { project: Project; group: ProjectGroup[
           {rowTime(project.updated_at, group)}
         </time>
       </Link>
-      <DeleteControl project={project} />
+      <DeleteControl project={project} confirming={confirming} onConfirming={setConfirming} />
     </li>
   )
 }
