@@ -1,9 +1,11 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState, type ReactNode } from 'react'
-import { usePatchPlanSlide, usePlanSlideAction } from '@/entities/assistant'
+import { assistantKeys, type PlanSet, usePatchPlanSlide, usePlanSlideAction } from '@/entities/assistant'
 import { hasChartData, slidePurposeLabel, type DeckPlan, type GenerationCreate, type SlidePlan } from '@/entities/generation'
+import { AgentChat } from '@/features/agent-chat'
 import { AssistantCommandBar } from '@/features/assistant-command'
 import { applyQuickAction, changeSlideChart, usePlanDraft, useResearchPlanSlide, type QuickSlideAction } from '@/features/edit-deck-plan'
-import { humanError } from '@/shared/api'
+import { humanError, requestOptionalJson } from '@/shared/api'
 import { pluralize } from '@/shared/lib/format'
 import { Button, LinkButton, Segmented } from '@/shared/ui'
 import { PlanCard, resolveDeckKeyMessage } from '@/widgets/deck-plan'
@@ -98,6 +100,8 @@ function planNote(plan: DeckPlan, edited: boolean, explicit: string | null): str
 export function PlanStep(props: PlanStepProps) {
   const { draftKey, basePlan, buildBody, planId, strategy, keyMessage, assistantNote, notice, extra, onSelectStyle, onAutopilot, autopilotPending, onServerPlanSet, onKeyMessageCommit } =
     props
+  const queryClient = useQueryClient()
+  const projectId = draftKey.replace(/^draft:/, '').split(':')[0] || ''
   const draft = usePlanDraft(draftKey, basePlan)
   const patchSlide = usePatchPlanSlide(planId ?? '')
   const slideAction = usePlanSlideAction(planId ?? '')
@@ -306,7 +310,18 @@ export function PlanStep(props: PlanStepProps) {
             }
           : null
       }
-      command={<AssistantCommandBar projectId={draftKey.replace(/^draft:/, '').split(':')[0] || ''} planId={planId} slideId={selectedId} slides={ordered} onApplied={(res) => { const next = res.plan?.plans[0]?.deck_plan; if (res.plan && next) { draft.replace(next, true); onServerPlanSet(res.plan, next) } }} />}
+      command={<AgentChat projectId={projectId} planId={planId} slideId={selectedId} slides={ordered}
+        onApplied={async () => {
+          if (!planId) return
+          const result = await queryClient.fetchQuery({ queryKey: assistantKeys.plan(planId), staleTime: 0, queryFn: async () =>
+            (await requestOptionalJson<PlanSet>(`/projects/${encodeURIComponent(projectId)}/plans/${encodeURIComponent(planId)}`)) ??
+            requestOptionalJson<PlanSet>(`/plans/${encodeURIComponent(planId)}`),
+          })
+          const next = (result?.plans.find((item) => item.strategy === strategy) ?? result?.plans[0])?.deck_plan
+          if (result && next) { draft.replace(next, true); onServerPlanSet(result, next) }
+        }}
+        fallback={<AssistantCommandBar projectId={projectId} planId={planId} slideId={selectedId} slides={ordered} onApplied={(res) => { const next = res.plan?.plans[0]?.deck_plan; if (res.plan && next) { draft.replace(next, true); onServerPlanSet(res.plan, next) } }} />}
+      />}
       actions={
         <>
           <Button variant="primary" size="lg" disabled={disabled} onClick={() => onSelectStyle(planWithCurrentMessage())}>

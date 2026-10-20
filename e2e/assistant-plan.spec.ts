@@ -214,3 +214,15 @@ test.describe('plan step', () => {
     await expect(page).toHaveURL(new RegExp(`/projects/${PROJECT_ID}/runs/run_`), { timeout: 20_000 })
   })
 })
+
+
+test('plan chat rereads the server plan and replaces the draft after an edit', async ({ page }) => {
+  await openPlan(page)
+  const chat = page.getByRole('region', { name: 'Помощник', exact: true })
+  const input = chat.getByRole('textbox', { name: 'Сообщение помощнику' })
+  await expect(input).toBeEnabled()
+  await input.fill('Сделай первый слайд короче')
+  await input.press('Enter')
+  await expect(chat.getByText('Обновил план.', { exact: true })).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Слайды' })).toContainText('Главное — рост и результат')
+})

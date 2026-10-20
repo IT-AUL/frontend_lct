@@ -24,6 +24,7 @@ import { rememberRun, useProject } from '@/entities/project'
 import { useActiveProviderSession } from '@/entities/provider-session'
 import { FEATURE_PATHS, useCapabilityFlag } from '@/entities/system'
 import { isAbortError, PlanBuildProgress, requestAndStorePlan, usePlanBuild } from '@/features/edit-deck-plan'
+import { AgentChat } from '@/features/agent-chat'
 import { AssistantCommandBar } from '@/features/assistant-command'
 import { routes } from '@/shared/config'
 import { Button, EmptyState, InsightBoardSkeleton, LinkButton } from '@/shared/ui'
@@ -508,7 +509,7 @@ export function UnderstandingPage() {
             }
           : null
       }
-      command={<AssistantCommandBar projectId={projectId} label="Попросить словами" placeholder="Например: убери выводы про возраст" />}
+      command={<AgentChat projectId={projectId} fallback={<AssistantCommandBar projectId={projectId} label="Попросить словами" placeholder="Например: убери выводы про возраст" />} />}
       footnote={buildingPlan ? undefined : "Дальше — составлю план, вы его проверите. Сделай сам — соберу презентацию без остановок."}
       actions={
         <>

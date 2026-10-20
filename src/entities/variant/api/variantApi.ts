@@ -42,12 +42,19 @@ export function useVariantSlides(variantId: string | null | undefined, isRunning
   return useQuery({
     queryKey: variantKeys.slides(variantId ?? ''),
     queryFn: async (): Promise<SlideInfo[]> => {
-      const page = await unwrap(
-        api.GET('/api/v1/variants/{variant_id}/slides', {
-          params: { path: { variant_id: variantId as string }, query: { limit: SLIDE_PAGE_LIMIT } },
-        }),
-      )
-      return [...page.items].sort((a, b) => a.index - b.index)
+      const items: SlideInfo[] = []
+      const cursors = new Set<string>()
+      let cursor: string | undefined
+      do {
+        const page = await unwrap(api.GET('/api/v1/variants/{variant_id}/slides', {
+          params: { path: { variant_id: variantId as string }, query: { limit: SLIDE_PAGE_LIMIT, ...(cursor ? { cursor } : {}) } },
+        }))
+        items.push(...page.items)
+        cursor = page.next_cursor ?? undefined
+        if (cursor && cursors.has(cursor)) throw new Error('Не удалось прочитать все слайды')
+        if (cursor) cursors.add(cursor)
+      } while (cursor)
+      return [...new Map(items.map((item) => [item.id, item])).values()].sort((a, b) => a.index - b.index)
     },
     enabled: Boolean(variantId),
     refetchInterval: isRunning ? 2500 : false,

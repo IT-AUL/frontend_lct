@@ -1,5 +1,8 @@
 export const assistantKeys = {
   all: ['assistant'] as const,
+  thread: (id: string) => ['assistant', 'thread', id] as const,
+  agentRun: (id: string) => ['assistant', 'agent-run', id] as const,
+  agentLog: (id: string) => ['assistant', 'agent-log', id] as const,
   sessions: ['assistant', 'session'] as const,
   session: (id: string) => ['assistant', 'session', id] as const,
   templateSummary: (id: string) => ['assistant', 'template', id, 'summary'] as const,

@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw'
+import { agentChatHandlers } from './agentChat'
 import type { RequestHandler } from 'msw'
 import { API_BASE } from '@/shared/config'
 import type { MockContext } from '../context'
@@ -199,8 +200,21 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
     }, 480)
     ;(doneTimer as { unref?: () => void }).unref?.()
   }
+  const agentDecks = new Map<string, { summary: Object; slides: Object[] }>()
+  const agentDeck = (id: string) => {
+    const existing = store.variants.get(id)
+    if (existing) return { summary: existing.summary as unknown as Object, slides: existing.slides as unknown as Object[] }
+    const cached = agentDecks.get(id)
+    if (cached) return cached
+    for (const scenario of ['idea', 'data'] as const) {
+      const summary = objects(fixture(scenario, 'variants').items).find((item) => item.id === id)
+      if (summary) { const deck = { summary, slides: objects(fixture(scenario, 'slides').items) }; agentDecks.set(id, deck); return deck }
+    }
+    return null
+  }
   const { route } = router
   return [
+    ...agentChatHandlers({ router, store }, { deck: agentDeck, plan, task: (id) => state(id).session }),
     http.get(`*${API_BASE}/artifacts/:artifactId/download`, async ({ params }) => {
       const load = artifacts[`../fixtures/assistant/artifact-${String(params.artifactId)}.json`]
       if (!load) return
@@ -577,7 +591,7 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
     http.get(`*${API_BASE}/variants/:variantId`, ({ params }) => {
       const variants = (['idea', 'data'] as const).flatMap((scenario) => objects(fixture(scenario, 'variants').items))
       const found = variants.find((variant) => variant.id === params.variantId)
-      return found ? json(found) : undefined
+      return found ? json(agentDeck(String(params.variantId))?.summary ?? found) : undefined
     }),
     http.post(`*${API_BASE}/variants/:variantId/audits`, ({ params }) => {
       const variantId = String(params.variantId)
@@ -591,7 +605,7 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
     }),
     http.get(`*${API_BASE}/variants/:variantId/slides`, ({ params }) => {
       const scenario = (['idea', 'data'] as const).find((scenario) => objects(fixture(scenario, 'variants').items).some((variant) => variant.id === params.variantId))
-      return scenario ? json(fixture(scenario, 'slides')) : undefined
+      return scenario ? json({ items: agentDeck(String(params.variantId))?.slides ?? [], next_cursor: null }) : undefined
     }),
     http.get(`*${API_BASE}/variants/:variantId/slide-drafts`, ({ params }) => {
       const variantId = String(params.variantId)
@@ -614,7 +628,7 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
     }),
     http.get(`*${API_BASE}/generations/:runId`, ({ params }) => {
       const found = (['idea', 'data'] as const).map((scenario) => fixture(scenario, 'generation-detail')).find((item) => item.id === params.runId)
-      return found ? json(found) : undefined
+      return found ? json(agentDeck(String(params.variantId))?.summary ?? found) : undefined
     }),
     route('get', '/slides/:slideId/explain', ({ param }) => {
       const slideId = param('slideId')
@@ -648,7 +662,7 @@ export function assistantHandlers({ router, store }: MockContext): RequestHandle
     }),
     http.get(`*${API_BASE}/slides/:slideId`, ({ params }) => {
       const found = (['idea', 'data'] as const).flatMap((scenario) => objects(fixture(scenario, 'slides').items)).find((item) => item.id === params.slideId)
-      return found ? json(found) : undefined
+      return found ? json(agentDeck(String(params.variantId))?.summary ?? found) : undefined
     }),
     route('get', '/variants/:variantId/changes', ({ param }) => {
       const variantId = param('variantId')

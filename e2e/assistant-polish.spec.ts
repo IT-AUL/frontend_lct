@@ -18,10 +18,11 @@ test('polish step: studio layout, slide rework, audit repair, style switch with 
 
   await test.step('the default slide tab reworks only the current slide and explains it without skeleton flash', async () => {
     const panel = page.getByRole('complementary', { name: 'Проблемы' })
+    await panel.getByText('О слайде · быстрые правки', { exact: true }).click()
     await expect(panel.getByRole('heading', { name: /^Переделать слайд \d+$/ })).toBeVisible()
     await expect(panel.getByRole('heading', { name: 'Почему так' })).toBeVisible()
     await expect(panel.getByRole('heading', { name: 'Заметки докладчика' })).toBeVisible()
-    await panel.getByRole('button', { name: 'Короче' }).click()
+    await panel.getByRole('button', { name: 'Короче', exact: true }).click()
     await expect(panel.getByText('Сделал слайд короче.')).toBeVisible({ timeout: 20_000 })
   })
 
@@ -45,6 +46,7 @@ test('polish step: studio layout, slide rework, audit repair, style switch with 
   await test.step('switching the style preserves the selected slide number in URL', async () => {
     await page.getByRole('button', { name: /Слайд 3/ }).first().click()
     await expect(page).toHaveURL(/\?slide=3/)
+    await expect(page.getByText('03 / 12', { exact: true })).toBeVisible()
     const select = page.getByRole('combobox', { name: 'Вариант · ревизия' })
     const current = await select.inputValue()
     const other = await select
@@ -67,7 +69,7 @@ test('polish step: studio layout, slide rework, audit repair, style switch with 
     const link = downloads.getByRole('link', { name: 'Скачать PPTX' })
     await expect(link).toBeVisible({ timeout: 20_000 })
     const deck = await downloadFrom(page, link)
-    expect(deck.name).toMatch(/-(точный|сбалансированный|визуальный)\.pptx$/)
+    expect(deck.name.normalize('NFC')).toMatch(/-(точный|сбалансированный|визуальный)\.pptx$/)
     expect(deck.bytes.subarray(0, 2).toString('latin1')).toBe('PK')
   })
 })

@@ -7,6 +7,7 @@ import { assistantKeys } from './keys'
 
 export interface SubscribeJobEventsOptions {
   after?: number
+  onUnsupported?: () => void
   onEvent: (event: JobEvent) => void
   signal?: AbortSignal
 }
@@ -20,7 +21,7 @@ function pause(ms: number, signal: AbortSignal): Promise<void> {
   })
 }
 
-export async function subscribeJobEvents(jobId: string, { after = 0, onEvent, signal: externalSignal }: SubscribeJobEventsOptions): Promise<void> {
+export async function subscribeJobEvents(jobId: string, { after = 0, onEvent, onUnsupported, signal: externalSignal }: SubscribeJobEventsOptions): Promise<void> {
   let cursor = Number.isSafeInteger(after) && after >= 0 ? after : 0
   let terminal = false
   let failures = 0
@@ -66,7 +67,7 @@ export async function subscribeJobEvents(jobId: string, { after = 0, onEvent, si
         }
       } catch (error) {
         if (signal.aborted) throw signal.reason
-        if (isUnsupportedEndpoint(error)) return
+        if (isUnsupportedEndpoint(error)) { onUnsupported?.(); return }
         if (error instanceof ApiError && error.status >= 400 && error.status < 500) throw error
         connectionError = error
       }
