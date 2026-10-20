@@ -2,7 +2,8 @@ import { Navigate, useLocation, useParams, useSearchParams } from 'react-router'
 import { useGeneration } from '@/entities/generation'
 import { useProject } from '@/entities/project'
 import { useTemplate } from '@/entities/template'
-import { useVariant, useVariants } from '@/entities/variant'
+import { useVariant, useVariants, useVariantSlides } from '@/entities/variant'
+import { AgentChat } from '@/features/agent-chat'
 import { AssistantCommandBar } from '@/features/assistant-command'
 import { AuditWorkspace } from '@/widgets/audit-workspace'
 import { SlideInspector } from '@/widgets/slide-inspector'
@@ -47,6 +48,7 @@ export function AuditPage() {
   const project = useProject(projectId)
   const variant = useVariant(variantId)
   const generation = useGeneration(runId)
+  const slides = useVariantSlides(variantId)
   const template = useTemplate(generation.data?.template_id)
 
   if (!variantId) return <DefaultVariantRedirect projectId={projectId} runId={runId} />
@@ -62,7 +64,7 @@ export function AuditPage() {
     )
 
   const strategy = variant.data?.strategy ?? 'balanced'
-  const slideCount = generation.data?.deck_plan?.slides.length ?? null
+  const slideCount = slides.data?.length ?? generation.data?.deck_plan?.slides.length ?? null
 
   return (
     <AuditWorkspace
@@ -91,7 +93,15 @@ export function AuditPage() {
           />
         ) : null
       }
-      renderSlidePanel={({ slideNumber, slideId, revision }) => (<><SlidePanel key={slideNumber} runId={runId} variantId={variantId} strategy={strategy} slideNumber={slideNumber} /><AssistantCommandBar projectId={projectId} variantId={variantId} slideId={generation.data?.deck_plan?.slides[slideNumber - 1]?.id ?? slideId} expectedRevision={revision} slides={generation.data?.deck_plan?.slides} /></>)}
+      renderSlidePanel={({ slideNumber, slideId, revision }) => (
+        <div className={styles.chatPanel}>
+          <details className={styles.slideDetails}>
+            <summary>О слайде · быстрые правки</summary>
+            <SlidePanel key={slideNumber} runId={runId} variantId={variantId} strategy={strategy} slideNumber={slideNumber} />
+          </details>
+          <AgentChat projectId={projectId} variantId={variantId} slideId={slideId} slides={slides.data} fallback={<AssistantCommandBar projectId={projectId} variantId={variantId} slideId={slideId} expectedRevision={revision} slides={slides.data} />} />
+        </div>
+      )}
     />
   )
 }

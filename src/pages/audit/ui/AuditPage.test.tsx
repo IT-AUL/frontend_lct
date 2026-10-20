@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { buildIssueViews, canAutoFix, clearOpenCounts, clusterIssueViews, readOpenCounts, type AuditIssue, type AuditRun } from '@/entities/audit'
+import { variantKeys } from '@/entities/variant'
 import { api } from '@/shared/api'
 import { generationFixture as generation, variantFixtures as fixtures } from '@/shared/api/mocks'
 import { routes } from '@/shared/config'
@@ -33,6 +34,8 @@ interface FakeInit {
   body?: { selected_issue_ids?: string[]; reason?: string }
 }
 
+let activeClient: QueryClient
+let slideOverride: typeof deck.slides | null
 let issues: AuditIssue[]
 let audit: AuditRun
 let postSpy: MockInstance
@@ -61,7 +64,7 @@ function fakeGet(path: string, init?: FakeInit) {
     case '/api/v1/variants/{variant_id}':
       return variant ? ok(variant.variant) : fail(path)
     case '/api/v1/variants/{variant_id}/slides':
-      return ok({ items: variant?.slides ?? [] })
+      return ok({ items: slideOverride ?? variant?.slides ?? [] })
     case '/api/v1/exports/{export_id}':
       return ok(deck.export)
     case '/api/v1/audits/{audit_id}':
@@ -101,6 +104,7 @@ function fakePost(path: string, init?: FakeInit) {
 
 function renderAudit(url: string) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  activeClient = queryClient
   const router = createMemoryRouter(
     [
       { path: '/projects/:projectId/runs/:runId/polish/:variantId?', element: <AuditPage /> },
@@ -122,6 +126,7 @@ const fixableCount = deck.issues.filter(canAutoFix).length
 
 beforeEach(() => {
   window.localStorage.clear()
+  slideOverride = null
   issues = structuredClone(deck.issues)
   audit = structuredClone(deck.audit)
   repairCreatesAudit = false
@@ -498,5 +503,35 @@ describe('AuditPage slide tab', { timeout: 20_000 }, () => {
     expect(await screen.findByText('Готово')).toBeInTheDocument()
     expect(screen.getByText('Сделал слайд короче.')).toBeInTheDocument()
   })
+  it('preserves the selected slide by id after a structural reorder', async () => {
+    const router = renderAudit(`${routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID)}?slide=3`)
+    await screen.findByText('03 / 12')
+    const moved = deck.slides[2]
+    if (!moved) throw new Error('Missing slide')
+    slideOverride = [moved, ...deck.slides.filter((item) => item.id !== moved.id)].map((item, index) => ({ ...item, index: index + 1 }))
+    await act(async () => { await activeClient.invalidateQueries({ queryKey: variantKeys.slides(VARIANT_ID) }) })
+    await waitFor(() => expect(router.state.location.search).toBe('?slide=1'))
+    expect(screen.getByText('01 / 12')).toBeInTheDocument()
+  })
+
+  it('selects the nearest remaining slide and reduces the count when the selected slide disappears', async () => {
+    const router = renderAudit(`${routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID)}?slide=12`)
+    await screen.findByText('12 / 12')
+    slideOverride = deck.slides.slice(0, -1)
+    await act(async () => { await activeClient.invalidateQueries({ queryKey: variantKeys.slides(VARIANT_ID) }) })
+    await waitFor(() => expect(router.state.location.search).toBe('?slide=11'))
+    expect(screen.getByText('11 / 11')).toBeInTheDocument()
+  })
+
+  it('keeps the requested slide while the slide list temporarily becomes empty', async () => {
+    const router = renderAudit(`${routes.polish(PROJECT_ID, RUN_ID, VARIANT_ID)}?slide=3`)
+    await screen.findByText('03 / 12')
+    await act(async () => { activeClient.setQueryData(variantKeys.slides(VARIANT_ID), []) })
+    expect(router.state.location.search).toBe('?slide=3')
+    await act(async () => { activeClient.setQueryData(variantKeys.slides(VARIANT_ID), deck.slides) })
+    expect(await screen.findByText('03 / 12')).toBeInTheDocument()
+    expect(router.state.location.search).toBe('?slide=3')
+  })
+
 })
 

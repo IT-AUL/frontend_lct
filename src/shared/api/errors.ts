@@ -8,8 +8,9 @@ export class ApiError extends Error {
   readonly stage: string | null
   readonly retryable: boolean
   readonly requestId: string | null
+  readonly details: Record<string, unknown>
 
-  constructor(params: { code: string; message: string; status: number; stage?: string | null; retryable?: boolean; requestId?: string | null }) {
+  constructor(params: { code: string; message: string; status: number; stage?: string | null; retryable?: boolean; requestId?: string | null; details?: Record<string, unknown> }) {
     super(params.message)
     this.name = 'ApiError'
     this.code = params.code
@@ -17,6 +18,7 @@ export class ApiError extends Error {
     this.stage = params.stage ?? null
     this.retryable = params.retryable ?? false
     this.requestId = params.requestId ?? null
+    this.details = params.details ?? {}
   }
 
   static fromResponse(status: number, body: unknown): ApiError {
@@ -30,6 +32,7 @@ export class ApiError extends Error {
         stage: error.stage,
         retryable: error.retryable,
         requestId: error.request_id,
+        details: error.details ?? {},
       })
     }
     return new ApiError({ code: status >= 500 ? 'internal_error' : 'unknown_error', message: `HTTP ${status}`, status, retryable: status >= 500 })

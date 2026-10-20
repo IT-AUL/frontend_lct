@@ -4,6 +4,24 @@
  */
 
 export interface paths {
+    "/api/v1/projects/{project_id}/agent/messages": {
+        parameters: { path: { project_id: string } };
+        post: {
+            parameters: { path: { project_id: string } };
+            requestBody: { content: { "application/json": components["schemas"]["AgentMessageRequest"] } };
+            responses: { 202: { content: { "application/json": components["schemas"]["AgentMessageAccepted"] } }; 409: { content: { "application/json": components["schemas"]["ErrorEnvelope"] } } };
+        };
+    };
+    "/api/v1/projects/{project_id}/agent/thread": {
+        parameters: { path: { project_id: string } };
+        get: { parameters: { path: { project_id: string } }; responses: { 200: { content: { "application/json": components["schemas"]["AgentThread"] } } } };
+        delete: { parameters: { path: { project_id: string } }; responses: { 204: { content?: never } } };
+    };
+    "/api/v1/projects/{project_id}/agent/jobs/{job_id}/cancel": {
+        parameters: { path: { project_id: string; job_id: string } };
+        post: { parameters: { path: { project_id: string; job_id: string } }; responses: { 200: { content: { "application/json": unknown } }; 204: { content?: never } } };
+    };
+
     "/api/v1/provider-sessions": {
         parameters: {
             query?: never;
@@ -1183,6 +1201,27 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AgentMessageRequest: { text: string; variant_id?: string; plan_id?: string; slide_id?: string; provider_session_id?: string };
+        AgentMessageAccepted: { job_id: string; message_id: string; events_url: string; thread_url: string };
+        AgentSource: { title: string; url: string; publisher?: string | null };
+        AgentAction: { tool: string; slide: number | null; ok: boolean; summary: string; revision?: number | null; sources?: components["schemas"]["AgentSource"][] };
+        AgentMessage: {
+            id: string;
+            role: "user" | "assistant";
+            text: string;
+            created_at: string;
+            job_id: string | null;
+            variant_id?: string | null;
+            plan_id?: string | null;
+            slide_id?: string | null;
+            question?: { text: string; options: string[] } | null;
+            actions?: components["schemas"]["AgentAction"][];
+            mode?: "model" | "local" | "unavailable" | "error";
+            revision?: number | null;
+            reply_to?: string | null;
+        };
+        AgentThread: { items: components["schemas"]["AgentMessage"][]; active_job_id: string | null };
+
         /** AnalysisAccepted */
         AnalysisAccepted: {
             /** Job Id */

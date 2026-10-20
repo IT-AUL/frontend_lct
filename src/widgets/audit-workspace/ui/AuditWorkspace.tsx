@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useEffectEvent, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import {
   auditIssuesQuery,
@@ -251,7 +251,7 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
 
   const slideInfos = slidesQuery.data ?? []
   const lastIssueSlide = issues.reduce((max, issue) => Math.max(max, slideNumber(issue) ?? 0), 0)
-  const slideCount = Math.max(slideInfos.length, lastIssueSlide, 1)
+  const slideCount = Math.max(slidesQuery.data ? slideInfos.length : lastIssueSlide, 1)
   const zeroBasedSlides = slideInfos.some((info) => info.index === 0)
   const slideAt = (number: number) => slideInfos.find((info) => info.index === (zeroBasedSlides ? number - 1 : number))
   const titleOf = (number: number) => slideAt(number)?.title ?? undefined
@@ -259,6 +259,18 @@ export function AuditWorkspace({ projectId, runId, variantId, slide, onSlideChan
   const pending = views.filter((view) => isPendingStatus(view.status))
   const firstTroubled = pending.map((view) => slideNumber(view.issue)).find((number): number is number => number !== null)
   const currentSlide = Math.min(Math.max(slide ?? firstTroubled ?? 1, 1), slideCount)
+
+  const previousSelection = useRef<{ variantId: string; slides: typeof slideInfos; id: string | null; number: number }>({ variantId, slides: slideInfos, id: null, number: currentSlide })
+  useEffect(() => {
+    if (!slidesQuery.isSuccess || slidesQuery.isFetching || slideInfos.length === 0) return
+    const previous = previousSelection.current
+    if (previous.variantId === variantId && previous.slides !== slideInfos && previous.id && previous.number === (slide ?? previous.number)) {
+      const moved = slideInfos.find((item) => item.id === previous.id)
+      const number = moved ? moved.index + (zeroBasedSlides ? 1 : 0) : Math.min(previous.number, slideCount)
+      if (number !== slide) onSlideChange(number)
+      previousSelection.current = { variantId, slides: slideInfos, id: moved?.id ?? slideAt(number)?.id ?? null, number }
+    } else previousSelection.current = { variantId, slides: slideInfos, id: slideAt(currentSlide)?.id ?? null, number: currentSlide }
+  })
 
   const filtered = filterIssueViews(views, filter)
   const groups: ClusteredGroup[] = groupIssueViews(filtered, grouping, titleOf).map((group) => ({
